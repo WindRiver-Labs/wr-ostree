@@ -1,0 +1,23 @@
+From 6ea5189dc9237218c520498b987da737700adda8 Mon Sep 17 00:00:00 2001
+From: Jiang Lu <lu.jiang@windriver.com>
+Date: Thu, 27 Sep 2018 17:13:01 +0800
+Subject: [PATCH 07/12] using bash specifically
+
+Signed-off-by: Jiang Lu <lu.jiang@windriver.com>
+---
+ src/boot/grub2/ostree-grub-generator | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/boot/grub2/ostree-grub-generator b/src/boot/grub2/ostree-grub-generator
+index 8e4b9a8..20b07c3 100644
+--- a/src/boot/grub2/ostree-grub-generator
++++ b/src/boot/grub2/ostree-grub-generator
+@@ -1,4 +1,4 @@
+-#!/bin/sh
++#!/bin/bash
+ 
+ # The builtin grub.cfg generator.
+ #
+-- 
+2.7.4
+
