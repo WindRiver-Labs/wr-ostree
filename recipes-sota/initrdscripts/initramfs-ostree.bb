@@ -1,7 +1,9 @@
 SUMMARY = "Basic init for initramfs to mount ostree and pivot root"
 LICENSE = "MIT"
 LIC_FILES_CHKSUM = "file://${COREBASE}/meta/COPYING.MIT;md5=3da9cfbcb788c80a0384361b4de20420"
-SRC_URI = "file://init-ostree.sh"
+SRC_URI = "file://init-ostree.sh \
+	file://init.luks-ostree \
+"
 
 PR = "r9"
 
@@ -12,6 +14,7 @@ do_configure() {
 
 do_install() {
         install -m 0755 ${WORKDIR}/init-ostree.sh ${D}/init
+	install -m 0755 ${WORKDIR}/init.luks-ostree ${D}/init.luks-ostree
 
 	# Create device nodes expected by some kernels in initramfs
 	# before even executing /init.
@@ -25,6 +28,6 @@ do_install() {
 #inherit allarch
 INHIBIT_DEFAULT_DEPS = "1"
 
-FILES_${PN} = " /init /dev"
+FILES_${PN} = " /init /init.luks-ostree /dev"
 
 COMPATIBLE_HOST = "(arm|aarch64|i.86|x86_64|powerpc).*-linux"

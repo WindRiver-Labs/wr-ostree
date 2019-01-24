@@ -169,8 +169,8 @@ try_to_mount_rootfs() {
 
 expand_fluxdata
 
-[ -x /init.luks ] && {
-    /init.luks $OSTREE_LABEL_ROOT $OSTREE_LABEL_FLUXDATA && echo "LUKS init done." || fatal "Couldn't init LUKS, dropping to shell"
+[ -x /init.luks-ostree ] && {
+    /init.luks-ostree $OSTREE_LABEL_ROOT $OSTREE_LABEL_FLUXDATA && echo "LUKS init done." || fatal "Couldn't init LUKS, dropping to shell"
 }
 
 echo "Waiting for root device to be ready..."
