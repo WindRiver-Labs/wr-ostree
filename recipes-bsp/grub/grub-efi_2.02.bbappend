@@ -10,6 +10,14 @@ SRC_URI += " \
 
 EFI_BOOT_PATH = "/boot/efi/EFI/BOOT"
 
+do_compile_append_class-native() {
+        make grub-editenv
+}
+
+do_install_append_class-native() {
+    install -m 0755 grub-editenv "${D}${bindir}"
+}
+
 do_install_append_class-target() {
     install -d ${D}${EFI_BOOT_PATH}
     [ x"${@bb.utils.contains('DISTRO_FEATURES', 'ostree', '1', '0', d)}" != x"0" ] && {
