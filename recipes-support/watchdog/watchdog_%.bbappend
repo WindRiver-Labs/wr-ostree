@@ -14,3 +14,5 @@ do_install_append() {
 FILES_${PN} += " \
 	${sbindir}/clearbootflag.sh \
 "
+
+SYSTEMD_AUTO_ENABLE = "enable"

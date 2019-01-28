@@ -17,4 +17,6 @@
 
 [ -f /boot/efi/EFI/BOOT/pulsar.env ] && {
 	/usr/bin/grub-editenv /boot/efi/EFI/BOOT/pulsar.env set boot_tried_count=0
+} || {
+	/usr/bin/grub-editenv /boot/efi/EFI/BOOT/pulsar.env create
 }
