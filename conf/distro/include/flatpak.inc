@@ -25,3 +25,7 @@ IMAGE_BOOT_FILES_x86 = "grub-efi-bootx64.efi grub.cfg bzImage"
 IMAGE_BOOT_FILES_x86-64 = "grub-efi-bootx64.efi grub.cfg bzImage"
 
 MODULE_TARBALL_DEPLOY = "0"
+
+OSTREE_GPGID ?= "Wind-River-Linux-Sample"
+OSTREE_GPG_PASSPHRASE ?= "windriver"
+OSTREE_GPGDIR ?= "${WR_SAMPLE_KEYS_DIR}/rpm_keys"

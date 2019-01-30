@@ -35,6 +35,47 @@ repo_apache_config () {
      echo "</Directory>") > ${DEPLOY_DIR_IMAGE}/${IMAGE_LINK_NAME}.rootfs.ostree.http.conf
 }
 
+python check_rpm_public_key () {
+    gpg_path = d.getVar('GPG_PATH', True)
+
+    gpg_bin = d.getVar('GPG_BIN', True) or \
+              bb.utils.which(os.getenv('PATH'), 'gpg')
+    gpg_keyid = d.getVar('OSTREE_GPGID', True)
+
+    # Check RPM_GPG_NAME and RPM_GPG_PASSPHRASE
+    cmd = "%s --homedir %s --list-keys %s" % \
+            (gpg_bin, gpg_path, gpg_keyid)
+    status, output = oe.utils.getstatusoutput(cmd)
+    if not status:
+        return
+
+    # Import RPM_GPG_NAME if not found
+    gpg_key = d.getVar('OSTREE_GPGDIR', True) + '/' + 'RPM-GPG-PRIVKEY-' + gpg_keyid
+    cmd = '%s --batch --homedir %s --passphrase %s --import %s' % \
+            (gpg_bin, gpg_path, d.getVar('OSTREE_GPG_PASSPHRASE', True), gpg_key)
+    status, output = oe.utils.getstatusoutput(cmd)
+    if status:
+        raise bb.build.FuncFailed('Failed to import gpg key (%s): %s' %
+                                  (gpg_key, output))
+}
+check_rpm_public_key[lockfiles] = "${TMPDIR}/check_rpm_public_key.lock"
+
+python () {
+    gpg_path = d.getVar('GPG_PATH', True)
+    if not gpg_path:
+        gpg_path = d.getVar('TMPDIR', True) + '/.gnupg'
+        d.setVar('GPG_PATH', gpg_path)
+
+    if not os.path.exists(gpg_path):
+        status, output = oe.utils.getstatusoutput('mkdir -m 0700 -p %s' % gpg_path)
+        if status:
+            raise bb.build.FuncFailed('Failed to create gpg keying %s: %s' %
+                                      (gpg_path, output))
+
+    is_image = bb.data.inherits_class('image', d)
+    if is_image:
+        bb.build.exec_func("check_rpm_public_key", d)
+}
 
 create_tarball_and_ostreecommit[vardepsexclude] = "DATETIME"
 create_tarball_and_ostreecommit() {
@@ -56,6 +97,8 @@ create_tarball_and_ostreecommit() {
 	ostree --repo=${OSTREE_REPO} commit \
 	       --tree=dir=${OSTREE_ROOTFS} \
 	       --skip-if-unchanged \
+               --gpg-sign=${OSTREE_GPGID} \
+               --gpg-homedir=${GPG_PATH} \
 	       --branch=${_image_basename} \
 	       --timestamp=${_timestamp} \
 	       --subject="Commit-id: ${_image_basename}-${MACHINE}-${DATETIME}"
@@ -235,8 +278,8 @@ IMAGE_CMD_ostree () {
         done 
 
 	#deploy the GPG pub key
-	if [ -f ${FLATPAK_GPGDIR}/pubring.gpg ]; then
-	    cp ${FLATPAK_GPGDIR}/pubring.gpg usr/share/ostree/trusted.gpg.d/
+	if [ -f ${GPG_PATH}/pubring.gpg ]; then
+	    cp ${GPG_PATH}/pubring.gpg usr/share/ostree/trusted.gpg.d/
 	fi
 
 #        cp ${DEPLOY_DIR_IMAGE}/${MACHINE}.dtb usr/lib/ostree-boot
