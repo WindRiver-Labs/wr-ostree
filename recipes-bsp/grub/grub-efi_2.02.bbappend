@@ -5,6 +5,7 @@
 FILESEXTRAPATHS_prepend := "${THISDIR}/grub-efi:"
 
 SRC_URI += " \
+    file://0001-Make-UEFI-watchdog-behaviour-configurable.patch \
     file://grub-runtime.cfg \
 "
 
