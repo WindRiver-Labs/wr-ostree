@@ -1,4 +1,4 @@
-From fd4e869bc2246fd82eb35af1a38be7251d1ce9ed Mon Sep 17 00:00:00 2001
+From 11a1b04d65b521519e27d0190af75a648ff85634 Mon Sep 17 00:00:00 2001
 From: Jiang Lu <lu.jiang@windriver.com>
 Date: Thu, 27 Sep 2018 16:40:59 +0800
 Subject: [PATCH 01/12] ostree:first 2 patch
@@ -10,10 +10,10 @@ Signed-off-by: Jiang Lu <lu.jiang@windriver.com>
  2 files changed, 15 insertions(+), 3 deletions(-)
 
 diff --git a/src/boot/grub2/ostree-grub-generator b/src/boot/grub2/ostree-grub-generator
-index 5b7ea1a..742753e 100644
+index 10645c74..ed0694bd 100644
 --- a/src/boot/grub2/ostree-grub-generator
 +++ b/src/boot/grub2/ostree-grub-generator
-@@ -23,7 +23,16 @@ set -e
+@@ -24,7 +24,16 @@ set -e
  script=$(basename ${0})
  # Atomically safe location where to generete grub.cfg when executing system upgrade.
  new_grub2_cfg=${2}
@@ -31,7 +31,7 @@ index 5b7ea1a..742753e 100644
  
  read_config()
  {
-@@ -93,6 +102,7 @@ cat >> ${new_grub2_cfg} <<EOF
+@@ -101,6 +110,7 @@ cat >> ${new_grub2_cfg} <<EOF
  serial --unit=0 --speed=115200 --word=8 --parity=no --stop=1
  default=boot
  timeout=10
@@ -40,7 +40,7 @@ index 5b7ea1a..742753e 100644
  EOF
  }
 diff --git a/src/libostree/ostree-core.c b/src/libostree/ostree-core.c
-index 080137f..72dac93 100644
+index 4e1a67e0..d0a7517a 100644
 --- a/src/libostree/ostree-core.c
 +++ b/src/libostree/ostree-core.c
 @@ -2277,9 +2277,11 @@ _ostree_validate_bareuseronly_mode (guint32     content_mode,
@@ -58,5 +58,5 @@ index 080137f..72dac93 100644
    else if (S_ISLNK (content_mode))
      ; /* Nothing */
 -- 
-2.7.4
+2.17.1
 

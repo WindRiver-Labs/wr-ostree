@@ -1,18 +1,18 @@
-From bcfa02095e1b6fdb5a53b4e07735fa2177f3e22b Mon Sep 17 00:00:00 2001
+From cc56b8f7a4d2ad6be9c27d9d304997d7be73cae9 Mon Sep 17 00:00:00 2001
 From: Jiang Lu <lu.jiang@windriver.com>
 Date: Thu, 27 Sep 2018 17:10:13 +0800
 Subject: [PATCH 06/12] ostree:swap bootentry atomically
 
 Signed-off-by: Jiang Lu <lu.jiang@windriver.com>
 ---
- src/boot/grub2/ostree-grub-generator | 42 ++++++++++++++++--------------------
+ src/boot/grub2/ostree-grub-generator | 42 +++++++++++++---------------
  1 file changed, 19 insertions(+), 23 deletions(-)
 
 diff --git a/src/boot/grub2/ostree-grub-generator b/src/boot/grub2/ostree-grub-generator
-index 8d1231f..8e4b9a8 100644
+index c515ec9b..fc8acaad 100644
 --- a/src/boot/grub2/ostree-grub-generator
 +++ b/src/boot/grub2/ostree-grub-generator
-@@ -89,34 +89,30 @@ populate_menu()
+@@ -97,34 +97,30 @@ populate_menu()
          fi
          menu="${menu}}\n\n"
  
@@ -67,5 +67,5 @@ index 8d1231f..8e4b9a8 100644
      printf "$menu" >> ${new_grub2_cfg}
  }
 -- 
-2.7.4
+2.17.1
 

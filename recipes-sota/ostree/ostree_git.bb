@@ -23,11 +23,11 @@ SRC_URI = "gitsm://github.com/ostreedev/ostree.git;branch=master \
            file://0012-deploy-using-etc-in-runtime-as-merge-source.patch \
 "
 
-SRCREV = "414891865568ee95978bfe2091ef6f8416726a1f"
+SRCREV = "13bcc49603b54f117c44e25dc2b457b9f25d9dc0"
 
 CLEANBROKEN = "1"
 
-PV = "2017.13+git${SRCPV}"
+PV = "2019.1+git${SRCPV}"
 
 S = "${WORKDIR}/git"
 

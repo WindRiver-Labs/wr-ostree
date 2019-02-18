@@ -1,4 +1,4 @@
-From c24fd06057ed27f8fc1dc71e228a69af02554872 Mon Sep 17 00:00:00 2001
+From 6dec1c473b8e2c0e5258eba96ddd908d0e9320a8 Mon Sep 17 00:00:00 2001
 From: Jiang Lu <lu.jiang@windriver.com>
 Date: Thu, 28 Jun 2018 16:29:45 +0800
 Subject: [PATCH 12/12] deploy:using /etc in runtime as merge source
@@ -15,10 +15,10 @@ Signed-off-by: Jiang Lu <lu.jiang@windriver.com>
  1 file changed, 2 insertions(+), 2 deletions(-)
 
 diff --git a/src/libostree/ostree-sysroot-deploy.c b/src/libostree/ostree-sysroot-deploy.c
-index 8ab1834..d36ac1f 100644
+index 1697a06e..100eaaff 100644
 --- a/src/libostree/ostree-sysroot-deploy.c
 +++ b/src/libostree/ostree-sysroot-deploy.c
-@@ -457,7 +457,7 @@ merge_configuration_from (OstreeSysroot    *sysroot,
+@@ -440,7 +440,7 @@ merge_configuration_from (OstreeSysroot    *sysroot,
  
    /* TODO: get rid of GFile usage here */
    g_autoptr(GFile) orig_etc = ot_fdrel_to_gfile (merge_deployment_dfd, "usr/etc");
@@ -27,7 +27,7 @@ index 8ab1834..d36ac1f 100644
    /* Return values for below */
    g_autoptr(GPtrArray) modified = g_ptr_array_new_with_free_func ((GDestroyNotify) ostree_diff_item_unref);
    g_autoptr(GPtrArray) removed = g_ptr_array_new_with_free_func ((GDestroyNotify) g_object_unref);
-@@ -493,7 +493,7 @@ merge_configuration_from (OstreeSysroot    *sysroot,
+@@ -476,7 +476,7 @@ merge_configuration_from (OstreeSysroot    *sysroot,
    if (!glnx_opendirat (merge_deployment_dfd, "usr/etc", TRUE, &orig_etc_fd, error))
      return FALSE;
    glnx_autofd int modified_etc_fd = -1;
@@ -37,5 +37,5 @@ index 8ab1834..d36ac1f 100644
    glnx_autofd int new_etc_fd = -1;
    if (!glnx_opendirat (new_deployment_dfd, "etc", TRUE, &new_etc_fd, error))
 -- 
-2.7.4
+2.17.1
 

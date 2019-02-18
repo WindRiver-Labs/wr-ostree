@@ -1,19 +1,19 @@
-From c86b1ed71dc6837ed78ec3ba4145945518e521ab Mon Sep 17 00:00:00 2001
+From 025f283020d2a1240beb8df44faadf5b3581f09d Mon Sep 17 00:00:00 2001
 From: fupan li <fupan.li@windriver.com>
 Date: Mon, 22 Jan 2018 14:18:18 +0800
 Subject: [PATCH 02/12] ostree: secure boot support for no change to grub.cfg
 
 Signed-off-by: fupan li <fupan.li@windriver.com>
 ---
- src/boot/grub2/ostree-grub-generator    | 33 +++++++++++++++++++++++++++++++++
+ src/boot/grub2/ostree-grub-generator    | 33 +++++++++++++++++++++++++
  src/libostree/ostree-bootloader-grub2.c |  3 ++-
  2 files changed, 35 insertions(+), 1 deletion(-)
 
 diff --git a/src/boot/grub2/ostree-grub-generator b/src/boot/grub2/ostree-grub-generator
-index 742753e..8d1231f 100644
+index ed0694bd..c515ec9b 100644
 --- a/src/boot/grub2/ostree-grub-generator
 +++ b/src/boot/grub2/ostree-grub-generator
-@@ -34,12 +34,15 @@ else
+@@ -35,12 +35,15 @@ else
      fi
  fi
  
@@ -27,9 +27,9 @@ index 742753e..8d1231f 100644
      options=""
 +    ostree=""
      linux=""
+     devicetree=""
  
-     while read -r line
-@@ -58,6 +61,7 @@ read_config()
+@@ -63,6 +66,7 @@ read_config()
                  ;;
              "options")
                  options=${value}
@@ -37,7 +37,7 @@ index 742753e..8d1231f 100644
                  ;;
          esac
      done < ${config_file}
-@@ -75,6 +79,7 @@ populate_menu()
+@@ -80,6 +84,7 @@ populate_menu()
      else
          boot_prefix="${OSTREE_BOOT_PARTITION}"
      fi
@@ -45,8 +45,8 @@ index 742753e..8d1231f 100644
      for config in $(ls -v -r $entries_path/*.conf); do
          read_config ${config}
          menu="${menu}menuentry '${title}' {\n"
-@@ -83,7 +88,35 @@ populate_menu()
-             menu="${menu}\t initrd ${boot_prefix}${initrd}\n"
+@@ -91,7 +96,35 @@ populate_menu()
+             menu="${menu}\t devicetree ${boot_prefix}${devicetree}\n"
          fi
          menu="${menu}}\n\n"
 +
@@ -82,10 +82,10 @@ index 742753e..8d1231f 100644
      printf "$menu" >> ${new_grub2_cfg}
  }
 diff --git a/src/libostree/ostree-bootloader-grub2.c b/src/libostree/ostree-bootloader-grub2.c
-index f0d3480..e809ea3 100644
+index 57673c7d..b126bd99 100644
 --- a/src/libostree/ostree-bootloader-grub2.c
 +++ b/src/libostree/ostree-bootloader-grub2.c
-@@ -384,10 +384,11 @@ _ostree_bootloader_grub2_write_config (OstreeBootloader      *bootloader,
+@@ -396,10 +396,11 @@ _ostree_bootloader_grub2_write_config (OstreeBootloader      *bootloader,
                                                        bootversion);
      }
  
@@ -99,5 +99,5 @@ index f0d3480..e809ea3 100644
    GSpawnFlags grub_spawnflags = G_SPAWN_SEARCH_PATH;
    if (!g_getenv ("OSTREE_DEBUG_GRUB2"))
 -- 
-2.7.4
+2.17.1
 

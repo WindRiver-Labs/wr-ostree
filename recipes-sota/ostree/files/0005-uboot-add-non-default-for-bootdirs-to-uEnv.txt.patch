@@ -1,4 +1,4 @@
-From 634e72e76f009efd269c65df61b203d09c1a38cb Mon Sep 17 00:00:00 2001
+From 9ed2ce2f70c87bb8ff89043e324e0f7f79c52f1d Mon Sep 17 00:00:00 2001
 From: Jiang Lu <lu.jiang@windriver.com>
 Date: Fri, 25 May 2018 13:00:47 +0800
 Subject: [PATCH 05/12] uboot: add non-default for bootdirs to uEnv.txt
@@ -11,7 +11,7 @@ Signed-off-by: Jiang Lu <lu.jiang@windriver.com>
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/src/libostree/ostree-bootloader-uboot.c b/src/libostree/ostree-bootloader-uboot.c
-index 6da41cc..2d99466 100644
+index 6da41cc4..2d99466e 100644
 --- a/src/libostree/ostree-bootloader-uboot.c
 +++ b/src/libostree/ostree-bootloader-uboot.c
 @@ -138,7 +138,7 @@ create_config_from_boot_loader_entries (OstreeBootloaderUboot     *self,
@@ -24,5 +24,5 @@ index 6da41cc..2d99466 100644
        val = ostree_bootconfig_parser_get (config, "initrd");
        if (val)
 -- 
-2.7.4
+2.17.1
 

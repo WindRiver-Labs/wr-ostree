@@ -1,4 +1,4 @@
-From 546045ff9ae2bf3c1994e86572e83ececf1c9cb4 Mon Sep 17 00:00:00 2001
+From aeef33de102ae7c26ee10b6e02f8caa59cdb0f20 Mon Sep 17 00:00:00 2001
 From: Gatis Paeglis <gatis.paeglis@qt.io>
 Date: Mon, 22 Aug 2016 15:52:21 +0200
 Subject: [PATCH 04/12] u-boot: add 'bootdir' to the generated uEnv.txt
@@ -27,7 +27,7 @@ bootdir=/boot/ostree/$os-$bootcsum/ is a better approach here, as
  1 file changed, 4 insertions(+)
 
 diff --git a/src/libostree/ostree-bootloader-uboot.c b/src/libostree/ostree-bootloader-uboot.c
-index 531a375..6da41cc 100644
+index 531a3756..6da41cc4 100644
 --- a/src/libostree/ostree-bootloader-uboot.c
 +++ b/src/libostree/ostree-bootloader-uboot.c
 @@ -113,6 +113,7 @@ create_config_from_boot_loader_entries (OstreeBootloaderUboot     *self,
@@ -49,5 +49,5 @@ index 531a375..6da41cc 100644
        if (val)
          g_ptr_array_add (new_lines, g_strdup_printf ("ramdisk_image%s=%s", index_suffix, val));
 -- 
-2.7.4
+2.17.1
 
