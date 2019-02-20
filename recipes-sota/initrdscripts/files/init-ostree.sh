@@ -185,7 +185,7 @@ while [ 1 ] ; do
     sleep 0.1
 done
 
-ostree-prepare-root ${ROOT_MOUNT}
+OSTREE_DEPLOY=`ostree-prepare-root ${ROOT_MOUNT} | awk -F ':' '{print $2}'`
 
 sed "/LABEL=otaboot[\t ]*\/boot[\t ]/s/LABEL=otaboot/${OSTREE_BOOT_DEVICE}/g" -i ${ROOT_MOUNT}/etc/fstab
 sed "/LABEL=otaboot_b[\t ]*\/boot[\t ]/s/LABEL=otaboot_b/${OSTREE_BOOT_DEVICE}/g" -i ${ROOT_MOUNT}/etc/fstab
@@ -202,6 +202,21 @@ done
 if [ "$INIT" == "/bin/bash" ] || [ "$INIT" == "/bin/sh" ]; then
     CMDLINE=""
 fi
+
+# Start checking ostree contents
+mount -t proc none /proc
+
+ostree_label=`ls /sysroot/ostree/repo/refs/remotes/pulsar-linux/`
+
+log_info "Checking ostree repo ${ostree_label} contents... with ${OSTREE_DEPLOY}"
+
+/usr/bin/ostree diff --repo=/sysroot/ostree/repo ${ostree_label} ${OSTREE_DEPLOY}| grep "[MD] */usr/"
+
+if [ $? -eq 0 ]; then
+	fatal
+fi
+
+umount /proc
 
 # !!! The Big Fat Warnings !!!
 #
