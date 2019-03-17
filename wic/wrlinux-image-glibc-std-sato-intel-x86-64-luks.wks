@@ -1,0 +1,7 @@
+bootloader --ptable gpt
+part /boot/efi --source rawcopy --sourceparams="file=wrlinux-image-glibc-std-sato-intel-x86-64_efi.otaimg"  --ondisk sda --fstype=vfat --label otaefi --active --align 4
+part / --source rawcopy --sourceparams="file=wrlinux-image-glibc-std-sato-intel-x86-64_boot.otaimg" --ondisk sda --fstype=ext4 --label otaboot --align 4
+part / --source rawcopy --sourceparams="file=wrlinux-image-glibc-std-sato-intel-x86-64.otaimg" --ondisk sda --fstype=ext4 --label otaroot --align 4
+part / --source rawcopy --sourceparams="file=wrlinux-image-glibc-std-sato-intel-x86-64_boot.otaimg" --ondisk sda --fstype=ext4 --label otaboot_b --align 4
+part / --source rawcopy --sourceparams="file=wrlinux-image-glibc-std-sato-intel-x86-64.otaimg" --ondisk sda --fstype=ext4 --label otaroot_b --align 4
+part /var --source rawcopy --sourceparams="file=wrlinux-image-glibc-std-sato-intel-x86-64_var.otaimg"  --ondisk sda --fstype=ext4 --label luksfluxdata --align 4
