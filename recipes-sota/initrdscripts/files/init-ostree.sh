@@ -127,6 +127,8 @@ expand_fluxdata() {
 fatal() {
     echo $1 >$CONSOLE
     echo >$CONSOLE
+    sleep 5
+    echo b > /proc/sysrq-trigger
     exec sh
 }
 
@@ -187,6 +189,11 @@ done
 
 OSTREE_DEPLOY=`ostree-prepare-root ${ROOT_MOUNT} | awk -F ':' '{print $2}'`
 
+if [ -z ${OSTREE_DEPLOY} ]; then
+	echo "Unable to deploy ostree ${ROOT_MOUNT}"
+	fatal
+fi
+
 sed "/LABEL=otaboot[\t ]*\/boot[\t ]/s/LABEL=otaboot/${OSTREE_BOOT_DEVICE}/g" -i ${ROOT_MOUNT}/etc/fstab
 sed "/LABEL=otaboot_b[\t ]*\/boot[\t ]/s/LABEL=otaboot_b/${OSTREE_BOOT_DEVICE}/g" -i ${ROOT_MOUNT}/etc/fstab
 sed "/LABEL=fluxdata[\t ]*\/var[\t ]/s/LABEL=fluxdata/LABEL=${OSTREE_LABEL_FLUXDATA}/g" -i ${ROOT_MOUNT}/etc/fstab
@@ -206,13 +213,31 @@ fi
 # Start checking ostree contents
 mount -t proc none /proc
 
-ostree_label=`ls /sysroot/ostree/repo/refs/remotes/pulsar-linux/`
+ostree_labels=`ls /sysroot/ostree/repo/refs/remotes/pulsar-linux/`
 
-log_info "Checking ostree repo ${ostree_label} contents... with ${OSTREE_DEPLOY}"
+for label in $ostree_labels
+do
+	ostree_rev=`/usr/bin/ostree rev-parse --repo=/sysroot/ostree/repo ${label}`
+	ostree_rev_match=`expr match "${OSTREE_DEPLOY}" ".*${ostree_rev}"`
+
+	if [ ${ostree_rev_match} -gt 0 ]; then
+		ostree_label="${label}"
+		break
+	fi
+done
+
+if [ -z "${ostree_label=}" ]; then
+	echo "No ostree label found"
+	#fatal
+	exec sh
+fi
+
+log_info "Checking ostree ${ostree_label} contents... with ${OSTREE_DEPLOY}"
 
 /usr/bin/ostree diff --repo=/sysroot/ostree/repo ${ostree_label} ${OSTREE_DEPLOY}| grep "[MD] */usr/"
 
 if [ $? -eq 0 ]; then
+	echo "Ostree content is tampered..."
 	fatal
 fi
 
