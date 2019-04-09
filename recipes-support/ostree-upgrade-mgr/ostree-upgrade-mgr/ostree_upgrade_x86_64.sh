@@ -37,16 +37,7 @@ MOUNT_FLAG="rw,noatime,iversion"
 }
 
 [ -f $GRUB_ENV_FILE ] || {
-	echo "Grub env file /boot/efi/EFI/BOOT/pulsar.env is not found, aborting."
-	exit 1
-}
-
-# retrieve 
-get_grub_env_var() {
-	local env_var=$1
-	local env_val=$($GRUB_EDITENV_BIN $GRUB_ENV_FILE list |grep $env_var | cut -f 2 -d=)
-
-	echo "$env_val"
+	$GRUB_EDITENV_BIN $GRUB_ENV_FILE create
 }
 
 cleanup() {
@@ -73,18 +64,6 @@ get_upgrade_part_label() {
 		ROOLBACK_VAL="${BACKUP_PART_INDICATOR}"
 		BOOTMODE_VAL=""
 	fi
-
-
-	ROOLBACK_VAL=$(get_grub_env_var $ROLLBACK_VAR)
-
-	[ -z $ROOLBACK_VAL ] && {
-
-		ROOLBACK_VAL="${BACKUP_PART_INDICATOR}"
-		BOOTMODE_VAL=""
-       	} || {
-		ROOLBACK_VAL=""
-		BOOTMODE_VAL="${BACKUP_PART_INDICATOR}"
-	}
 
 	return 0
 }
