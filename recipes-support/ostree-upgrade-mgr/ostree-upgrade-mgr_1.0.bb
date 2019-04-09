@@ -6,8 +6,16 @@ LIC_FILES_CHKSUM = "file://COPYING;md5=12f884d2ae1ff87c09e5b7ccc2c4ca7e"
 
 S = "${WORKDIR}"
 
+def get_arch_setting_ostree_mgr(bb, d):
+    if d.getVar('TRANSLATED_TARGET_ARCH') in [ 'x86-64', 'i686' ]:
+        return "x86_64"
+    else:
+        return "arm"
+
+ARCH_OSTREE_MGR_SETTING = "${@get_arch_setting_ostree_mgr(bb, d)}"
+
 SRC_URI = "file://COPYING \
-           file://ostree_upgrade_${TARGET_ARCH}.sh \
+           file://ostree_upgrade_${ARCH_OSTREE_MGR_SETTING}.sh \
           "
 
 FILES_${PN} += "/usr/bin/ostree_upgrade.sh \
@@ -15,12 +23,7 @@ FILES_${PN} += "/usr/bin/ostree_upgrade.sh \
 
 do_install() {
 	install -d ${D}/usr/bin
-	if [ "${TARGET_ARCH}" = "x86_64" ]; then
-		install -m 0755 ${S}/ostree_upgrade_${TARGET_ARCH}.sh ${D}/usr/bin/ostree_upgrade.sh
-	fi
-        if [ "${TARGET_ARCH}" = "arm" ]; then
-                install -m 0755 ${S}/ostree_upgrade_${TARGET_ARCH}.sh ${D}/usr/bin/ostree_upgrade.sh
-        fi
+	install -m 0755 ${S}/ostree_upgrade_${ARCH_OSTREE_MGR_SETTING}.sh ${D}/usr/bin/ostree_upgrade.sh
 }
 
 DEPENDS += "watchdog"
