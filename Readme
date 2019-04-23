@@ -1,0 +1,37 @@
+wr-ostree
+=========
+
+This layer provides ostree-support for WRLINUX.
+
+
+Dependencies
+------------
+This layer depends on the openembedded-core and wrlinux layers.
+
+
+Maintenance
+-----------
+This layer is maintained by Wind River Systems, Inc.
+Contact <support@windriver.com> or your support representative for more
+information on submitting changes.
+
+
+Building with wr-ostree layer
+---------------------------
+This layer should be added to the bblayers.conf file.
+
+Notes
+-----
+The layer is validate with Wind River intel-x86-64 BSP.
+
+The following table summarizes the valid Wind River Linux distros for this layer.
+'Y' in each content cell stands for supported; 'N' stands for not supported:
+
+  +--------------+-------------+-------------+
+  | valid/distro |   wrlinux   | wrlinux-cgl |
+  +--------------+-------------+-------------+
+  |    valid     |      Y      |      Y      |
+  +--------------+-------------+-------------+
+
+Due to ostree rootfs structure limitation, the layer can not working with
+feature/intel-persistent-memory.
