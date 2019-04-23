@@ -96,11 +96,35 @@ prepare_mount() {
 	mount -o $MOUNT_FLAG "$3" $UPGRADE_ESP_DIR
 }
 
+check_repo_url() {
+	grep "\[remote \"pulsar-linux\"\]" ${UPGRADE_ROOTFS_DIR}/ostree/repo/config  -A 1 |grep "url.*=" > /dev/null
+	if [ $? = 1 ]; then
+		grep "\[remote \"pulsar-linux\"\]" /sysroot/ostree/repo/config  -A 1 |grep "url.*=" > /dev/null
+		if [ $? = 1 ]; then
+			if [ -f /etc/ostree/remotes.d/pulsar-linux.conf ]; then
+				cat /etc/ostree/remotes.d/pulsar-linux.conf >> /sysroot/ostree/repo/config
+				rm /etc/ostree/remotes.d/pulsar-linux.conf
+			else
+				echo "No remote repo found, please configure it via:"
+				echo " ostree remote add [--repo=/path/to/upgrade/repo] pulsar-linux <URL>"
+				cleanup
+				exit 1
+			fi
+		fi
+		cp /sysroot/ostree/repo/config ${UPGRADE_ROOTFS_DIR}/ostree/repo/config
+	fi
+	sed -i  "/gpg-verify/d" ${UPGRADE_ROOTFS_DIR}/ostree/repo/config
+	if [ ! -f /usr/share/ostree/trusted.gpg.d/pubring.gpg ]; then
+		echo "gpg-verify=false" >> ${UPGRADE_ROOTFS_DIR}/ostree/repo/config
+	fi
+}
+
 prepare_upgrade() {
 	UPGRADE_ESP_DEV=$(get_esp_dev)
 	get_upgrade_part_label
 
 	prepare_mount $UPGRADE_ROOT_LABEL $UPGRADE_BOOT_LABEL $UPGRADE_ESP_DEV
+	check_repo_url
 }
 
 ostree_upgrade() {
@@ -139,7 +163,8 @@ ostree_upgrade() {
 
 update_env() {
 	$GRUB_EDITENV_BIN $GRUB_ENV_FILE set \
-		rollback_part=$ROOLBACK_VAL $BOOTMODE_VAR=$BOOTMODE_VAL
+		rollback_part=$ROOLBACK_VAL $BOOTMODE_VAR=$BOOTMODE_VAL \
+		default=0
 }
 
 run_upgrade() {
