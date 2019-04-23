@@ -55,8 +55,9 @@ python check_rpm_public_key () {
             (gpg_bin, gpg_path, d.getVar('OSTREE_GPG_PASSPHRASE', True), gpg_key)
     status, output = oe.utils.getstatusoutput(cmd)
     if status:
-        raise bb.build.FuncFailed('Failed to import gpg key (%s): %s' %
-                                  (gpg_key, output))
+        d.delVar('GPG_PATH')
+        d.delVar('OSTREE_GPGID')
+        return
 }
 check_rpm_public_key[lockfiles] = "${TMPDIR}/check_rpm_public_key.lock"
 
@@ -94,14 +95,25 @@ create_tarball_and_ostreecommit() {
 	    ${DEPLOY_DIR_IMAGE}/${_image_basename}-${MACHINE}.rootfs.ostree.tar.bz2
 
 	# Commit the result
-	ostree --repo=${OSTREE_REPO} commit \
-	       --tree=dir=${OSTREE_ROOTFS} \
-	       --skip-if-unchanged \
-               --gpg-sign=${OSTREE_GPGID} \
-               --gpg-homedir=${GPG_PATH} \
-	       --branch=${_image_basename} \
-	       --timestamp=${_timestamp} \
-	       --subject="Commit-id: ${_image_basename}-${MACHINE}-${DATETIME}"
+	if [ -z "${OSTREE_GPGID}" ]; then
+		bbwarn "Ostree repo create without gpg.\n" \
+			"To enable gpg signing, please set \$OSTREE_GPGDIR, \$OSTREE_GPGID, \$OSTREE_GPG_PASSPHRASE with correct key in conf/local.conf."
+		ostree --repo=${OSTREE_REPO} commit \
+			--tree=dir=${OSTREE_ROOTFS} \
+			--skip-if-unchanged \
+			--branch=${_image_basename} \
+			--timestamp=${_timestamp} \
+			--subject="Commit-id: ${_image_basename}-${MACHINE}-${DATETIME}"
+	else
+		ostree --repo=${OSTREE_REPO} commit \
+			--tree=dir=${OSTREE_ROOTFS} \
+			--skip-if-unchanged \
+			--gpg-sign=${OSTREE_GPGID} \
+			--gpg-homedir=${GPG_PATH} \
+			--branch=${_image_basename} \
+			--timestamp=${_timestamp} \
+			--subject="Commit-id: ${_image_basename}-${MACHINE}-${DATETIME}"
+        fi
 }
 
 IMAGE_CMD_ostree () {
@@ -278,7 +290,7 @@ IMAGE_CMD_ostree () {
         done 
 
 	#deploy the GPG pub key
-	if [ -f ${GPG_PATH}/pubring.gpg ]; then
+	if [ -n "${OSTREE_GPGID}" ] && [ -f ${GPG_PATH}/pubring.gpg ]; then
 	    cp ${GPG_PATH}/pubring.gpg usr/share/ostree/trusted.gpg.d/
 	fi
 
