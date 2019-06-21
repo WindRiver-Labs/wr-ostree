@@ -69,3 +69,15 @@ PACKAGE_INSTALL_append = " \
 	${@bb.utils.contains('DISTRO_FEATURES', 'luks', 'packagegroup-luks-initramfs', '', d)} \
 "
 
+ROOTFS_POSTPROCESS_COMMAND += "add_gpg_key;"
+
+add_gpg_key() {
+	if [ -n "${OSTREE_GPGID}" ] ; then
+		if [ -f ${GPG_PATH}/pubring.gpg ]; then
+			cp ${GPG_PATH}/pubring.gpg ${IMAGE_ROOTFS}/usr/share/ostree/trusted.gpg.d/pubring.gpg
+		fi
+		if [ -f ${GPG_PATH}/pubring.kbx ]; then
+			cp ${GPG_PATH}/pubring.kbx ${IMAGE_ROOTFS}/usr/share/ostree/trusted.gpg.d/pubkbx.gpg
+		fi
+	fi
+}
