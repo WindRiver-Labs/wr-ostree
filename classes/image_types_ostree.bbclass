@@ -132,6 +132,14 @@ IMAGE_CMD_ostree () {
 
 	cd ${OSTREE_ROOTFS}
 
+	# Setup gpg key for signing
+	if [ -n "${OSTREE_GPGID}" ] && [ -n "${OSTREE_GPG_PASSPHRASE}" ] && [ -n "${GPG_PATH}" ] ; then
+		pw=`echo -n "ExamplePassword" |perl -e '$s = <STDIN>; $s =~ s/(.)/sprintf("%x",ord($1))/eg; print $s'`
+		for e in `${GPG_BIN} --homedir=${OSTREE_GPGDIR} -k --with-keygrip --with-colons ${OSTREE_GPGID} |grep ^grp |awk -F: '{print $10}'` ; do
+			echo "PRESET_PASSPHRASE $e  -1 $pw" | $(dirname ${GPG_BIN})/gpg-connect-agent --homedir=${GPG_PATH}
+		done
+	fi
+
 	# Create sysroot directory to which physical sysroot will be mounted
 	mkdir sysroot
 	ln -sf sysroot/ostree ostree
@@ -290,8 +298,13 @@ IMAGE_CMD_ostree () {
         done 
 
 	#deploy the GPG pub key
-	if [ -n "${OSTREE_GPGID}" ] && [ -f ${GPG_PATH}/pubring.gpg ]; then
-	    cp ${GPG_PATH}/pubring.gpg usr/share/ostree/trusted.gpg.d/
+	if [ -n "${OSTREE_GPGID}" ]; then
+		if [ -f ${GPG_PATH}/pubring.gpg ]; then
+			cp ${GPG_PATH}/pubring.gpg usr/share/ostree/trusted.gpg.d/pubring.gpg
+		fi
+		if [ -f ${GPG_PATH}/pubring.kbx ]; then
+			cp ${GPG_PATH}/pubring.kbx usr/share/ostree/trusted.gpg.d/pubkbx.gpg
+		fi
 	fi
 
 #        cp ${DEPLOY_DIR_IMAGE}/${MACHINE}.dtb usr/lib/ostree-boot
