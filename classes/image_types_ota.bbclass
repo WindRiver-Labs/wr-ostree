@@ -72,6 +72,7 @@ IMAGE_CMD_otaimg () {
 
 		ostree admin --sysroot=${PHYS_SYSROOT} init-fs ${PHYS_SYSROOT}
 		ostree admin --sysroot=${PHYS_SYSROOT} os-init ${OSTREE_OSNAME}
+		ostree config --repo=${PHYS_SYSROOT}/ostree/repo set core.add-remotes-config-dir false
 
 		mkdir -p ${PHYS_SYSROOT}/boot/loader.0
 		ln -s loader.0 ${PHYS_SYSROOT}/boot/loader
