@@ -117,8 +117,15 @@ expand_fluxdata() {
    datadev=$(lsblk $datapart -n -o PKNAME | head -n 1)
    datadevnum=$(echo ${datapart} | sed 's/\(.*\)\(.\)$/\2/')
 
+   disk_sect=`fdisk -l /dev/$datadev | head -1 |awk '{print $7}'`
+   part_end=`fdisk -l /dev/$datadev | grep ^${datapart} | awk '{print $3}'`
+   disk_end=$(expr $disk_sect - 1026)
+   if [ $part_end -ge $disk_end ]; then
+       echo "No fluxdata expansion." && return 0
+   fi
+
    echo "Expanding partition for ${fluxdata_label} ..."
-   parted -s /dev/$datadev -- resizepart $datadevnum -1
+   parted -s /dev/$datadev -- resizepart $datadevnum 100%
 			     
    echo "Expanding FS for ${fluxdata_label} ..."
    resize2fs -f ${datapart}
@@ -142,8 +149,7 @@ read_args
 [ -z "$INIT" ] && INIT="/sbin/init"
 
 
-udevadm settle --timeout=3 --quiet
-killall "${_UDEV_DAEMON##*/}" 2>/dev/null
+udevadm settle --timeout=3
 
 mkdir -p $ROOT_MOUNT/
 
@@ -181,6 +187,10 @@ while [ 1 ] ; do
     sleep 0.1
 done
 
+if [ ! -d "${ROOT_MOUNT}/boot" ] ; then
+   mkdir -p ${ROOT_MOUNT}/boot
+fi
+
 echo "Waiting for boot device to be ready..."
 while [ 1 ] ; do
     mount "${OSTREE_BOOT_DEVICE}" "${ROOT_MOUNT}/boot" && break
@@ -198,6 +208,8 @@ sed "/LABEL=otaboot[\t ]*\/boot[\t ]/s/LABEL=otaboot/${OSTREE_BOOT_DEVICE}/g" -i
 sed "/LABEL=otaboot_b[\t ]*\/boot[\t ]/s/LABEL=otaboot_b/${OSTREE_BOOT_DEVICE}/g" -i ${ROOT_MOUNT}/etc/fstab
 sed "/LABEL=fluxdata[\t ]*\/var[\t ]/s/LABEL=fluxdata/LABEL=${OSTREE_LABEL_FLUXDATA}/g" -i ${ROOT_MOUNT}/etc/fstab
 
+udevadm control -e
+
 cd $ROOT_MOUNT
 for x in dev proc sys; do
     log_info "Moving /$x to new rootfs"
@@ -213,32 +225,39 @@ fi
 # Start checking ostree contents
 mount -t proc none /proc
 
-ostree_labels=`ls /sysroot/ostree/repo/refs/remotes/pulsar-linux/`
-
-for label in $ostree_labels
-do
-	ostree_rev=`/usr/bin/ostree rev-parse --repo=/sysroot/ostree/repo ${label}`
-	ostree_rev_match=`expr match "${OSTREE_DEPLOY}" ".*${ostree_rev}"`
-
-	if [ ${ostree_rev_match} -gt 0 ]; then
-		ostree_label="${label}"
-		break
-	fi
-done
-
-if [ -z "${ostree_label=}" ]; then
-	echo "No ostree label found"
-	#fatal
-	exec sh
+# Check for skip-boot-diff
+if [ "${instsbd}" = 1 ] ; then
+    skip=1
+else
+    skip=`ostree config --repo=/sysroot/ostree/repo get upgrade.skip-boot-diff 2> /dev/null`
 fi
 
-log_info "Checking ostree ${ostree_label} contents... with ${OSTREE_DEPLOY}"
 
-/usr/bin/ostree diff --repo=/sysroot/ostree/repo ${ostree_label} ${OSTREE_DEPLOY}| grep "[MD] */usr/"
+if [ "${skip}" != "1" ] ; then
 
-if [ $? -eq 0 ]; then
-	echo "Ostree content is tampered..."
-	fatal
+    /usr/bin/ostree fsck --repo=/sysroot/ostree/repo
+    if [ $? -ne 0 ]; then
+	    echo "Ostree repo is damaged..."
+	    fatal
+    fi
+
+    ostree_ref="${OSTREE_DEPLOY##*/}"
+    ostree_ref="${ostree_ref%%.*}"
+
+    if [ -z "${ostree_ref}" ]; then
+	    echo "No ostree ref found"
+	    #fatal
+	    exec sh
+    fi
+
+    log_info "Checking ostree ${ostree_ref} contents... with ${OSTREE_DEPLOY}"
+
+    /usr/bin/ostree diff --repo=/sysroot/ostree/repo ${ostree_ref} ${OSTREE_DEPLOY}| grep "[MD] */usr/"
+
+    if [ $? -eq 0 ]; then
+	    echo "Ostree deploy content is corrupted..."
+	    fatal
+    fi
 fi
 
 umount /proc
