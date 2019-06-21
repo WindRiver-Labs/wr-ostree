@@ -12,7 +12,7 @@ SRC_URI = "gitsm://github.com/ostreedev/ostree.git;branch=master \
 "
 require ${@bb.utils.contains('DISTRO_FEATURES', 'ostree', '${BPN}_ostree.inc', '', d)}
 
-SRCREV = "13bcc49603b54f117c44e25dc2b457b9f25d9dc0"
+SRCREV = "6649032a375238255052a43adb8bc56faac989ca"
 
 CLEANBROKEN = "1"
 
@@ -28,7 +28,7 @@ DEPENDS_remove_class-native = "systemd-native"
 
 RDEPENDS_${PN}_append_class-target = " ostree-upgrade-mgr "
 
-RDEPENDS_${PN} = "python util-linux-libuuid util-linux-libblkid util-linux-libmount libcap xz bash openssl"
+RDEPENDS_${PN} = "gnupg util-linux-libuuid util-linux-libblkid util-linux-libmount libcap xz bash openssl"
 
 RDEPENDS_${PN}_remove_class-native = "python-native"
 
