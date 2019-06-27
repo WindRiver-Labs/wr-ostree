@@ -15,8 +15,8 @@
 #* along with this program; if not, write to the Free Software
 #* Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 
-[ -f /boot/efi/EFI/BOOT/pulsar.env ] && {
-	/usr/bin/grub-editenv /boot/efi/EFI/BOOT/pulsar.env set boot_tried_count=0
+[ -f /boot/efi/EFI/BOOT/boot.env ] && {
+	/usr/bin/grub-editenv /boot/efi/EFI/BOOT/boot.env set boot_tried_count=0
 } || {
-	/usr/bin/grub-editenv /boot/efi/EFI/BOOT/pulsar.env create
+	/usr/bin/grub-editenv /boot/efi/EFI/BOOT/boot.env create
 }

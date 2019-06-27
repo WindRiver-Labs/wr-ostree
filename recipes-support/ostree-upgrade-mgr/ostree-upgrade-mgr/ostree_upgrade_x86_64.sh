@@ -21,9 +21,8 @@ UPGRADE_ROOTFS_DIR=""
 UPGRADE_BOOT_DIR=""
 UPGRADE_ESP_DIR=""
 BACKUP_PART_INDICATOR="_b"
-#BOOTCMD=$(cat /proc/bootcmd)
 GRUB_EDITENV_BIN=$(which grub-editenv)
-GRUB_ENV_FILE="/boot/efi/EFI/BOOT/pulsar.env"
+GRUB_ENV_FILE="/boot/efi/EFI/BOOT/boot.env"
 ROLLBACK_VAR="rollback_part"
 BOOTMODE_VAR="boot_mode"
 BOOT_VAR="boot_part"
@@ -56,12 +55,12 @@ get_upgrade_part_label() {
 	if [ $? -ne 0 ]; then
 		UPGRADE_ROOT_LABEL="${labelroot}${BACKUP_PART_INDICATOR}"
 		UPGRADE_BOOT_LABEL="${labelboot}${BACKUP_PART_INDICATOR}"
-		ROOLBACK_VAL=""
+		ROLLBACK_VAL=""
 		BOOTMODE_VAL="${BACKUP_PART_INDICATOR}"
 	else
 		UPGRADE_ROOT_LABEL=`echo "${labelroot}" |sed "s/${BACKUP_PART_INDICATOR}//g"`
 		UPGRADE_BOOT_LABEL=`echo "${labelboot}" |sed "s/${BACKUP_PART_INDICATOR}//g"`
-		ROOLBACK_VAL="${BACKUP_PART_INDICATOR}"
+		ROLLBACK_VAL="${BACKUP_PART_INDICATOR}"
 		BOOTMODE_VAL=""
 	fi
 
@@ -91,32 +90,46 @@ prepare_mount() {
 	UPGRADE_BOOT_DIR="$UPGRADE_ROOTFS_DIR/boot"
 	UPGRADE_ESP_DIR="$UPGRADE_BOOT_DIR/efi"
 
-	mount -o $MOUNT_FLAG "LABEL=$1" "$UPGRADE_ROOTFS_DIR"
-	mount -o $MOUNT_FLAG "LABEL=$2" "$UPGRADE_BOOT_DIR"
-	mount -o $MOUNT_FLAG "$3" $UPGRADE_ESP_DIR
+	mount -o $MOUNT_FLAG "LABEL=$1" "$UPGRADE_ROOTFS_DIR" || fatal "Error mounting LABEL=$1"
+	mount -o $MOUNT_FLAG "LABEL=$2" "$UPGRADE_BOOT_DIR" || fatal "Error mounting LABEL=$2"
+	mount -o $MOUNT_FLAG "$3" $UPGRADE_ESP_DIR || fatal "Error mounting $3"
 }
 
 check_repo_url() {
-	grep "\[remote \"pulsar-linux\"\]" ${UPGRADE_ROOTFS_DIR}/ostree/repo/config  -A 1 |grep "url.*=" > /dev/null
-	if [ $? = 1 ]; then
-		grep "\[remote \"pulsar-linux\"\]" /sysroot/ostree/repo/config  -A 1 |grep "url.*=" > /dev/null
-		if [ $? = 1 ]; then
-			if [ -f /etc/ostree/remotes.d/pulsar-linux.conf ]; then
-				cat /etc/ostree/remotes.d/pulsar-linux.conf >> /sysroot/ostree/repo/config
-				rm /etc/ostree/remotes.d/pulsar-linux.conf
-			else
-				echo "No remote repo found, please configure it via:"
-				echo " ostree remote add [--repo=/path/to/upgrade/repo] pulsar-linux <URL>"
-				cleanup
-				exit 1
-			fi
-		fi
-		cp /sysroot/ostree/repo/config ${UPGRADE_ROOTFS_DIR}/ostree/repo/config
+	local branch
+	local remote
+	local url
+
+	# Check and copy any repo information for the upgrade
+	branch=`ostree config --repo=/sysroot/ostree/repo get upgrade.branch 2> /dev/null`
+	remote=`ostree config --repo=/sysroot/ostree/repo get upgrade.remote 2> /dev/null`
+
+	if [ -z "${branch}" ] ; then
+		echo "No branch specified for upgrade, please configure it via:"
+		echo " ostree config set upgrade.branch <branch>"
+		cleanup
+		exit 1
 	fi
-	sed -i  "/gpg-verify/d" ${UPGRADE_ROOTFS_DIR}/ostree/repo/config
-	if [ ! -f /usr/share/ostree/trusted.gpg.d/pubring.gpg ]; then
-		echo "gpg-verify=false" >> ${UPGRADE_ROOTFS_DIR}/ostree/repo/config
+
+	if [ -z "${remote}" ] ; then
+		echo "No remote repository specified for upgrade, please configure it via:"
+		echo " ostree config set upgrade.remote <remote_repo_name>"
+		cleanup
+		exit 1
 	fi
+
+	url=`ostree remote --repo=/sysroot/ostree/repo show-url ${remote} 2> /dev/null`
+
+	if [ -z "${url}" ] ; then
+		echo "No remote repository url configured, please configure it via:"
+		echo " ostree remote add ${remote} <url>"
+		cleanup
+		exit 1
+	fi
+
+	# Copy the existing configuration to the upgrade partition
+	cp /sysroot/ostree/repo/config $UPGRADE_ROOTFS_DIR/ostree/repo/config
+
 }
 
 prepare_upgrade() {
@@ -127,44 +140,70 @@ prepare_upgrade() {
 	check_repo_url
 }
 
-ostree_upgrade() {
-	[ -d $UPGRADE_ROOTFS_DIR/ostree/repo/refs/remotes/pulsar-linux ] && \
-		branch=`ls $UPGRADE_ROOTFS_DIR/ostree/repo/refs/remotes/pulsar-linux/ | sed -n '1p'`
+fatal() {
+	echo $1
+	cleanup
+	exit 1
+}
 
-	if [ -z '${branch}' ]; then
-		echo "No branch found, try default cube-gw"
-		branch=cube-gw-ostree-runtime
+ostree_upgrade() {
+	local branch
+	local remote
+
+	branch=`ostree config --repo=$UPGRADE_ROOTFS_DIR/ostree/repo get upgrade.branch 2> /dev/null`
+	remote=`ostree config --repo=$UPGRADE_ROOTFS_DIR/ostree/repo get upgrade.remote 2> /dev/null`
+	os=`ostree config --repo=$UPGRADE_ROOTFS_DIR/ostree/repo get upgrade.os 2> /dev/null`
+
+	if [ "${os}" = "" ] ; then
+	    os=`ls /ostree/deploy |head -1`
 	fi
 
-	
-	ostree remote list --repo=$UPGRADE_ROOTFS_DIR/ostree/repo |grep pulsar-linux
+	if [ "${os}" = "" ] ; then
+	    echo "Error deploy OS is not defined, please configure it via:"
+	    echo " ostree config set upgrade.os <DEPLOY_OS_NAME>"
+	    cleanup
+	    exit 1
+	fi
 
-	[ $? = 0 ] || {
-		echo "No remote repo found for pulsar-linux, please configure it via:"
-		echo " ostree remote add --repo=/path/to/upgrade/repo pulsar-linux <URL>"
-		cleanup
-		exit 1
-	}
-	ostree pull --repo=$UPGRADE_ROOTFS_DIR/ostree/repo pulsar-linux:${branch}
+	# Perform repairs, if needed on the upgrade ostree repository
+	ostree fsck -a --delete --repo=$UPGRADE_ROOTFS_DIR/ostree/repo
 
+	ostree fsck --repo=/sysroot/ostree/repo
+	if [ $? = 0 ] ; then
+		ostree pull --localcache-repo=/sysroot/ostree/repo --repo=$UPGRADE_ROOTFS_DIR/ostree/repo ${remote}:${branch}
+		# Always try a cached pull first so as not to incur extra bandwidth cost
+		if [ $? -ne 0 ]; then
+			echo "Trying an uncached pull"
+			ostree pull --repo=$UPGRADE_ROOTFS_DIR/ostree/repo ${remote}:${branch}
+		fi
+	else
+		# if the local repository is corrupted in any maner, skip the localcache operation
+		ostree pull --repo=$UPGRADE_ROOTFS_DIR/ostree/repo ${remote}:${branch}
+	fi
 	if [ $? -ne 0 ]; then
 		echo "Ostree pull failed"
 		cleanup
 		exit 1
 	fi
 
-	ostree admin --sysroot=$UPGRADE_ROOTFS_DIR deploy --os=pulsar-linux ${branch}
+	ostree admin --sysroot=$UPGRADE_ROOTFS_DIR deploy --os=${os} ${branch}
 	if [ $? -ne 0 ]; then
 		echo "Ostree deploy failed"
 		cleanup
 		exit 1
 	fi
+	check=`ostree config get upgrade.noflux 2>/dev/null`
+	if [ "$check" = 1 ] ; then
+		if [ -n "${updir}" -a -n "${upcommit}" ] ; then
+			sed -i -e  's/^LABEL=fluxdata.*//' $UPGRADE_ROOTFS_DIR/boot/0/etc/fstab
+		fi
+	fi
 }
 
 update_env() {
 	$GRUB_EDITENV_BIN $GRUB_ENV_FILE set \
-		rollback_part=$ROOLBACK_VAL $BOOTMODE_VAR=$BOOTMODE_VAL \
-		default=0
+		rollback_part=$ROLLBACK_VAL $BOOTMODE_VAR=$BOOTMODE_VAL \
+		default=0 boot_tried_count=0
 }
 
 run_upgrade() {
