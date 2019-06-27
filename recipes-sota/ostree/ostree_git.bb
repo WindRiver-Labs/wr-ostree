@@ -9,6 +9,7 @@ INHERIT_remove_class-native = "systemd"
 SRC_URI = "gitsm://github.com/ostreedev/ostree.git;branch=master \
            file://system-export.sh \
            file://sample.conf \
+           file://0001-fsck-Throw-and-error-and-return-non-zero-for-non-ver.patch \
 "
 require ${@bb.utils.contains('DISTRO_FEATURES', 'ostree', '${BPN}_ostree.inc', '', d)}
 
