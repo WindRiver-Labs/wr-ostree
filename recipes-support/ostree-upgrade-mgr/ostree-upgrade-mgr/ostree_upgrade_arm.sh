@@ -82,22 +82,22 @@ if [ $testval -ne 0 ]; then
 fi
 
 #TOOD:pull-local
-#ostree pull-local --repo=/tmp/sysroot_b/ostree/repo /sysroot/ostree/repo/ pulsar-linux:cube-gw-ostree-runtime
-branch=`ls /tmp/sysroot_b/ostree/repo/refs/remotes/pulsar-linux/ | sed -n '1p'`
+#ostree pull-local --repo=/tmp/sysroot_b/ostree/repo /sysroot/ostree/repo/ wrlinux:cube-gw-ostree-runtime
+branch=`ls /tmp/sysroot_b/ostree/repo/refs/remotes/wrlinux/ | sed -n '1p'`
 
 if [ -z '${branch}' ]; then
 	echo "No branch found, try default cube-gw"
 	branch=cube-gw-ostree-runtime
 fi
 
-ostree pull --repo=/tmp/sysroot_b/ostree/repo pulsar-linux:${branch}
+ostree pull --repo=/tmp/sysroot_b/ostree/repo wrlinux:${branch}
 testval=$?
 if [ $testval -ne 0 ]; then
 	echo "Ostree pull failed"
 	cleanup
 fi
 
-ostree admin --sysroot=/tmp/sysroot_b/ deploy --os=pulsar-linux ${branch}
+ostree admin --sysroot=/tmp/sysroot_b/ deploy --os=wrlinux ${branch}
 testval=$?
 if [ $testval -ne 0 ]; then
 	echo "Ostree deploy failed"

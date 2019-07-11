@@ -87,8 +87,8 @@ IMAGE_CMD_otaimg () {
 			fi
 			cp ${DEPLOY_DIR_IMAGE}/grub.cfg ${PHYS_SYSROOT}/boot/efi/EFI/BOOT/
 			#create the OS vendor fallback boot dir
-			mkdir ${PHYS_SYSROOT}/boot/efi/EFI/"${@(d.getVar('DISTRO', False) or 'pulsar')}"
-			cp ${DEPLOY_DIR_IMAGE}/grub.cfg ${PHYS_SYSROOT}/boot/efi/EFI/"${@(d.getVar('DISTRO', False) or 'pulsar')}"
+			mkdir ${PHYS_SYSROOT}/boot/efi/EFI/"${@(d.getVar('DISTRO', False) or 'wrlinux')}"
+			cp ${DEPLOY_DIR_IMAGE}/grub.cfg ${PHYS_SYSROOT}/boot/efi/EFI/"${@(d.getVar('DISTRO', False) or 'wrlinux')}"
 
 		elif [ "${OSTREE_BOOTLOADER}" = "u-boot" ]; then
 			touch ${PHYS_SYSROOT}/boot/loader/uEnv.txt
@@ -142,7 +142,7 @@ IMAGE_CMD_otaimg () {
 #part /boot/efi --source  rootfs --rootfs-dir=/boot/efi  --ondisk sda --fstype=vfat --label otaefi --active --align 4
 #part /boot --source  rootfs --rootfs-dir=/boot  --ondisk sda --fstype=ext4 --label otaboot --size 200M --active --align 4
 #part / --source rootfs --rootfs-dir=/sysroot --ondisk sda --fstype=ext4 --label ${ROOT_LABEL} --size 3G --align 4
-#part /var --source rootfs --rootfs-dir=/ostree/deploy/pulsar-linux/var  --ondisk sda --fstype=ext4 --label ${FLUXDATA} --active --align 4
+#part /var --source rootfs --rootfs-dir=/ostree/deploy/wrlinux/var  --ondisk sda --fstype=ext4 --label ${FLUXDATA} --active --align 4
 #EOF
 		#cp $WKS_FULL_PATH.sample ${wic_deployed_var_path}/wic.wks.sample
 		# ESP

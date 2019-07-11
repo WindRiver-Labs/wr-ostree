@@ -3,7 +3,7 @@ OSTREE_INITRAMFS_IMAGE ?= "initramfs-ostree-image"
 OSTREE_REPO ?= "${DEPLOY_DIR_IMAGE}/ostree_repo"
 
 OSTREE_BRANCHNAME ?= "${IMAGE_BASENAME}"
-OSTREE_OSNAME ?= "pulsar-linux"
+OSTREE_OSNAME ?= "wrlinux"
 OSTREE_BOOTLOADER_x86 = 'grub'
 OSTREE_BOOTLOADER_x86-64 = 'grub'
 OSTREE_BOOTLOADER_arm = 'u-boot'

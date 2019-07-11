@@ -528,7 +528,7 @@ luks_restore_fluxdata() {
 
     _luks_mount_label ${FLUXDATA_LABEL} ${TMP_MNT_FLUXDATA} || return 1 
 
-    cp -arf ${TMP_MNT_ROOT}/ostree/deploy/pulsar-linux/deploy/*/var/* ${TMP_MNT_FLUXDATA}/
+    cp -arf ${TMP_MNT_ROOT}/ostree/deploy/wrlinux/deploy/*/var/* ${TMP_MNT_FLUXDATA}/
 
     sync && umount_dir ${TMP_MNT_ROOT} && umount_dir ${TMP_MNT_FLUXDATA}
 

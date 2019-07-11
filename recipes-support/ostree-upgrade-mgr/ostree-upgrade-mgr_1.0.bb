@@ -1,6 +1,6 @@
-SUMMARY = "pulsar upgrade config manager"
+SUMMARY = "wrlinux ostree upgrade config manager"
 DESCRIPTION = "Example of how to run some postinstall and postrm \
-operations to complete the pulsar upgrade"
+operations to complete a wrlinux upgrade with ostree"
 LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://COPYING;md5=12f884d2ae1ff87c09e5b7ccc2c4ca7e"
 

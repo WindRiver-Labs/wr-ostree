@@ -1,17 +1,17 @@
 From 3f6e401e512af954330e5b2d09edabb29b4c6729 Mon Sep 17 00:00:00 2001
 From: Hongxu Jia <hongxu.jia@windriver.com>
 Date: Wed, 20 Jun 2018 10:22:09 +0800
-Subject: [PATCH 11/12] tweak regex of ostree-system-generator for pulsar.
+Subject: [PATCH 11/12] tweak regex of ostree-system-generator for wrlinux.
 
-Pulsar generate grub.cfg based on Yocto rather than ostree's
+wrlinux generate grub.cfg based on Yocto rather than ostree's
 ostree-grub-generator.
 
-And pulsar has boot params ostree="/boot/0/ostree" which is a
-synlink point to "../../ostree/boot.0/pulsar-linux".
+And wrlinux has boot params ostree="/boot/0/ostree" which is a
+synlink point to "../../ostree/boot.0/wrlinux".
 
-So tweak regex of ostree-system-generator for pulsar.
+So tweak regex of ostree-system-generator for wrlinux.
 
-Upstream-Status: Inappropriate [Pulsar specific]
+Upstream-Status: Inappropriate [wrlinux specific]
 
 Signed-off-by: Hongxu Jia <hongxu.jia@windriver.com>
 ---
