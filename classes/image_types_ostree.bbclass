@@ -332,9 +332,11 @@ IMAGE_CMD_ostree () {
 	timestamp=`date +%s`
 	create_tarball_and_ostreecommit "${OSTREE_BRANCHNAME}-dev" "$timestamp"
 
-	# Clean up package management data for factory deploy
-	rm -rf ${OSTREE_ROOTFS}/usr/rootdirs/var/lib/rpm/*
-	rm -rf ${OSTREE_ROOTFS}/usr/rootdirs/var/lib/dnf/*
+	if [ "${OSTREE_NORPMDATA}" = 1 ] || [ ! -e ${OSTREE_ROOTFS}/usr/bin/rpm ] ; then
+		# Clean up package management data for factory deploy
+		rm -rf ${OSTREE_ROOTFS}/usr/rootdirs/var/lib/rpm/*
+		rm -rf ${OSTREE_ROOTFS}/usr/rootdirs/var/lib/dnf/*
+	fi
 
 	# Make factory older than development which is helpful for ostree admin upgrade
 	timestamp=`expr $timestamp - 1`
