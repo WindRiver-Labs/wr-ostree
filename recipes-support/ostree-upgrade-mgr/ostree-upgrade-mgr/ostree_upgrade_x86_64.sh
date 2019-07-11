@@ -166,17 +166,25 @@ ostree_upgrade() {
 	fi
 
 	# Perform repairs, if needed on the upgrade ostree repository
+	repair=0
 	ostree fsck -a --delete --repo=$UPGRADE_ROOTFS_DIR/ostree/repo
+	if [ $? != 0 ] ; then
+		repair=1
+	fi
+
+	lcache="--localcache-repo=/sysroot/ostree/repo"
 
 	ostree fsck --repo=/sysroot/ostree/repo
 	if [ $? = 0 ] ; then
-		ostree pull --localcache-repo=/sysroot/ostree/repo --repo=$UPGRADE_ROOTFS_DIR/ostree/repo ${remote}:${branch}
+		ostree pull $lcache --repo=$UPGRADE_ROOTFS_DIR/ostree/repo ${remote}:${branch}
 		# Always try a cached pull first so as not to incur extra bandwidth cost
 		if [ $? -ne 0 ]; then
+			lcache=""
 			echo "Trying an uncached pull"
 			ostree pull --repo=$UPGRADE_ROOTFS_DIR/ostree/repo ${remote}:${branch}
 		fi
 	else
+		lcache=""
 		# if the local repository is corrupted in any maner, skip the localcache operation
 		ostree pull --repo=$UPGRADE_ROOTFS_DIR/ostree/repo ${remote}:${branch}
 	fi
@@ -184,6 +192,25 @@ ostree_upgrade() {
 		echo "Ostree pull failed"
 		cleanup
 		exit 1
+	fi
+	if [ $repair = 1 ] ; then
+		# Repair any other remote references if the original was damaged and re-run fsck
+		for b in `ostree --repo=$UPGRADE_ROOTFS_DIR/ostree/repo refs|grep :`; do
+			if [ "${remote}:${branch}" != "$b" ] ; then
+				ostree pull $lcache --repo=$UPGRADE_ROOTFS_DIR/ostree/repo $b
+				if [ $? -ne 0 ]; then
+					echo "Ostree pull failed"
+					cleanup
+					exit 1
+				fi
+			fi
+		done
+		ostree fsck -a --delete --repo=$UPGRADE_ROOTFS_DIR/ostree/repo
+		if [ $? != 0 ] ; then
+			echo "Error: Upgrade partition ostree repo could not be repaired"
+			cleanup
+			exit 1
+		fi
 	fi
 
 	ostree admin --sysroot=$UPGRADE_ROOTFS_DIR deploy --os=${os} ${branch}
