@@ -24,7 +24,7 @@ usage: $0 [args]
   This command will reset the /etc directory based on the contents of
   /usr/etc.  The default is to leave the fstab and machine-id the same.
 
-  -f    Restore /etc to its original state (skipp
+  -f    Restore /etc to its original state (skipping fstab and machine-id)
   -v    verbose
   -n    dry run
   -F    Reset everything, including fstab and machine-id
