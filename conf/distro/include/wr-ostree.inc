@@ -9,6 +9,7 @@ OSTREE_BOOTLOADER_x86-64 = 'grub'
 OSTREE_BOOTLOADER_arm = 'u-boot'
 OSTREE_INITRAMFS_IMAGE ?= "initramfs-ostree-image"
 OSTREE_KERNEL_ARGS ?= "ro rootwait"
+OSTREE_SKIP_BOOT_DIFF ?= "0"
 
 OSTREE_GPGID ?= "Wind-River-Linux-Sample"
 OSTREE_GPG_PASSPHRASE ?= "windriver"
