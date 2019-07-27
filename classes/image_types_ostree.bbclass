@@ -316,7 +316,7 @@ IMAGE_CMD_ostree () {
 	# add the required mount
 	echo "LABEL=otaboot     /boot    auto   defaults 0 0" >>usr/etc/fstab
         if [ -n "${GRUB_USED}" ]; then
-	    echo "LABEL=otaefi     /boot/efi    auto   defaults 0 0" >>usr/etc/fstab
+	    echo "LABEL=otaefi     /boot/efi    auto   ro 0 0" >>usr/etc/fstab
         fi
 	echo "LABEL=fluxdata	 /var    auto   defaults 0 0" >>usr/etc/fstab
 
