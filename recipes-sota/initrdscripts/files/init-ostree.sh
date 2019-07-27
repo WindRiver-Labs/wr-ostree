@@ -88,6 +88,8 @@ read_args() {
                 ROOT_DEVICE=$optarg ;;
             rootdelay=*)
                 ROOT_DELAY=$optarg ;;
+            skip-boot-diff=*)
+		SKIP_BOOT_DIFF=$optarg ;;
             rootflags=*)
 		ROOT_FLAGS=$optarg ;;
             init=*)
@@ -226,7 +228,7 @@ fi
 mount -t proc none /proc
 
 # Check for skip-boot-diff
-if [ "${instsbd}" = 1 ] ; then
+if [ "${SKIP_BOOT_DIFF}" = 1 ] ; then
     skip=1
 else
     skip=`ostree config --repo=/sysroot/ostree/repo get upgrade.skip-boot-diff 2> /dev/null`

@@ -15,11 +15,13 @@
 #* along with this program; if not, write to the Free Software
 #* Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 
-partbase=`mount |grep "sysroot " | awk '{print $1}' | awk -F 'p' '{print $1}'`
+partbase=`cat /proc/mounts |grep "sysroot " | awk '{print $1}' | awk -F 'p' '{print $1}'`
 part=${partbase}'p1'
-mkdir -p /tmp/realboot
-mount ${part} /tmp/realboot
-rm -rf /tmp/realboot/boot_cnt
-umount /tmp/realboot
-rm -rf /tmp/realboot
+tdir=`mktemp -d`
+if [ "$tdir" != "" ] ; then
+	mount ${part} ${tdir}
+	printf '0\0WR' > ${tdir}/boot_cnt
+	umount ${tdir}
+	rm -rf ${tdir}
+fi
 

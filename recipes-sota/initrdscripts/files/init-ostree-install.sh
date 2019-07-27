@@ -26,6 +26,7 @@
 # insturl=OSTREE_URL		- URL to OSTree repository
 #
 #OPTIONAL:
+# bl=booloader                  - grub, ufsd(u-boot fdisk sd)
 # instab=0			- Do not use the AB layout, only use A
 # instnet=0			- Do not invoke udhcpc or dhclient
 # instflux=0			- Do not create/use the fluxdata partition
@@ -113,6 +114,7 @@ INSTAB=${INSTAB=""}
 INSTPOST=${INSTPOST=""}
 INSTOS=${INSTOS=""}
 INSTNAME=${INSTNAME=""}
+BL=${BL=""}
 INSTBR=${INSTBR=""}
 INSTSBD=${INSTSBD=""}
 INSTURL=${INSTURL=""}
@@ -124,12 +126,19 @@ ECURLARG=${ECURLARG=""}
 LCURL=${LCURL=""}
 LCURLARG=${LCURLARG=""}
 MAX_TIMEOUT_FOR_WAITING_LOWSPEED_DEVICE=60
+OSTREE_KERNEL_ARGS=${OSTREE_KERNEL_ARGS=%OSTREE_KERNEL_ARGS%}
+
+if [ "$OSTREE_KERNEL_ARGS" = "%OSTREE_KERNEL_ARGS%" ] ; then
+	OSTREE_KERNEL_ARGS="ro rootwait"
+fi
 
 read_args() {
 	[ -z "$CMDLINE" ] && CMDLINE=`cat /proc/cmdline`
 	for arg in $CMDLINE; do
 		optarg=`expr "x$arg" : 'x[^=]*=\(.*\)'`
 		case $arg in
+			bl=*)
+				if [ "$BL" = ""  ] ; then BL=$optarg; fi ;;
 			instnet=*)
 				if [ "$INSTNET" = ""  ] ; then INSTNET=$optarg; fi ;;
 			instsh=*)
@@ -172,6 +181,7 @@ read_args() {
 		esac
 	done
 	# defaults if not set
+	if [ "$BL" = "" ] ; then BL=grub ; fi
 	if [ "$INSTSH" = "" ] ; then INSTSH=0 ; fi
 	if [ "$INSTAB" = "" ] ; then INSTAB=1 ; fi
 	if [ "$INSTOS" = "" ] ; then INSTOS=wrlinux ; fi
@@ -201,6 +211,106 @@ shell_start() {
 		setsid sh -c "exec /bin/bash </dev/$c >/dev/$c 2>&1"
 	fi
 }
+
+grub_partition() {
+	if [ "$INSTAB" = 1 ] ; then
+		parted -s ${dev} mklabel gpt
+		parted -s ${dev} mkpart msdos 64s 32MB
+		parted -s ${dev} mkpart ext2 32MB 240MB
+		parted -s ${dev} mkpart ext2 240MB 448MB
+		if [ "${INSTFLUX}" = 1 ] ; then
+			parted -s ${dev} mkpart ext2 448MB 50%
+			parted -s ${dev} mkpart ext2 50% 95%
+			parted -s ${dev} mkpart ext2 95% 100%
+		else
+			parted -s ${dev} mkpart ext2 448MB 53%
+			parted -s ${dev} mkpart ext2 53% 100%
+		fi
+		parted -s ${dev} name 1 otaefi
+		parted -s ${dev} name 2 otaboot
+		parted -s ${dev} name 3 otaboot_b
+		parted -s ${dev} name 4 otaroot
+		parted -s ${dev} name 5 otaroot_b
+		if [ "${INSTFLUX}" = 1 ] ; then
+			parted -s ${dev} name 6 fluxdata
+			parted -s ${dev} resizepart 6 100%
+		fi
+		parted -s ${dev} set 1 esp on
+	else
+		parted -s ${dev} mklabel gpt
+		parted -s ${dev} mkpart msdos 64s 32MB
+		parted -s ${dev} mkpart ext2 32MB 240MB
+		if [ "${INSTFLUX}" = 1 ] ; then
+			parted -s ${dev} mkpart ext2 240MB 95%
+			parted -s ${dev} mkpart ext2 95% 100%
+		else
+			parted -s ${dev} mkpart ext2 240MB 100%
+		fi
+		parted -s ${dev} name 1 otaefi
+		parted -s ${dev} set 1 esp on
+		parted -s ${dev} name 2 otaboot
+		parted -s ${dev} name 3 otaroot
+		if [ "${INSTFLUX}" = 1 ] ; then
+			parted -s ${dev} name 4 fluxdata
+			parted -s ${dev} resizepart 4 100%
+		fi
+	fi
+}
+
+ufdisk_partition() {
+
+	fsz=24
+	bsz=200
+	rsz=1400
+	# Parititions must be alinged on MB boundaries
+	esz=$(($bsz+$rsz+$bsz+$rsz+5))
+	dd if=/dev/zero of=${dev} bs=512 count=1
+	fdisk -W always -t dos ${dev} <<EOF
+n
+p
+1
+
++${fsz}M
+n
+e
+2
+
++${esz}M
+n
+l
+
++${bsz}M
+n
+l
+
++${rsz}M
+n
+l
+
++${bsz}M
+n
+l
+
++${rsz}M
+n
+p
+3
+
+
+d
+1
+n
+p
+1
+2056
+
+t
+1
+c
+w
+EOF
+}
+
 ##################
 
 early_setup
@@ -264,80 +374,54 @@ fi
 
 dev=${INSTDEV}
 
-if [ "$INSTAB" = 1 ] ; then
-	parted -s ${dev} mklabel gpt 
-	parted -s ${dev} mkpart msdos 64s 32MB
-	parted -s ${dev} mkpart ext2 32MB 240MB
-	parted -s ${dev} mkpart ext2 240MB 448MB
-	if [ "${INSTFLUX}" = 1 ] ; then
-		parted -s ${dev} mkpart ext2 448MB 50%
-		parted -s ${dev} mkpart ext2 50% 95%
-		parted -s ${dev} mkpart ext2 95% 100%
-	else
-		parted -s ${dev} mkpart ext2 448MB 53%
-		parted -s ${dev} mkpart ext2 53% 100%
-	fi
-	parted -s ${dev} name 1 otaefi
-	parted -s ${dev} name 2 otaboot
-	parted -s ${dev} name 3 otaboot_b
-	parted -s ${dev} name 4 otaroot
-	parted -s ${dev} name 5 otaroot_b
-	if [ "${INSTFLUX}" = 1 ] ; then
-		parted -s ${dev} name 6 fluxdata
-		parted -s ${dev} resizepart 6 100%
-	fi
-	parted -s ${dev} set 1 esp on
+if [ "$BL" = "grub" ] ; then
+	grub_partition
+elif [ "$BL" = "ufsd" ] ; then
+	ufdisk_partition
 else
-	parted -s ${dev} mklabel gpt
-	parted -s ${dev} mkpart msdos 64s 32MB
-	parted -s ${dev} mkpart ext2 32MB 240MB
-	if [ "${INSTFLUX}" = 1 ] ; then
-		parted -s ${dev} mkpart ext2 240MB 95%
-		parted -s ${dev} mkpart ext2 95% 100%
-	else
-		parted -s ${dev} mkpart ext2 240MB 100%
-	fi
-	parted -s ${dev} name 1 otaefi
-	parted -s ${dev} set 1 esp on
-	parted -s ${dev} name 2 otaboot
-	parted -s ${dev} name 3 otaroot
-	if [ "${INSTFLUX}" = 1 ] ; then
-		parted -s ${dev} name 4 fluxdata
-		parted -s ${dev} resizepart 4 100%
-	fi
+	fatal "Error: bl=$BL is not supported"
 fi
 
-partprobe ${dev}
-parted -s ${dev} print
-
+blockdev --rereadpt ${dev}
 
 # Customize here for disk formatting
 
 fs_dev=${INSTDEV}
 
 if [ "${fs_dev#/dev/mmcblk}" != ${fs_dev} ] ; then
-       fs_dev="${raw_dev}p"
+       fs_dev="${INSTDEV}p"
 elif [ "${fs_dev#/dev/nbd}" != ${fs_dev} ] ; then
-       fs_dev="${raw_dev}p"
+       fs_dev="${INSTDEV}p"
 elif [ "${fs_dev#/dev/loop}" != ${fs_dev} ] ; then
-       fs_dev="${raw_dev}p"
+       fs_dev="${INSTDEV}p"
 fi
 
-if [ "$INSTAB" = "1" ] ; then
-	mkfs.vfat -n otaefi ${fs_dev}1
-	mkfs.ext4 -F -L otaboot ${fs_dev}2
-	mkfs.ext4 -F -L otaboot_b ${fs_dev}3
-	mkfs.ext4 -F -L otaroot ${fs_dev}4
-	mkfs.ext4 -F -L otaroot_b ${fs_dev}5
-	if [ "${INSTFLUX}" = 1 ] ; then
-		mkfs.ext4 -F -L fluxdata ${fs_dev}6
+if [ "$BL" = "grub" ] ; then
+	if [ "$INSTAB" = "1" ] ; then
+		mkfs.vfat -n otaefi ${fs_dev}1
+		mkfs.ext4 -F -L otaboot ${fs_dev}2
+		mkfs.ext4 -F -L otaboot_b ${fs_dev}3
+		mkfs.ext4 -F -L otaroot ${fs_dev}4
+		mkfs.ext4 -F -L otaroot_b ${fs_dev}5
+		if [ "${INSTFLUX}" = 1 ] ; then
+			mkfs.ext4 -F -L fluxdata ${fs_dev}6
+		fi
+	else
+		mkfs.vfat -n otaefi ${fs_dev}1
+		mkfs.ext4 -F -L otaboot ${fs_dev}2
+		mkfs.ext4 -F -L otaroot ${fs_dev}3
+		if [ "${INSTFLUX}" = 1 ] ; then
+			mkfs.ext4 -F -L fluxdata ${fs_dev}4
+		fi
 	fi
 else
-	mkfs.vfat -n otaefi ${fs_dev}1
-	mkfs.ext4 -F -L otaboot ${fs_dev}2
-	mkfs.ext4 -F -L otaroot ${fs_dev}3
+	mkfs.vfat -n boot ${fs_dev}1
+	mkfs.ext4 -F -L otaboot ${fs_dev}5
+	mkfs.ext4 -F -L otaroot ${fs_dev}6
+	mkfs.ext4 -F -L otaboot_b ${fs_dev}7
+	mkfs.ext4 -F -L otaroot_b ${fs_dev}8
 	if [ "${INSTFLUX}" = 1 ] ; then
-		mkfs.ext4 -F -L fluxdata ${fs_dev}4
+		mkfs.ext4 -F -L fluxdata ${fs_dev}3
 	fi
 fi
 
@@ -347,6 +431,10 @@ PHYS_SYSROOT="/sysroot"
 OSTREE_BOOT_DEVICE="LABEL=otaboot"
 OSTREE_ROOT_DEVICE="LABEL=otaroot"
 mount_flags="rw,noatime,iversion"
+
+for arg in ${OSTREE_KERNEL_ARGS}; do
+        kargs_list="${kargs_list} --karg-append=$arg"
+done
 
 mkdir -p ${PHYS_SYSROOT}
 mount -o $mount_flags "${OSTREE_ROOT_DEVICE}" "${PHYS_SYSROOT}"
@@ -378,11 +466,15 @@ mkdir -p ${PHYS_SYSROOT}/boot/efi
 mount ${fs_dev}1 ${PHYS_SYSROOT}/boot/efi
 
 # Prep for Install
-mkdir -p ${PHYS_SYSROOT}/boot/grub2
-touch ${PHYS_SYSROOT}/boot/grub2/grub.cfg
-
 mkdir -p ${PHYS_SYSROOT}/boot/loader.0
 ln -s loader.0 ${PHYS_SYSROOT}/boot/loader
+
+if [ "$BL" = "grub" ] ; then
+	mkdir -p ${PHYS_SYSROOT}/boot/grub2
+	touch ${PHYS_SYSROOT}/boot/grub2/grub.cfg
+else
+	touch  ${PHYS_SYSROOT}/boot/loader/uEnv.txt
+fi
 
 do_gpg=""
 if [ "$INSTGPG" != "1" ] ; then
@@ -395,7 +487,7 @@ mkdir -p /var/volatile/tmp /var/volatile/run
 
 ostree pull --repo=${PHYS_SYSROOT}/ostree/repo ${INSTNAME} ${INSTBR} || fatal "Error: ostree pull failed"
 export OSTREE_BOOT_PARTITION="/boot"
-ostree admin deploy --sysroot=${PHYS_SYSROOT} --os=${INSTOS} ${INSTNAME}:${INSTBR} || fatal "Error: ostree deploy failed"
+ostree admin deploy ${kargs_list} --sysroot=${PHYS_SYSROOT} --os=${INSTOS} ${INSTNAME}:${INSTBR} || fatal "Error: ostree deploy failed"
 
 # Initialize "B" partion if used
 
@@ -418,23 +510,34 @@ if [ "$INSTAB" = "1" ] ; then
 	mkdir -p ${PHYS_SYSROOT}_b/boot/efi
 	mount ${fs_dev}1 ${PHYS_SYSROOT}_b/boot/efi
 
-	# Prep for Install
-	mkdir -p ${PHYS_SYSROOT}_b/boot/grub2
-	touch ${PHYS_SYSROOT}_b/boot/grub2/grub.cfg
-
 	mkdir -p ${PHYS_SYSROOT}_b/boot/loader.0
 	ln -s loader.0 ${PHYS_SYSROOT}_b/boot/loader
 
+	# Prep for Install
+	if [ "$BL" = "grub" ] ; then
+		mkdir -p ${PHYS_SYSROOT}_b/boot/grub2
+		touch ${PHYS_SYSROOT}_b/boot/grub2/grub.cfg
+	else
+		touch  ${PHYS_SYSROOT}_b/boot/loader/uEnv.txt
+	fi
+
 	ostree pull --repo=${PHYS_SYSROOT}_b/ostree/repo --localcache-repo=${PHYS_SYSROOT}/ostree/repo ${INSTNAME}:${INSTBR} || fatal "ostree pull failed"
-	ostree admin deploy --sysroot=${PHYS_SYSROOT}_b --os=${INSTOS} ${INSTBR} || fatal "ostree deploy failed"
+	ostree admin deploy ${kargs_list} --sysroot=${PHYS_SYSROOT}_b --os=${INSTOS} ${INSTBR} || fatal "ostree deploy failed"
 fi
 
-# Replace boot loader
+# Replace/install boot loader
 if [ -e ${PHYS_SYSROOT}/boot/0/boot/efi/EFI ] ; then
 	cp -r  ${PHYS_SYSROOT}/boot/0/boot/efi/EFI ${PHYS_SYSROOT}/boot/efi/
 	if [ ! -e ${PHYS_SYSROOT}/boot/efi/EFI/BOOT/boot.env ] ; then
 		echo "# GRUB Environment Block" > ${PHYS_SYSROOT}/boot/efi/EFI/BOOT/boot.env
 		echo -n "#######################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################" >> ${PHYS_SYSROOT}/boot/efi/EFI/BOOT/boot.env
+	fi
+fi
+if [ -e ${PHYS_SYSROOT}/boot/loader/uEnv.txt ] ; then
+	bootdir=$(grep ^bootdir= ${PHYS_SYSROOT}/boot/loader/uEnv.txt)
+	bootdir=${bootdir#bootdir=}
+	if [ "$bootdir" != "" ] && [ -e "${PHYS_SYSROOT}/boot$bootdir" ] ; then
+		cp -r ${PHYS_SYSROOT}/boot$bootdir/* ${PHYS_SYSROOT}/boot/efi
 	fi
 fi
 
