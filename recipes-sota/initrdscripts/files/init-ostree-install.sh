@@ -343,8 +343,10 @@ fi
 
 # Early curl exec
 
-if [ "${ECURL}" != "" ] ; then
+if [ "${ECURL}" != "" -a "${ECURL}" != "none" ] ; then
 	curl ${ECURL} --output /ecurl
+	# Prevent recursion if script debugging
+	export ECURL="none"
 	chmod 755 /ecurl
 	/ecurl ${ECURLARG}
 fi
@@ -489,6 +491,11 @@ ostree pull --repo=${PHYS_SYSROOT}/ostree/repo ${INSTNAME} ${INSTBR} || fatal "E
 export OSTREE_BOOT_PARTITION="/boot"
 ostree admin deploy ${kargs_list} --sysroot=${PHYS_SYSROOT} --os=${INSTOS} ${INSTNAME}:${INSTBR} || fatal "Error: ostree deploy failed"
 
+if [ "$INSTAB" != 1 ] ; then
+	# Deploy a second time so a roll back is available from the start
+	ostree admin deploy ${kargs_list} --sysroot=${PHYS_SYSROOT} --os=${INSTOS} ${INSTNAME}:${INSTBR} || fatal "Error: ostree deploy failed"
+fi
+
 # Initialize "B" partion if used
 
 
@@ -528,10 +535,14 @@ fi
 # Replace/install boot loader
 if [ -e ${PHYS_SYSROOT}/boot/0/boot/efi/EFI ] ; then
 	cp -r  ${PHYS_SYSROOT}/boot/0/boot/efi/EFI ${PHYS_SYSROOT}/boot/efi/
-	if [ ! -e ${PHYS_SYSROOT}/boot/efi/EFI/BOOT/boot.env ] ; then
-		echo "# GRUB Environment Block" > ${PHYS_SYSROOT}/boot/efi/EFI/BOOT/boot.env
-		echo -n "#######################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################" >> ${PHYS_SYSROOT}/boot/efi/EFI/BOOT/boot.env
+	echo "# GRUB Environment Block" > ${PHYS_SYSROOT}/boot/efi/EFI/BOOT/boot.env
+	if [ "$INSTAB" != "1" ] ; then
+	    printf "ab=0\n" >> ${PHYS_SYSROOT}/boot/efi/EFI/BOOT/boot.env
+	else
+	    echo -n "#####" >> ${PHYS_SYSROOT}/boot/efi/EFI/BOOT/boot.env
 	fi
+	printf "boot_tried_count=0\n" >> ${PHYS_SYSROOT}/boot/efi/EFI/BOOT/boot.env
+	echo -n "###############################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################" >> ${PHYS_SYSROOT}/boot/efi/EFI/BOOT/boot.env
 fi
 if [ -e ${PHYS_SYSROOT}/boot/loader/uEnv.txt ] ; then
 	bootdir=$(grep ^bootdir= ${PHYS_SYSROOT}/boot/loader/uEnv.txt)
@@ -543,8 +554,9 @@ fi
 
 # Late curl exec
 
-if [ "${LCURL}" != "" ] ; then
+if [ "${LCURL}" != "" -a "${LCURL}" != "none" ] ; then
 	curl ${LCURL} --output /lcurl
+	export LCURL="none"
 	chmod 755 /lcurl
 	/lcurl ${LCURLARG}
 fi

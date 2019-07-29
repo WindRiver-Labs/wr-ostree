@@ -23,6 +23,7 @@ UPGRADE_ROOTFS_DIR=""
 UPGRADE_BOOT_DIR=""
 UPGRADE_ESP_DIR=""
 CLEANUP_MOUNTS=""
+CLEANUP_DIRS=""
 DEBUG_SKIP_FSCK=${DEBUG_SKIP_FSCK=0}
 USE_GRUB=1
 BACKUP_PART_INDICATOR="_b"
@@ -32,22 +33,26 @@ ROLLBACK_VAR="rollback_part"
 BOOTMODE_VAR="boot_mode"
 BOOT_VAR="boot_part"
 ROOT_VAR="root_part"
-MOUNT_FLAG="rw,noatime,iversion"
+MOUNT_FLAG="noatime,iversion"
 
 cleanup() {
 	for d in $CLEANUP_MOUNTS ; do
 		umount $d
 	done
 
-	rmdir $UPGRADE_ROOTFS_DIR
+	for d in $CLEANUP_DIRS ; do
+		rmdir $d
+	done
 }
 # get the label name for boot partition to be upgraded
 get_upgrade_part_label() {
 	local labelroot=`cat /proc/cmdline |tr " " "\n" |sort -u |grep ostree_root | awk -F '=' '{print $3}'`
 	local labelboot=`cat /proc/cmdline |tr " " "\n" |sort -u |grep ostree_boot | awk -F '=' '{print $3}'`
 
+	NO_AB=`ostree config --repo=/sysroot/ostree/repo get upgrade.no-ab 2> /dev/null`
+
 	echo "$labelroot" | fgrep "${BACKUP_PART_INDICATOR}" >> /dev/null
-	if [ $? -ne 0 ]; then
+	if [ $? -ne 0 -a "${NO_AB}" != "1" ]; then
 		UPGRADE_ROOT_LABEL="${labelroot}${BACKUP_PART_INDICATOR}"
 		UPGRADE_BOOT_LABEL="${labelboot}${BACKUP_PART_INDICATOR}"
 		ROLLBACK_VAL=""
@@ -77,16 +82,38 @@ create_dir() {
 	return 0
 }
 
+rwmount() {
+    local flags="$1"
+    local dev="$2"
+    local mount="$3"
+
+    if [ "$flags" != "" ] ; then
+	    flags=",${flags}"
+    fi
+
+    # First mount read-only and transition to rw, or mount straight to
+    # rw if the volume is available
+    mount -r $dev $mount 2> /dev/null
+    if [ $? = 0 ] ; then
+	CLEANUP_MOUNTS="$mount $CLEANUP_MOUNTS"
+	mount -o remount,rw${flags} $dev $mount 2> /dev/null || fatal "Error mounting $3"
+    else
+	mount -o rw${flags} $dev $mount || fatal "Error mounting $3"
+	CLEANUP_MOUNTS="$mount $CLEANUP_MOUNTS"
+    fi
+}
+
 #arg1 ROOT label
 #arg2 BOOT label
 #arg3 ESP device
 prepare_mount() {
 	UPGRADE_ROOTFS_DIR=$(mktemp -d /tmp/rootfs.XXXXX)
+	CLEANUP_DIRS="$UPGRADE_ROOTFS_DIR $CLEANUP_DIRS"
 	UPGRADE_BOOT_DIR="$UPGRADE_ROOTFS_DIR/boot"
 	UPGRADE_ESP_DIR="$UPGRADE_BOOT_DIR/efi"
 
 	# Detect correct disk labels from the running disk
-	sysrootdev=$(cat /proc/mounts |grep \ /sysroot\  |awk '{print $1}')
+	sysrootdev=$(cat /proc/mounts |grep \ /sysroot\  |awk '{print $1}'|head -1)
 	[ "$sysrootdev" = "" ] && fatal "Could not find mounted /sysroot"
 
 	RAWDEV=$(lsblk -npo pkname $sysrootdev)
@@ -94,26 +121,20 @@ prepare_mount() {
 
 	dev=$(lsblk -rpno label,kname $RAWDEV|grep ^$1\ |awk '{print $2}')
 	[ "$dev" = "" ] && fatal "Error finding LABEL=$1"
-	mount -o $MOUNT_FLAG $dev "$UPGRADE_ROOTFS_DIR" || fatal "Error mounting LABEL=$1"
-	CLEANUP_MOUNTS="$UPGRADE_ROOTFS_DIR"
-
+	if [ ${NO_AB} = "1" ] ; then
+		mount --bind / $UPGRADE_ROOTFS_DIR || fatal "Error with bind mount of root dir"
+		CLEANUP_MOUNTS="${UPGRADE_ROOTFS_DIR} $CLEANUP_MOUNTS"
+		rwmount "$MOUNT_FLAG" $dev "$UPGRADE_ROOTFS_DIR/sysroot"
+	else
+		rwmount "$MOUNT_FLAG" $dev "$UPGRADE_ROOTFS_DIR"
+	fi
 
 	dev=$(lsblk -rpno label,kname $RAWDEV|grep ^$2\ |awk '{print $2}')
 	[ "$dev" = "" ] && fatal "Error finding LABEL=$2"
-	mount -o $MOUNT_FLAG $dev "$UPGRADE_BOOT_DIR" || fatal "Error mounting LABEL=$2"
-	CLEANUP_MOUNTS="$UPGRADE_BOOT_DIR $CLEANUP_MOUNTS"
+	rwmount "$MOUNT_FLAG" $dev "$UPGRADE_BOOT_DIR" || fatal "Error mounting LABEL=$2"
 
 	if [ "$3" != "" ] ; then
-		# This volume is "special" and might already be mounted RO, and a
-		# remount requires manipulating the state.
-		mount -r "$3" $UPGRADE_ESP_DIR 2> /dev/null
-		if [ $? = 0 ] ; then
-			CLEANUP_MOUNTS="$UPGRADE_ESP_DIR $CLEANUP_MOUNTS"
-			mount -o remount,rw "$3" $UPGRADE_ESP_DIR 2> /dev/null || fatal "Error mounting $3"
-		else
-			mount -w "$3" $UPGRADE_ESP_DIR || fatal "Error mounting $3"
-			CLEANUP_MOUNTS="$UPGRADE_ESP_DIR $CLEANUP_MOUNTS"
-		fi
+		rwmount "" "$3" $UPGRADE_ESP_DIR
 	fi
 }
 
@@ -234,7 +255,7 @@ ostree_upgrade() {
 		fi
 	fi
 
-	ostree admin --sysroot=$UPGRADE_ROOTFS_DIR deploy --os=${os} ${branch}
+	OSTREE_ETC_MERGE_DIR=/etc ostree admin --sysroot=$UPGRADE_ROOTFS_DIR deploy --os=${os} ${branch}
 	if [ $? -ne 0 ]; then
 		fatal "Ostree deploy failed"
 	fi
@@ -254,10 +275,10 @@ update_env() {
 	else
 		# Assume this is a u-boot volume to update
 		tmpdir=$(mktemp -d /tmp/boot.XXXXX)
+		CLEANUP_DIRS="$tmpdir $CLEANUP_DIRS"
 		dev=$(lsblk -rpno label,kname $RAWDEV|grep ^boot\ |awk '{print $2}')
 		[ "$dev" = "" ] && fatal "Error finding LABEL=boot"
-		mount -w $dev $tmpdir || fatal "Error mounting LABEL=boot"
-		CLEANUP_MOUNTS="$tmpdir $CLEANUP_MOUNTS"
+		rwmount "" $dev $tmpdir
 		abflag="B"
 		if [ "$BOOTMODE_VAL" = "" ] ; then
 			abflag="A"

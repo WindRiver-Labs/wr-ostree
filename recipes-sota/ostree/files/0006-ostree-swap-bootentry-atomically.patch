@@ -5,14 +5,12 @@ Subject: [PATCH 06/12] ostree:swap bootentry atomically
 
 Signed-off-by: Jiang Lu <lu.jiang@windriver.com>
 ---
- src/boot/grub2/ostree-grub-generator | 42 +++++++++++++---------------
- 1 file changed, 19 insertions(+), 23 deletions(-)
+ src/boot/grub2/ostree-grub-generator |   44 ++++++++++++++++-------------------
+ 1 file changed, 21 insertions(+), 23 deletions(-)
 
-diff --git a/src/boot/grub2/ostree-grub-generator b/src/boot/grub2/ostree-grub-generator
-index c515ec9b..fc8acaad 100644
 --- a/src/boot/grub2/ostree-grub-generator
 +++ b/src/boot/grub2/ostree-grub-generator
-@@ -97,34 +97,30 @@ populate_menu()
+@@ -97,34 +97,32 @@ populate_menu()
          fi
          menu="${menu}}\n\n"
  
@@ -42,10 +40,12 @@ index c515ec9b..fc8acaad 100644
 -        if [ -L ${linux_dir}/../${count} ]; then
 -            unlink ${linux_dir}/../${count}
 +    for i in 1 0; do
-+        if [ -n "${boots[$i]}" -a -d ${boots[$i]} ]; then
-+            ln -sTf `basename ${boots[$i]}` ${sysroot_dir}${boot_prefix}/$i
-+        elif [ -n "${boots[0]}" -a -d ${boots[0]} ]; then
-+            ln -sTf `basename ${boots[0]}`  ${sysroot_dir}${boot_prefix}/$i
++        if [ -n "${boots[$i]}" -a -d "${boots[$i]}" ]; then
++	    rm -f ${sysroot_dir}${boot_prefix}/$i
++            ln -s `basename ${boots[$i]}` ${sysroot_dir}${boot_prefix}/$i
++        elif [ -n "${boots[0]}" -a -d "${boots[0]}" ]; then
++	    rm -f ${sysroot_dir}${boot_prefix}/$i
++            ln -s `basename ${boots[0]}`  ${sysroot_dir}${boot_prefix}/$i
          fi
 -        if [ -L ${ostree_boot_dir}/${count} ]; then
 -            unlink ${ostree_boot_dir}/${count}
@@ -66,6 +66,3 @@ index c515ec9b..fc8acaad 100644
      # The printf command seems to be more reliable across shells for special character (\n, \t) evaluation
      printf "$menu" >> ${new_grub2_cfg}
  }
--- 
-2.17.1
-
