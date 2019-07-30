@@ -258,57 +258,45 @@ grub_partition() {
 }
 
 ufdisk_partition() {
-
 	fsz=24
 	bsz=200
 	rsz=1400
-	# Parititions must be alinged on MB boundaries
-	esz=$(($bsz+$rsz+$bsz+$rsz+5))
+
 	dd if=/dev/zero of=${dev} bs=512 count=1
-	fdisk -W always -t dos ${dev} <<EOF
-n
-p
-1
-
-+${fsz}M
-n
-e
-2
-
-+${esz}M
-n
-l
-
-+${bsz}M
-n
-l
-
-+${rsz}M
-n
-l
-
-+${bsz}M
-n
-l
-
-+${rsz}M
-n
-p
-3
-
-
-d
-1
-n
-p
-1
-2056
-
-t
-1
-c
-w
-EOF
+	(
+	    # Partition for storage of u-boot variables and backup kernel
+	    printf "n\np\n1\n\n+${fsz}M\n"
+	    # Create extend partition
+	    printf "n\ne\n2\n\n\n"
+	    if [ "${INSTFLUX}" = 1 ] ; then
+		    # Create Boot and Root A partition
+		    printf "n\nl\n\n+${bsz}M\n"
+		    printf "n\nl\n\n+${rsz}M\n"
+		    if [ "$INSTAB" = "1" ] ; then
+			    # Create Boot and Root B partition
+			    printf "n\nl\n\n+${bsz}M\n"
+			    printf "n\nl\n\n+${rsz}M\n"
+		    fi
+		    # flux data partition
+		    printf "n\nl\n\n\n"
+	    else
+		    if [ "$INSTAB" = "1" ] ; then
+			    # Create Boot and Root A partition
+			    printf "n\nl\n\n+${bsz}M\n"
+			    printf "n\nl\n\n+${rsz}M\n"
+			    # Create Boot and Root A partition
+			    printf "n\nl\n\n+${bsz}M\n"
+			    printf "n\nl\n\n+${rsz}M\n"
+		    else
+			    # Create Boot and Root A partition for whole disk
+			    printf "n\nl\n\n+${bsz}M\n"
+			    printf "n\nl\n\n\n"
+		    fi
+	    fi
+	    # Fix partition 1 to adjust for boot loader
+	    printf "d\n1\nn\np\n1\n2056\n\nt\n1\nc\n"
+	    printf "w\n"
+	) | fdisk -W always -t dos ${dev}
 }
 
 ##################
@@ -417,13 +405,22 @@ if [ "$BL" = "grub" ] ; then
 		fi
 	fi
 else
-	mkfs.vfat -n boot ${fs_dev}1
-	mkfs.ext4 -F -L otaboot ${fs_dev}5
-	mkfs.ext4 -F -L otaroot ${fs_dev}6
-	mkfs.ext4 -F -L otaboot_b ${fs_dev}7
-	mkfs.ext4 -F -L otaroot_b ${fs_dev}8
-	if [ "${INSTFLUX}" = 1 ] ; then
-		mkfs.ext4 -F -L fluxdata ${fs_dev}3
+	if [ "$INSTAB" = "1" ] ; then
+		mkfs.vfat -n boot ${fs_dev}1
+		mkfs.ext4 -F -L otaboot ${fs_dev}5
+		mkfs.ext4 -F -L otaroot ${fs_dev}6
+		mkfs.ext4 -F -L otaboot_b ${fs_dev}7
+		mkfs.ext4 -F -L otaroot_b ${fs_dev}8
+		if [ "${INSTFLUX}" = 1 ] ; then
+			mkfs.ext4 -F -L fluxdata ${fs_dev}9
+		fi
+	else
+		mkfs.vfat -n boot ${fs_dev}1
+		mkfs.ext4 -F -L otaboot ${fs_dev}5
+		mkfs.ext4 -F -L otaroot ${fs_dev}6
+		if [ "${INSTFLUX}" = 1 ] ; then
+			mkfs.ext4 -F -L fluxdata ${fs_dev}7
+		fi
 	fi
 fi
 
@@ -493,7 +490,7 @@ ostree admin deploy ${kargs_list} --sysroot=${PHYS_SYSROOT} --os=${INSTOS} ${INS
 
 if [ "$INSTAB" != 1 ] ; then
 	# Deploy a second time so a roll back is available from the start
-	ostree admin deploy ${kargs_list} --sysroot=${PHYS_SYSROOT} --os=${INSTOS} ${INSTNAME}:${INSTBR} || fatal "Error: ostree deploy failed"
+	ostree admin deploy --sysroot=${PHYS_SYSROOT} --os=${INSTOS} ${INSTNAME}:${INSTBR} || fatal "Error: ostree deploy failed"
 fi
 
 # Initialize "B" partion if used
@@ -550,6 +547,13 @@ if [ -e ${PHYS_SYSROOT}/boot/loader/uEnv.txt ] ; then
 	if [ "$bootdir" != "" ] && [ -e "${PHYS_SYSROOT}/boot$bootdir" ] ; then
 		cp -r ${PHYS_SYSROOT}/boot$bootdir/* ${PHYS_SYSROOT}/boot/efi
 	fi
+	printf "123A" > ${PHYS_SYSROOT}/boot/efi/boot_ab_flag
+	# The first 0 is the boot count, the second zero is the boot entry default
+	printf '00WR' > ${PHYS_SYSROOT}/boot/efi/boot_cnt
+	if [ "$INSTAB" != "1" ] ; then
+		printf '1' > ${PHYS_SYSROOT}/boot/efi/no_ab
+	fi
+
 fi
 
 # Late curl exec

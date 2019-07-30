@@ -27,7 +27,7 @@ CLEANUP_DIRS=""
 DEBUG_SKIP_FSCK=${DEBUG_SKIP_FSCK=0}
 USE_GRUB=1
 BACKUP_PART_INDICATOR="_b"
-GRUB_EDITENV_BIN=$(which grub-editenv)
+GRUB_EDITENV_BIN=$(which grub-editenv 2>/dev/null)
 GRUB_ENV_FILE="/boot/efi/EFI/BOOT/boot.env"
 ROLLBACK_VAR="rollback_part"
 BOOTMODE_VAR="boot_mode"
@@ -165,8 +165,9 @@ check_repo_url() {
 	fi
 
 	# Copy the existing configuration to the upgrade partition
-	cp /sysroot/ostree/repo/config $UPGRADE_ROOTFS_DIR/ostree/repo/config
-
+	if [ "$(stat -c "%d:%i" /sysroot/ostree/repo/config)" != "$(stat -c "%d:%i" $UPGRADE_ROOTFS_DIR/ostree/repo/config)" ] ; then
+		cp /sysroot/ostree/repo/config $UPGRADE_ROOTFS_DIR/ostree/repo/config
+	fi
 }
 
 prepare_upgrade() {
@@ -284,7 +285,8 @@ update_env() {
 			abflag="A"
 		fi
 		printf "123"${abflag} > $tmpdir/boot_ab_flag
-		printf '0\0WR' > $tmpdir/boot_cnt
+		# The first 0 is the boot count, the second zero is the boot entry default
+		printf '00WR' > $tmpdir/boot_cnt
 	fi
 }
 
