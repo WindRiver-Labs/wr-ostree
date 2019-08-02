@@ -67,7 +67,6 @@ IMAGE_CMD_otaimg () {
 			bbfatal "OSTREE_BRANCHNAME should be set in your local.conf"
 		fi
 
-
 		PHYS_SYSROOT=`mktemp -d ${WORKDIR}/ota-sysroot-XXXXX`
 
 		ostree admin --sysroot=${PHYS_SYSROOT} init-fs ${PHYS_SYSROOT}
@@ -76,6 +75,19 @@ IMAGE_CMD_otaimg () {
 		if [ "${OSTREE_SKIP_BOOT_DIFF}" = "1" ] ; then
 			ostree config --repo=${PHYS_SYSROOT}/ostree/repo set upgrade.skip-boot-diff 1
 		fi
+		if [ "${OSTREE_USE_AB}" != 1 ] ; then
+			ostree config  --repo=${PHYS_SYSROOT}/ostree/repo set upgrade.no-ab 1
+		fi
+		ostree config --repo=${PHYS_SYSROOT}/ostree/repo set upgrade.branch ${OSTREE_BRANCHNAME}
+		if [ -n "${OSTREE_REMOTE_URL}" ] ; then
+			do_gpg=""
+			if [ "${OSTREE_GPGID}" = "" ] ; then
+				do_gpg=--no-gpg-verify
+			fi
+			ostree config --repo=${PHYS_SYSROOT}/ostree/repo set upgrade.remote ${OSTREE_REMOTE_NAME}
+			ostree remote --repo=${PHYS_SYSROOT}/ostree/repo add ${do_gpg} ${OSTREE_REMOTE_NAME} ${OSTREE_REMOTE_URL}
+		fi
+
 
 		mkdir -p ${PHYS_SYSROOT}/boot/loader.0
 		ln -s loader.0 ${PHYS_SYSROOT}/boot/loader
@@ -95,8 +107,13 @@ IMAGE_CMD_otaimg () {
 
 			# Create an empty GRUB Environment Block
 			echo "# GRUB Environment Block" > ${PHYS_SYSROOT}/boot/efi/EFI/BOOT/boot.env
-			echo -n "#######################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################" >> ${PHYS_SYSROOT}/boot/efi/EFI/BOOT/boot.env
-
+			if [ "${OSTREE_USE_AB}" != "1" ] ; then
+				printf "ab=0\n" >> ${PHYS_SYSROOT}/boot/efi/EFI/BOOT/boot.env
+			else
+				echo -n "#####" >> ${PHYS_SYSROOT}/boot/efi/EFI/BOOT/boot.env
+			fi
+			printf "boot_tried_count=0\n" >> ${PHYS_SYSROOT}/boot/efi/EFI/BOOT/boot.env
+			echo -n "###############################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################" >> ${PHYS_SYSROOT}/boot/efi/EFI/BOOT/boot.env
 		elif [ "${OSTREE_BOOTLOADER}" = "u-boot" ]; then
 			touch ${PHYS_SYSROOT}/boot/loader/uEnv.txt
 		else
@@ -111,85 +128,54 @@ IMAGE_CMD_otaimg () {
 		done
 
 		ostree admin --sysroot=${PHYS_SYSROOT} deploy ${kargs_list} --os=${OSTREE_OSNAME} ${OSTREE_BRANCHNAME}
-
-		# Copy deployment /home and /var/sota to sysroot
-		HOME_TMP=`mktemp -d ${WORKDIR}/home-tmp-XXXXX`
-		tar --xattrs --xattrs-include='*' -C ${HOME_TMP} -xf ${DEPLOY_DIR_IMAGE}/${IMAGE_LINK_NAME}.rootfs.ostree.tar.bz2 ./boot/efi || true
-		if [ -d ${HOME_TMP}/boot/efi ]; then
-			cp -a ${HOME_TMP}/boot/efi ${PHYS_SYSROOT}/boot
-		fi
-#		tar --xattrs --xattrs-include='*' -C ${HOME_TMP} -xf ${DEPLOY_DIR_IMAGE}/${IMAGE_LINK_NAME}.rootfs.ostree.tar.bz2 ./usr/homedirs  ./var/local || true
-#		mv ${HOME_TMP}/var/sota ${PHYS_SYSROOT}/ostree/deploy/${OSTREE_OSNAME}/var/ || true
-#		mv ${HOME_TMP}/var/local ${PHYS_SYSROOT}/ostree/deploy/${OSTREE_OSNAME}/var/ || true
-		# Create /var/sota if it doesn't exist yet
-#		mkdir -p ${PHYS_SYSROOT}/ostree/deploy/${OSTREE_OSNAME}/var/sota || true
-#		mv ${HOME_TMP}/usr/homedirs/home ${PHYS_SYSROOT}/ || true
-#		install -d ${PHYS_SYSROOT}/usr/homedirs/home
-		# Ensure that /var/local exists (AGL symlinks /usr/local to /var/local)
-#		install -d ${PHYS_SYSROOT}/ostree/deploy/${OSTREE_OSNAME}/var/local
-
-		# Calculate image type
-		OTA_ROOTFS_SIZE=$(calculate_size `du -ks $PHYS_SYSROOT | cut -f 1`  "${IMAGE_OVERHEAD_FACTOR}" "${IMAGE_ROOTFS_SIZE}" "${IMAGE_ROOTFS_MAXSIZE}" `expr ${IMAGE_ROOTFS_EXTRA_SPACE}` "${IMAGE_ROOTFS_ALIGNMENT}")
-
-		if [ $OTA_ROOTFS_SIZE -lt 0 ]; then
-			exit -1
+		if [ "${OSTREE_USE_AB}" != "1" ] ; then
+			# Provide a rollback deployment when using a single disk
+			ostree admin --sysroot=${PHYS_SYSROOT} deploy --os=${OSTREE_OSNAME} ${OSTREE_BRANCHNAME}
 		fi
 
-		# create image
-		rm -rf ${DEPLOY_DIR_IMAGE}/${IMAGE_NAME}.otaimg
-		rm -rf ${DEPLOY_DIR_IMAGE}/${IMAGE_NAME}_efi.otaimg
-		rm -rf ${DEPLOY_DIR_IMAGE}/${IMAGE_NAME}_var.otaimg
-		sync
+		if [ -d ${PHYS_SYSROOT}/boot/0/ostree/boot/efi ] ; then
+			cp -a ${PHYS_SYSROOT}/boot/0/ostree/boot/efi ${PHYS_SYSROOT}/boot
+		fi
+
+		if [ "${OSTREE_BOOTLOADER}" = "u-boot" ]; then
+			mkdir -p ${WORKDIR}/rootfs_ota_uboot
+
+			bootdir=$(grep ^bootdir= ${PHYS_SYSROOT}/boot/loader/uEnv.txt)
+			bootdir=${bootdir#bootdir=}
+			if [ "$bootdir" != "" ] && [ -e "${PHYS_SYSROOT}/boot$bootdir" ] ; then
+				cp -r ${PHYS_SYSROOT}/boot$bootdir/*  ${WORKDIR}/rootfs_ota_uboot
+			fi
+			printf "123A" >  ${WORKDIR}/rootfs_ota_uboot/boot_ab_flag
+			# The first 0 is the boot count, the second zero is the boot entry default
+			printf '00WR' >  ${WORKDIR}/rootfs_ota_uboot/boot_cnt
+			if [ "$INSTAB" != "1" ] ; then
+				printf '1' >  ${WORKDIR}/rootfs_ota_uboot/no_ab
+			fi
+		fi
 
                 #create an image with the free space equal the rootfs size
-                wic_deployed_var_path=$(find ${PHYS_SYSROOT}/ostree/deploy/${OSTREE_OSNAME}/deploy/ -maxdepth 2 -name "var")
-		rm -rf ${PHYS_SYSROOT}/ostree/deploy/${OSTREE_OSNAME}/var
-		cp ${wic_deployed_var_path} -ar ${PHYS_SYSROOT}/ostree/deploy/${OSTREE_OSNAME}/ 
-#                cat<<EOF>>${wic_deployed_var_path}/wic.wks.sample
-#part /boot/efi --source  rootfs --rootfs-dir=/boot/efi  --ondisk sda --fstype=vfat --label otaefi --active --align 4
-#part /boot --source  rootfs --rootfs-dir=/boot  --ondisk sda --fstype=ext4 --label otaboot --size 200M --active --align 4
-#part / --source rootfs --rootfs-dir=/sysroot --ondisk sda --fstype=ext4 --label ${ROOT_LABEL} --size 3G --align 4
-#part /var --source rootfs --rootfs-dir=/ostree/deploy/wrlinux/var  --ondisk sda --fstype=ext4 --label ${FLUXDATA} --active --align 4
-#EOF
-		#cp $WKS_FULL_PATH.sample ${wic_deployed_var_path}/wic.wks.sample
-		# ESP
-		# create an EFI partition with 20M
+                wic_deployed_var_path=$(find ${PHYS_SYSROOT}/ostree/deploy/${OSTREE_OSNAME}/deploy/ -maxdepth 2 -name "var"|head -1)
+		rm -rf ${WORKDIR}/rootfs_ota_var
+		cp ${wic_deployed_var_path} -ar ${WORKDIR}/rootfs_ota_var
+
+		# rootfs data for EFI partition
 		if [ -d ${PHYS_SYSROOT}/boot/efi ]; then
-			dd if=/dev/zero of=${DEPLOY_DIR_IMAGE}/${IMAGE_NAME}_efi.otaimg count=20000 bs=1024
-			mkfs.vfat ${DEPLOY_DIR_IMAGE}/${IMAGE_NAME}_efi.otaimg -n otaefi
-			mcopy -i ${DEPLOY_DIR_IMAGE}/${IMAGE_NAME}_efi.otaimg  -s ${PHYS_SYSROOT}/boot/efi/* ::/
-			rm -rf ${PHYS_SYSROOT}/boot/efi/*
+			rm -rf ${WORKDIR}/rootfs_ota_efi
+			mv ${PHYS_SYSROOT}/boot/efi ${WORKDIR}/rootfs_ota_efi
+			mkdir -p ${PHYS_SYSROOT}/boot/efi
 		fi
 
 		# boot partition
-		# Since OSTREE needs to create symlink to locate real kernel image, and vfat does not support symlink, so we need to a boot partition
-		# for kernel and initramfs images, 200MB in size
-		dd if=/dev/zero of=${DEPLOY_DIR_IMAGE}/${IMAGE_NAME}_boot.otaimg count=200000 bs=1024
-		mkfs.ext4 -O ^64bit ${DEPLOY_DIR_IMAGE}/${IMAGE_NAME}_boot.otaimg -L otaboot -d ${PHYS_SYSROOT}/boot
-		rm -rf ${PHYS_SYSROOT}/boot/*
+		# OSTREE needs to create symlinks to locate the real kernel image, and efi partition does not support symlinks
+
+		rm -rf ${WORKDIR}/rootfs_ota_boot
+		mv ${PHYS_SYSROOT}/boot ${WORKDIR}/rootfs_ota_boot
+		mkdir -p ${PHYS_SYSROOT}/boot
 
 		# rootfs partition
-		dd if=/dev/zero of=${DEPLOY_DIR_IMAGE}/${IMAGE_NAME}.otaimg seek=$OTA_ROOTFS_SIZE count=$OTA_ROOTFS_SIZE bs=1024
-		mkfs.ext4 -O ^64bit ${DEPLOY_DIR_IMAGE}/${IMAGE_NAME}.otaimg -L ${ROOT_LABEL} -d ${PHYS_SYSROOT}
+		rm -rf ${WORKDIR}/rootfs_ota
+		mv ${PHYS_SYSROOT} ${WORKDIR}/rootfs_ota
 
-		#create an var data partiton
-		dd if=/dev/zero of=${DEPLOY_DIR_IMAGE}/${IMAGE_NAME}_var.otaimg count=20000 bs=1024
-		mkfs.ext4 -O ^64bit ${DEPLOY_DIR_IMAGE}/${IMAGE_NAME}_var.otaimg -L ${FLUXDATA} -d \
-			${PHYS_SYSROOT}/ostree/deploy/${OSTREE_OSNAME}/deploy/*/var/
-
-		rm -rf ${PHYS_SYSROOT}
-		rm -rf ${HOME_TMP}
-
-		rm -f ${DEPLOY_DIR_IMAGE}/${IMAGE_LINK_NAME}.otaimg
-		rm -f ${DEPLOY_DIR_IMAGE}/${IMAGE_LINK_NAME}_efi.otaimg
-		rm -f ${DEPLOY_DIR_IMAGE}/${IMAGE_LINK_NAME}_boot.otaimg
-		rm -f ${DEPLOY_DIR_IMAGE}/${IMAGE_LINK_NAME}_var.otaimg
-		if [ -f ${DEPLOY_DIR_IMAGE}/${IMAGE_NAME}_efi.otaimg ]; then
-			ln -s ${IMAGE_NAME}_efi.otaimg ${DEPLOY_DIR_IMAGE}/${IMAGE_LINK_NAME}_efi.otaimg
-		fi
-		ln -s ${IMAGE_NAME}_boot.otaimg ${DEPLOY_DIR_IMAGE}/${IMAGE_LINK_NAME}_boot.otaimg
-		ln -s ${IMAGE_NAME}.otaimg ${DEPLOY_DIR_IMAGE}/${IMAGE_LINK_NAME}.otaimg
-		ln -s ${IMAGE_NAME}_var.otaimg ${DEPLOY_DIR_IMAGE}/${IMAGE_LINK_NAME}_var.otaimg
 	fi
 }
 

@@ -121,7 +121,7 @@ prepare_mount() {
 
 	dev=$(lsblk -rpno label,kname $RAWDEV|grep ^$1\ |awk '{print $2}')
 	[ "$dev" = "" ] && fatal "Error finding LABEL=$1"
-	if [ ${NO_AB} = "1" ] ; then
+	if [ "${NO_AB}" = "1" ] ; then
 		mount --bind / $UPGRADE_ROOTFS_DIR || fatal "Error with bind mount of root dir"
 		CLEANUP_MOUNTS="${UPGRADE_ROOTFS_DIR} $CLEANUP_MOUNTS"
 		rwmount "$MOUNT_FLAG" $dev "$UPGRADE_ROOTFS_DIR/sysroot"

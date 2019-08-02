@@ -55,8 +55,8 @@ python check_rpm_public_key () {
             (gpg_bin, gpg_path, d.getVar('OSTREE_GPG_PASSPHRASE', True), gpg_key)
     status, output = oe.utils.getstatusoutput(cmd)
     if status:
-        d.delVar('GPG_PATH')
-        d.delVar('OSTREE_GPGID')
+        d.setVar('GPG_PATH', '')
+        d.setVar('OSTREE_GPGID', '')
         return
 }
 check_rpm_public_key[lockfiles] = "${TMPDIR}/check_rpm_public_key.lock"
@@ -284,17 +284,17 @@ IMAGE_CMD_ostree () {
 	fi
 
         if [ -f ${DEPLOY_DIR_IMAGE}/uEnv.txt ]; then
-            cp ${DEPLOY_DIR_IMAGE}/uEnv.txt usr/lib/ostree-boot/
+		cp ${DEPLOY_DIR_IMAGE}/uEnv.txt usr/lib/ostree-boot/
         fi
 
         if [ -f ${DEPLOY_DIR_IMAGE}/boot.scr ]; then
-            cp ${DEPLOY_DIR_IMAGE}/boot.scr usr/lib/ostree-boot/boot.scr
+		cp ${DEPLOY_DIR_IMAGE}/boot.scr usr/lib/ostree-boot/boot.scr
         fi
 
         for i in ${KERNEL_DEVICETREE}; do
-            if [ -f ${DEPLOY_DIR_IMAGE}/$i ]; then
-                cp ${DEPLOY_DIR_IMAGE}/$i usr/lib/ostree-boot/
-            fi
+		if [ -f ${DEPLOY_DIR_IMAGE}/$i ]; then
+			cp ${DEPLOY_DIR_IMAGE}/$i usr/lib/ostree-boot/
+		fi
         done 
 
 	#deploy the GPG pub key

@@ -21,7 +21,7 @@
 #REQUIRED:
 # rdinit=/install		- Activates the installer
 # instdev=/dev/YOUR_DEVCICE	- Which device to install to
-# instname=OSTREE_REMOTE_NAME	- Remote name like lts18
+# instname=OSTREE_REMOTE_NAME	- Remote name like wrlinux
 # instbr=OSTREE_BRANCH_NAME	- Branch for OSTree to use
 # insturl=OSTREE_URL		- URL to OSTree repository
 #
