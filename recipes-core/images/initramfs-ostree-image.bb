@@ -55,6 +55,9 @@ LICENSE = "MIT"
 
 IMAGE_FSTYPES = "${INITRAMFS_FSTYPES}"
 
+# Stop any kind of circular dependency with the flux-ota class
+IMAGE_CLASSES_remove = "flux-ota"
+
 inherit core-image
 
 IMAGE_ROOTFS_SIZE = "8192"
