@@ -1,3 +1,4 @@
+BANNER[feature_ostree-sample-keys] = "${@'WARNING: You are using the example Wind River gpg signing keys.  These keys are provided as samples and are unsafe to use in production.  Please consider running "layers/meta-secure-core/meta-signing-key/scripts/create-user-key-store.sh".  This script can generate a complete set of new keys and print the variables you should set in the local.conf.' if d.getVar('WR_KEYS_DIR') == d.getVar('WR_SAMPLE_KEYS_DIR') else ''}"
 
 OSTREE_INITRAMFS_IMAGE ?= "initramfs-ostree-image"
 OSTREE_REPO ?= "${DEPLOY_DIR_IMAGE}/ostree_repo"
@@ -13,7 +14,7 @@ OSTREE_SKIP_BOOT_DIFF ?= "0"
 
 OSTREE_GPGID ?= "Wind-River-Linux-Sample"
 OSTREE_GPG_PASSPHRASE ?= "windriver"
-OSTREE_GPGDIR ?= "${WR_SAMPLE_KEYS_DIR}/rpm_keys"
+OSTREE_GPGDIR ?= "${WR_KEYS_DIR}/rpm_keys"
 
 # Configuration of image upgrade and install variables
 

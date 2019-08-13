@@ -43,7 +43,7 @@ python check_rpm_public_key () {
     gpg_keyid = d.getVar('OSTREE_GPGID', True)
 
     # Check RPM_GPG_NAME and RPM_GPG_PASSPHRASE
-    cmd = "%s --homedir %s --list-keys %s" % \
+    cmd = "%s --homedir %s --list-keys \"%s\"" % \
             (gpg_bin, gpg_path, gpg_keyid)
     status, output = oe.utils.getstatusoutput(cmd)
     if not status:
@@ -51,7 +51,7 @@ python check_rpm_public_key () {
 
     # Import RPM_GPG_NAME if not found
     gpg_key = d.getVar('OSTREE_GPGDIR', True) + '/' + 'RPM-GPG-PRIVKEY-' + gpg_keyid
-    cmd = '%s --batch --homedir %s --passphrase %s --import %s' % \
+    cmd = '%s --batch --homedir %s --passphrase %s --import "%s"' % \
             (gpg_bin, gpg_path, d.getVar('OSTREE_GPG_PASSPHRASE', True), gpg_key)
     status, output = oe.utils.getstatusoutput(cmd)
     if status:
@@ -105,10 +105,14 @@ create_tarball_and_ostreecommit() {
 			--timestamp=${_timestamp} \
 			--subject="Commit-id: ${_image_basename}-${MACHINE}-${DATETIME}"
 	else
+		# Setup gpg key for signing
+		if [ -n "${OSTREE_GPGID}" ] && [ -n "${OSTREE_GPG_PASSPHRASE}" ] && [ -n "${GPG_PATH}" ] ; then
+			gpg --homedir=${GPG_PATH} -o /dev/null -u "${OSTREE_GPGID}" --passphrase ${OSTREE_GPG_PASSPHRASE} --pinentry-mode=loopback -s /dev/null
+		fi
 		ostree --repo=${OSTREE_REPO} commit \
 			--tree=dir=${OSTREE_ROOTFS} \
 			--skip-if-unchanged \
-			--gpg-sign=${OSTREE_GPGID} \
+			--gpg-sign="${OSTREE_GPGID}" \
 			--gpg-homedir=${GPG_PATH} \
 			--branch=${_image_basename} \
 			--timestamp=${_timestamp} \
@@ -131,14 +135,6 @@ IMAGE_CMD_ostree () {
 	sync
 
 	cd ${OSTREE_ROOTFS}
-
-	# Setup gpg key for signing
-	if [ -n "${OSTREE_GPGID}" ] && [ -n "${OSTREE_GPG_PASSPHRASE}" ] && [ -n "${GPG_PATH}" ] ; then
-		pw=`echo -n "ExamplePassword" |perl -e '$s = <STDIN>; $s =~ s/(.)/sprintf("%x",ord($1))/eg; print $s'`
-		for e in `${GPG_BIN} --homedir=${OSTREE_GPGDIR} -k --with-keygrip --with-colons ${OSTREE_GPGID} |grep ^grp |awk -F: '{print $10}'` ; do
-			echo "PRESET_PASSPHRASE $e  -1 $pw" | $(dirname ${GPG_BIN})/gpg-connect-agent --homedir=${GPG_PATH}
-		done
-	fi
 
 	# Create sysroot directory to which physical sysroot will be mounted
 	mkdir sysroot
