@@ -40,6 +40,7 @@ python check_rpm_public_key () {
 
     gpg_bin = d.getVar('GPG_BIN', True) or \
               bb.utils.which(os.getenv('PATH'), 'gpg')
+    d.setVar('OSTREE_GPG_BIN', gpg_bin)
     gpg_keyid = d.getVar('OSTREE_GPGID', True)
 
     # Check RPM_GPG_NAME and RPM_GPG_PASSPHRASE
@@ -96,8 +97,11 @@ create_tarball_and_ostreecommit() {
 
 	# Commit the result
 	if [ -z "${OSTREE_GPGID}" ]; then
-		bbwarn "Ostree repo create without gpg.\n" \
-			"To enable gpg signing, please set \$OSTREE_GPGDIR, \$OSTREE_GPGID, \$OSTREE_GPG_PASSPHRASE with correct key in conf/local.conf."
+		bbwarn "Ostree repo created without gpg.\n" \
+		       "This usually indicates a failure to find /usr/bin/gpg,"
+		       "or you tried to use an invalid GPG database.  "
+		       "It could also be possible that OSTREE_GPGID, OSTREE_GPG_PASSPHRASE, "
+		       "WR_KEYS_DIR has a bad value."
 		ostree --repo=${OSTREE_REPO} commit \
 			--tree=dir=${OSTREE_ROOTFS} \
 			--skip-if-unchanged \
@@ -107,9 +111,32 @@ create_tarball_and_ostreecommit() {
 	else
 		# Setup gpg key for signing
 		if [ -n "${OSTREE_GPGID}" ] && [ -n "${OSTREE_GPG_PASSPHRASE}" ] && [ -n "${GPG_PATH}" ] ; then
-			gpg --homedir=${GPG_PATH} -o /dev/null -u "${OSTREE_GPGID}" --passphrase ${OSTREE_GPG_PASSPHRASE} --pinentry-mode=loopback -s /dev/null
+			gpg_ver=`${OSTREE_GPG_BIN} --version | head -1 | awk '{ print $3 }' | awk -F. '{ print $1 }'`
+			echo '#!/bin/bash' > ${WORKDIR}/gpg
+			if [ "$gpg_ver" = "1" ] ; then
+				# GPGME has to be tricked into running a helper script to provide a passphrase when using gpg 1
+				echo 'exarg=""' >> ${WORKDIR}/gpg
+				echo 'echo "$@" |grep -q batch && exarg="--passphrase ${OSTREE_GPG_PASSPHRASE}"' >> ${WORKDIR}/gpg
+			elif [ "$gpg_ver" = "2" ] ; then
+				gpg_connect=$(dirname $(which ${OSTREE_GPG_BIN}))/gpg-connect-agent
+				if [ ! -f $gpg_connect ] ; then
+					bb.fatal "ERROR Could not locate gpg-connect-agent at: $gpg_connect"
+				fi
+				if [ -f "${GPG_PATH}/gpg-agent.conf" ] ; then
+					if ! grep -q allow-loopback-pin "${GPG_PATH}/gpg-agent.conf" ; then
+						echo allow-loopback-pinentry >> "${GPG_PATH}/gpg-agent.conf"
+						$gpg_connect --homedir ${GPG_PATH} reloadagent /bye
+					fi
+				else
+					echo allow-loopback-pinentry > "${GPG_PATH}/gpg-agent.conf"
+					$gpg_connect --homedir ${GPG_PATH} reloadagent /bye
+				fi
+				${OSTREE_GPG_BIN} --homedir=${GPG_PATH} -o /dev/null -u "${OSTREE_GPGID}" --pinentry=loopback --passphrase ${OSTREE_GPG_PASSPHRASE} -s /dev/null
+			fi
+			echo 'exec ${OSTREE_GPG_BIN} $exarg $@' >> ${WORKDIR}/gpg
+			chmod 700 ${WORKDIR}/gpg
 		fi
-		ostree --repo=${OSTREE_REPO} commit \
+		PATH="${WORKDIR}:$PATH" ostree --repo=${OSTREE_REPO} commit \
 			--tree=dir=${OSTREE_ROOTFS} \
 			--skip-if-unchanged \
 			--gpg-sign="${OSTREE_GPGID}" \
@@ -117,6 +144,7 @@ create_tarball_and_ostreecommit() {
 			--branch=${_image_basename} \
 			--timestamp=${_timestamp} \
 			--subject="Commit-id: ${_image_basename}-${MACHINE}-${DATETIME}"
+		rm -f ${WORKDIR}/gpg
         fi
 }
 
