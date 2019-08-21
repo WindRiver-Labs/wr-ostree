@@ -5,7 +5,7 @@ LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/MIT;md5=0835ade698e0bcf8506ecda
 INHIBIT_DEFAULT_DEPS = "1"
 PACKAGE_ARCH = "${MACHINE_ARCH}"
 
-DEPENDS = "u-boot-mkimage-native u-boot-imx"
+DEPENDS = "u-boot-mkimage-native"
 
 inherit deploy
 
