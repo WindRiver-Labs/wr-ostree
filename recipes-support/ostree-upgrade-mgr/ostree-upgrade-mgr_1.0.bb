@@ -23,4 +23,4 @@ do_install() {
 	install -m 0755 ${S}/ostree_reset.sh ${D}/usr/bin/ostree_reset.sh
 }
 
-DEPENDS += "watchdog"
+RDEPENDS_${PN} += "watchdog"
