@@ -48,6 +48,9 @@ OSTREE_WKS_BOOT_SIZE ?= ""
 OSTREE_WKS_ROOT_SIZE ?= ""
 OSTREE_WKS_FLUX_SIZE ?= ""
 
-
 # Parition type for /var
 OSTREE_FLUX_PART ?= "${@bb.utils.contains('DISTRO_FEATURES', 'luks', 'luksfluxdata', 'fluxdata',d)}"
+
+# Use this WKS file with wic (WKS_FILE = "${OSTREE_WKS_FILE}" should be set in the feature
+# template or local.conf
+OSTREE_WKS_FILE ?= "${OSTREE_ARCH_WKS}${OSTREE_AB_WKS}.wks.in"
