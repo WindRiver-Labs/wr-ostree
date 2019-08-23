@@ -41,6 +41,9 @@ fi
 
 if [ -f $envfile ] ; then
 	/usr/bin/grub-editenv $envfile set boot_tried_count=0
+	if /usr/bin/grub-editenv $envfile list |grep -q ^default=1 ; then
+		echo "WARNING: running on rollback partition"
+	fi
 else
 	/usr/bin/grub-editenv $envfile create
 fi

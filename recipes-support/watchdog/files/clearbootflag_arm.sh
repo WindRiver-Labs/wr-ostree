@@ -20,7 +20,13 @@ part=${partbase}'p1'
 tdir=`mktemp -d`
 if [ "$tdir" != "" ] ; then
 	mount ${part} ${tdir}
-	printf '0\0WR' > ${tdir}/boot_cnt
+	grep -q ^.1WR ${tdir}/boot_cnt
+	if grep -q ^.1WR ${tdir}/boot_cnt; then
+		echo "WARNING: running on rollback partition"
+		printf '01WR' > ${tdir}/boot_cnt
+	else
+		printf '00WR' > ${tdir}/boot_cnt
+	fi
 	umount ${tdir}
 	rm -rf ${tdir}
 fi
