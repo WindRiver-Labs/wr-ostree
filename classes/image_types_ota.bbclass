@@ -8,8 +8,8 @@
 #
 
 do_image_otaimg[depends] += "e2fsprogs-native:do_populate_sysroot \
-                             ${@'grub:do_populate_sysroot' if d.getVar('OSTREE_BOOTLOADER', True) == 'grub' else ''} \
-                             ${@'virtual/bootloader:do_deploy' if d.getVar('OSTREE_BOOTLOADER', True) == 'u-boot' else ''}"
+                             ${@'grub:do_populate_sysroot' if d.getVar('OSTREE_BOOTLOADER_INCLUDE', True) == 'grub' else ''} \
+                             ${@'virtual/bootloader:do_deploy' if d.getVar('OSTREE_BOOTLOADER_INCLUDE', True) == 'u-boot' else ''}"
 
 export FLUXDATA = "${@bb.utils.contains('DISTRO_FEATURES', 'luks', 'luks_fluxdata', 'fluxdata', d)}"
 export ROOT_LABEL = "${@bb.utils.contains('DISTRO_FEATURES', 'luks', 'luks_otaroot', 'otaroot', d)}"

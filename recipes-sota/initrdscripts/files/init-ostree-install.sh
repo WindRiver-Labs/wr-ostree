@@ -116,7 +116,7 @@ fatal() {
 
 # Global Variable setup
 BLM=2506
-FSZ=24
+FSZ=32
 BSZ=200
 RSZ=1400
 _UDEV_DAEMON=`udev_daemon`
@@ -639,5 +639,7 @@ elif [ "$INSTPOST" = "exit" ] ; then
 	exit 0
 fi
 echo b > /proc/sysrq-trigger
-sleep 60
+while [ 1 ] ; do
+	sleep 60
+done
 exit 0
