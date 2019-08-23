@@ -38,12 +38,21 @@
 # instpost=shell		- shell at the end of install vs reboot
 # instos=OSTREE_OS_NAME		- Use alternate OS name vs wrlinux
 # instsbd=1			- Turn on the skip-boot-diff configuration
+# instfmt=1			- Set to 0 to skip partition formatting
+# instpt=1			- Set to 0 to skip disk partitioning
 # instgpg=0			- Turn off OSTree GnuPG signing checks
+# instdate=YYYYMMDDhhmm		- Argument to date -s to force set time
 # dhcpargs=DHCP_ARGS		- Arguments to pass to udhcpc
 # ecurl=URL_TO_SCRIPT		- Download+execute script before disk prep
 # ecurlarg=ARGS_TO_ECURL_SCRIPT	- Arguments to pass to ecurl script
 # lcurl=URL_TO_SCRIPT		- Download+execute script after install
 # lcurlarg=ARGS_TO_ECURL_SCRIPT	- Arugments to pass to lcurl script
+# Disk sizing
+# BLM=#				- Blocks of boot magic area to skip
+# 				  ARM BSPs with SD cards usually need this
+# FSZ=#				- fdisk size of fat partition
+# BSZ=#				- fdisk size of boot partition
+# RSZ=#				- fdisk size of root partition
 
 log_info() { echo "$0[$$]: $*" >&2; }
 log_error() { echo "$0[$$]: ERROR $*" >&2; }
@@ -106,7 +115,12 @@ fatal() {
 }
 
 # Global Variable setup
+BLM=2506
+FSZ=24
+BSZ=200
+RSZ=1400
 _UDEV_DAEMON=`udev_daemon`
+INSTDATE=${INSTDATE=""}
 INSTSH=${INSTSH=""}
 INSTNET=${INSTNET=""}
 INSTDEV=${INSTDEV=""}
@@ -115,6 +129,8 @@ INSTPOST=${INSTPOST=""}
 INSTOS=${INSTOS=""}
 INSTNAME=${INSTNAME=""}
 BL=${BL=""}
+INSTPT=${INSTPT=""}
+INSTFMT=${INSTFMT=""}
 INSTBR=${INSTBR=""}
 INSTSBD=${INSTSBD=""}
 INSTURL=${INSTURL=""}
@@ -162,10 +178,16 @@ read_args() {
 				if [ "$INSTBR" = "" ] ; then INSTBR=$optarg; fi ;;
 			instsbd=*)
 				if [ "$INSTSBD" = "" ] ; then INSTSBD=$optarg; fi ;;
+			instpt=*)
+				if [ "$INSTPT" = "" ] ; then INSTPT=$optarg; fi ;;
+			instfmt=*)
+				if [ "$INSTFMT" = "" ] ; then INSTFMT=$optarg; fi ;;
 			insturl=*)
 				if [ "$INSTURL" = "" ] ; then INSTURL=$optarg; fi ;;
 			instgpg=*)
 				if [ "$INSTGPG" = "" ] ; then INSTGPG=$optarg; fi ;;
+			instdate=*)
+				if [ "$INSTDATE" = "" ] ; then INSTDATE=$optarg; fi ;;
 			instflux=*)
 				if [ "$INSTFLUX" = "" ] ; then INSTFLUX=$optarg; fi ;;
 			dhcpargs=*)
@@ -178,6 +200,14 @@ read_args() {
 				if [ "$LCURL" = "" ] ; then LCURL=$optarg; fi ;;
 			lcurlarg=*)
 				if [ "$LCURLARG" = "" ] ; then LCURLARG=$optarg; fi ;;
+			BLM=*)
+				BLM=$optarg ;;
+			FSZ=*)
+				FSZ=$optarg ;;
+			BSZ=*)
+				BSZ=$optarg ;;
+			RSZ=*)
+				RSZ=$optarg ;;
 		esac
 	done
 	# defaults if not set
@@ -258,44 +288,41 @@ grub_partition() {
 }
 
 ufdisk_partition() {
-	fsz=24
-	bsz=200
-	rsz=1400
-
 	dd if=/dev/zero of=${dev} bs=512 count=1
 	(
-	    # Partition for storage of u-boot variables and backup kernel
-	    printf "n\np\n1\n\n+${fsz}M\n"
-	    # Create extend partition
-	    printf "n\ne\n2\n\n\n"
-	    if [ "${INSTFLUX}" = 1 ] ; then
-		    # Create Boot and Root A partition
-		    printf "n\nl\n\n+${bsz}M\n"
-		    printf "n\nl\n\n+${rsz}M\n"
-		    if [ "$INSTAB" = "1" ] ; then
-			    # Create Boot and Root B partition
-			    printf "n\nl\n\n+${bsz}M\n"
-			    printf "n\nl\n\n+${rsz}M\n"
-		    fi
-		    # flux data partition
-		    printf "n\nl\n\n\n"
-	    else
-		    if [ "$INSTAB" = "1" ] ; then
-			    # Create Boot and Root A partition
-			    printf "n\nl\n\n+${bsz}M\n"
-			    printf "n\nl\n\n+${rsz}M\n"
-			    # Create Boot and Root A partition
-			    printf "n\nl\n\n+${bsz}M\n"
-			    printf "n\nl\n\n+${rsz}M\n"
-		    else
-			    # Create Boot and Root A partition for whole disk
-			    printf "n\nl\n\n+${bsz}M\n"
-			    printf "n\nl\n\n\n"
-		    fi
-	    fi
-	    # Fix partition 1 to adjust for boot loader
-	    printf "d\n1\nn\np\n1\n2056\n\nt\n1\nc\n"
-	    printf "w\n"
+	# Partition for storage of u-boot variables and backup kernel
+	printf "n\np\n1\n\n+${FSZ}M\n"
+	# Create extend partition
+	printf "n\ne\n2\n\n\n"
+	if [ "${INSTFLUX}" = 1 ] ; then
+		# Create Boot and Root A partition
+		printf "n\nl\n\n+${BSZ}M\n"
+		printf "n\nl\n\n+${RSZ}M\n"
+		if [ "$INSTAB" = "1" ] ; then
+			# Create Boot and Root B partition
+			printf "n\nl\n\n+${BSZ}M\n"
+			printf "n\nl\n\n+${RSZ}M\n"
+		fi
+		# flux data partition
+		printf "n\nl\n\n\n"
+	else
+		if [ "$INSTAB" = "1" ] ; then
+			# Create Boot and Root A partition
+			printf "n\nl\n\n+${BSZ}M\n"
+			printf "n\nl\n\n+${RSZ}M\n"
+			# Create Boot and Root A partition
+			printf "n\nl\n\n+${BSZ}M\n"
+			printf "n\nl\n\n+${RSZ}M\n"
+		else
+			# Create Boot and Root A partition for whole disk
+			printf "n\nl\n\n+${BSZ}M\n"
+			printf "n\nl\n\n\n"
+		fi
+	fi
+	# Fix partition 1 to adjust for boot loader
+	printf "d\n1\nn\np\n1\n${BLM}\n\nt\n1\nc\n"
+	printf "p\n"
+	printf "w\n"
 	) | fdisk -W always -t dos ${dev}
 }
 
@@ -322,6 +349,10 @@ if [ "$INSTBR" = "" ] ; then
 fi
 if [ "$INSTURL" = "" ] ; then
 	fatal "Error no URL for OSTree, need kernel argument: insturl=..."
+fi
+
+if [ "$INSTDATE" != "" ] ; then
+	date -s $INSTDATE
 fi
 
 # Customize here for network
@@ -364,12 +395,14 @@ fi
 
 dev=${INSTDEV}
 
-if [ "$BL" = "grub" ] ; then
-	grub_partition
-elif [ "$BL" = "ufsd" ] ; then
-	ufdisk_partition
-else
-	fatal "Error: bl=$BL is not supported"
+if [ "$INSTPT" != "0" ] ; then
+	if [ "$BL" = "grub" ] ; then
+		grub_partition
+	elif [ "$BL" = "ufsd" ] ; then
+		ufdisk_partition
+	else
+		fatal "Error: bl=$BL is not supported"
+	fi
 fi
 
 blockdev --rereadpt ${dev}
@@ -386,7 +419,11 @@ elif [ "${fs_dev#/dev/loop}" != ${fs_dev} ] ; then
        fs_dev="${INSTDEV}p"
 fi
 
-if [ "$BL" = "grub" ] ; then
+if [ "$INSTPT" != "0" ] ; then
+	INSTFMT=1
+fi
+
+if [ "$BL" = "grub" -a "$INSTFMT" != "0" ] ; then
 	if [ "$INSTAB" = "1" ] ; then
 		mkfs.vfat -n otaefi ${fs_dev}1
 		mkfs.ext4 -F -L otaboot ${fs_dev}2
@@ -404,7 +441,7 @@ if [ "$BL" = "grub" ] ; then
 			mkfs.ext4 -F -L fluxdata ${fs_dev}4
 		fi
 	fi
-else
+elif [ "$INSTFMT" != 0 ] ; then
 	if [ "$INSTAB" = "1" ] ; then
 		mkfs.vfat -n boot ${fs_dev}1
 		mkfs.ext4 -F -L otaboot ${fs_dev}5
@@ -568,9 +605,9 @@ fi
 # Modify fstab if not using fluxdata
 # Caution... If someone resets the /etc/fstab with OSTree this change is lost...
 if [ "$INSTFLUX" != "1" ] ; then
-	sed -i -e 's/^LABEL=fluxdata.*//' ${PHYS_SYSROOT}/boot/0/ostree/etc/fstab
+	sed -i -e 's/^LABEL=fluxdata.*//' ${PHYS_SYSROOT}/boot/?/ostree/etc/fstab
 	if [ "$INSTAB" = 1 ] ; then
-		sed -i -e 's/^LABEL=fluxdata.*//' ${PHYS_SYSROOT}_b/boot/0/ostree/etc/fstab
+		sed -i -e 's/^LABEL=fluxdata.*//' ${PHYS_SYSROOT}_b/boot/?/ostree/etc/fstab
 	fi
 fi
 
