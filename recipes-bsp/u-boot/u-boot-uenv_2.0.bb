@@ -16,7 +16,7 @@ do_compile(){
     default_dtb="${DEFAULT_DTB}"
     if [ "$default_dtb" = "" ] ; then
         for k in ${KERNEL_DEVICETREE}; do
-            default_dtb="$k"
+            default_dtb="$(basename $k)"
 	    break;
 	done
         bbwarn 'DEFAULT_DTB=""'

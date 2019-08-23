@@ -316,8 +316,8 @@ IMAGE_CMD_ostree () {
         fi
 
         for i in ${KERNEL_DEVICETREE}; do
-		if [ -f ${DEPLOY_DIR_IMAGE}/$i ]; then
-			cp ${DEPLOY_DIR_IMAGE}/$i usr/lib/ostree-boot/
+		if [ -f ${DEPLOY_DIR_IMAGE}/$(basename $i) ]; then
+			cp ${DEPLOY_DIR_IMAGE}/$(basename $i) usr/lib/ostree-boot/
 		fi
         done 
 
