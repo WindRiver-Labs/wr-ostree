@@ -11,4 +11,5 @@ SRC_URI+= "\
            file://0010-encrypt-decrypt-password-of-remote-repository-uri.patch \
            file://0011-tweak-regex-of-ostree-system-generator-for-pulsar.patch \
            file://0012-deploy-using-etc-in-runtime-as-merge-source.patch \
+           file://0001-ostree-bootloader-uboot.c-Create-links-to-the-deploy.patch \
 "
