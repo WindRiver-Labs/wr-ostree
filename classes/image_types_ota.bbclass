@@ -72,8 +72,8 @@ IMAGE_CMD_otaimg () {
 		ostree admin --sysroot=${PHYS_SYSROOT} init-fs ${PHYS_SYSROOT}
 		ostree admin --sysroot=${PHYS_SYSROOT} os-init ${OSTREE_OSNAME}
 		ostree config --repo=${PHYS_SYSROOT}/ostree/repo set core.add-remotes-config-dir false
-		if [ "${OSTREE_SKIP_BOOT_DIFF}" = "1" ] ; then
-			ostree config --repo=${PHYS_SYSROOT}/ostree/repo set upgrade.skip-boot-diff 1
+		if [ "${OSTREE_SKIP_BOOT_DIFF}" != "0" ] ; then
+			ostree config --repo=${PHYS_SYSROOT}/ostree/repo set upgrade.skip-boot-diff ${OSTREE_SKIP_BOOT_DIFF}
 		fi
 		if [ "${OSTREE_USE_AB}" != 1 ] ; then
 			ostree config  --repo=${PHYS_SYSROOT}/ostree/repo set upgrade.no-ab 1

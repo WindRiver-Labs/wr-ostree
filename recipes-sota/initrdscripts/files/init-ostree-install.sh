@@ -218,6 +218,7 @@ read_args() {
 	if [ "$INSTNET" = "" ] ; then INSTNET=dhcp ; fi
 	if [ "$INSTGPG" = "" ] ; then INSTGPG=1 ; fi
 	if [ "$INSTFLUX" = "" ] ; then INSTFLUX=1 ; fi
+	if [ "$INSTSBD" = "" ] ; then INSTSBD=2 ; fi
 }
 
 shell_start() {
@@ -488,9 +489,7 @@ if [ "$INSTAB" != "1" ] ; then
 	ostree config --repo=${PHYS_SYSROOT}/ostree/repo set upgrade.no-ab 1
 fi
 
-if [ "${INSTSBD}" = 1 ] ; then
-	ostree config --repo=${PHYS_SYSROOT}/ostree/repo set upgrade.skip-boot-diff 1
-fi
+ostree config --repo=${PHYS_SYSROOT}/ostree/repo set upgrade.skip-boot-diff $INSTSBD
 
 if [ ! -d "${PHYS_SYSROOT}/boot" ] ; then
    mkdir -p ${PHYS_SYSROOT}/boot

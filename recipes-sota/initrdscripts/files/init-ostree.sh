@@ -33,6 +33,7 @@ OSTREE_SYSROOT=""
 #OSTREE_LABEL_BOOT="otaboot"
 OSTREE_BOOT_DEVICE="LABEL=otaboot"
 OSTREE_LABEL_FLUXDATA="fluxdata"
+SKIP_BOOT_DIFF=""
 # The timeout (tenth of a second) for rootfs on low speed device
 MAX_TIMEOUT_FOR_WAITING_LOWSPEED_DEVICE=60
 
@@ -227,20 +228,26 @@ fi
 mount -t proc none /proc
 
 # Check for skip-boot-diff
-if [ "${SKIP_BOOT_DIFF}" = 1 ] ; then
-	skip=1
+if [ "${SKIP_BOOT_DIFF}" != "" ] ; then
+	skip="${SKIP_BOOT_DIFF}"
 else
 	skip=`ostree config --repo=/sysroot/ostree/repo get upgrade.skip-boot-diff 2> /dev/null`
 fi
 
+if [ "$skip" = "" ] ; then
+	skip=0
+fi
 
-if [ "${skip}" != "1" ] ; then
+if [ ${skip} -lt 1 ] ; then
 
 	/usr/bin/ostree fsck --repo=/sysroot/ostree/repo
 	if [ $? -ne 0 ]; then
 		echo "Ostree repo is damaged..."
 		fatal
 	fi
+fi
+
+if [ ${skip} -lt 2 ] ; then
 
 	ostree_ref="${OSTREE_DEPLOY##*/}"
 	ostree_ref="${ostree_ref%%.*}"

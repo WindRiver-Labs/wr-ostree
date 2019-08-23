@@ -9,7 +9,12 @@ OSTREE_OSNAME ?= "wrlinux"
 # Not all BSPs will need this, so it can be unset by the BSP
 OSTREE_BOOTLOADER_INCLUDE ??= "${OSTREE_BOOTLOADER}"
 OSTREE_KERNEL_ARGS ??= "ro rootwait"
-OSTREE_SKIP_BOOT_DIFF ??= "0"
+
+# The OSTREE_SKIP_BOOT_DIFF can be one of the following:
+#   0 = Perform a full fsck and boot diff
+#   1 = Skip the FSCK check
+#   2 = Skip the FSCK and the boot
+OSTREE_SKIP_BOOT_DIFF ??= "2"
 
 OSTREE_GPGID ?= "Wind-River-Linux-Sample"
 OSTREE_GPG_PASSPHRASE ?= "windriver"
