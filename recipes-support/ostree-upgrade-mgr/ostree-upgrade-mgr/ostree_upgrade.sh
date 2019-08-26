@@ -223,18 +223,23 @@ ostree_upgrade() {
 
 	lcache="--localcache-repo=/sysroot/ostree/repo"
 
-	[ $DEBUG_SKIP_FSCK = 1 ] || ostree fsck --repo=/sysroot/ostree/repo
-	if [ $? = 0 ] ; then
-		ostree pull $lcache --repo=$UPGRADE_ROOTFS_DIR/ostree/repo ${remote}:${branch}
-		# Always try a cached pull first so as not to incur extra bandwidth cost
-		if [ $? -ne 0 ]; then
+	if [ "${NO_AB}" != "1" ] ; then
+		[ $DEBUG_SKIP_FSCK = 1 ] || ostree fsck --repo=/sysroot/ostree/repo
+		if [ $? = 0 ] ; then
+			ostree pull $lcache --repo=$UPGRADE_ROOTFS_DIR/ostree/repo ${remote}:${branch}
+			# Always try a cached pull first so as not to incur extra bandwidth cost
+			if [ $? -ne 0 ]; then
+				lcache=""
+				echo "Trying an uncached pull"
+				ostree pull --repo=$UPGRADE_ROOTFS_DIR/ostree/repo ${remote}:${branch}
+			fi
+		else
 			lcache=""
-			echo "Trying an uncached pull"
+			# if the local repository is corrupted in any maner, skip the localcache operation
 			ostree pull --repo=$UPGRADE_ROOTFS_DIR/ostree/repo ${remote}:${branch}
 		fi
 	else
 		lcache=""
-		# if the local repository is corrupted in any maner, skip the localcache operation
 		ostree pull --repo=$UPGRADE_ROOTFS_DIR/ostree/repo ${remote}:${branch}
 	fi
 	if [ $? -ne 0 ]; then
