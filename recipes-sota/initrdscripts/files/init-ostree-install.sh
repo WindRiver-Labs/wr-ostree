@@ -29,6 +29,9 @@
 # bl=booloader                  - grub, ufsd(u-boot fdisk sd)
 # instab=0			- Do not use the AB layout, only use A
 # instnet=0			- Do not invoke udhcpc or dhclient
+#	If the above is 0, use the kernel arg:
+#	ip=<client-ip>:<server-ip>:<gw-ip>:<netmask>:<hostname>:\
+#	<device>:<autoconf>:<dns0-ip>:<dns1-ip>
 # instflux=0			- Do not create/use the fluxdata partition
 # instsh=1			- Start a debug shell
 # instsh=2			- Use verbose logging
@@ -38,6 +41,7 @@
 # instpost=shell		- shell at the end of install vs reboot
 # instos=OSTREE_OS_NAME		- Use alternate OS name vs wrlinux
 # instsbd=1			- Turn on the skip-boot-diff configuration
+# instsf=1			- Skip fat partition format
 # instfmt=1			- Set to 0 to skip partition formatting
 # instpt=1			- Set to 0 to skip disk partitioning
 # instgpg=0			- Turn off OSTree GnuPG signing checks
@@ -135,12 +139,14 @@ INSTBR=${INSTBR=""}
 INSTSBD=${INSTSBD=""}
 INSTURL=${INSTURL=""}
 INSTGPG=${INSTGPG=""}
+INSTSF=${INSTSF=""}
 INSTFLUX=${INSTFLUX=""}
 DHCPARGS=${DHCPARGS=""}
 ECURL=${ECURL=""}
 ECURLARG=${ECURLARG=""}
 LCURL=${LCURL=""}
 LCURLARG=${LCURLARG=""}
+IP=""
 MAX_TIMEOUT_FOR_WAITING_LOWSPEED_DEVICE=60
 OSTREE_KERNEL_ARGS=${OSTREE_KERNEL_ARGS=%OSTREE_KERNEL_ARGS%}
 
@@ -166,6 +172,8 @@ read_args() {
 					fi
 				fi
 				;;
+			ip=*)
+				IP=$optarg ;;
 			instdev=*)
 				if [ "$INSTDEV" = "" ] ; then INSTDEV=$optarg; fi ;;
 			instab=*)
@@ -174,6 +182,8 @@ read_args() {
 				if [ "$INSTPOST" = "" ] ; then INSTPOST=$optarg; fi ;;
 			instname=*)
 				if [ "$INSTNAME" = "" ] ; then INSTNAME=$optarg; fi ;;
+			instsf=*)
+				if [ "$INSTSF" = "" ] ; then INSTSF=$optarg; fi ;;
 			instbr=*)
 				if [ "$INSTBR" = "" ] ; then INSTBR=$optarg; fi ;;
 			instsbd=*)
@@ -212,6 +222,7 @@ read_args() {
 	done
 	# defaults if not set
 	if [ "$BL" = "" ] ; then BL=grub ; fi
+	if [ "$INSTSF" = "" ] ; then INSTSF=0 ; fi
 	if [ "$INSTSH" = "" ] ; then INSTSH=0 ; fi
 	if [ "$INSTAB" = "" ] ; then INSTAB=1 ; fi
 	if [ "$INSTOS" = "" ] ; then INSTOS=wrlinux ; fi
@@ -289,10 +300,25 @@ grub_partition() {
 }
 
 ufdisk_partition() {
-	dd if=/dev/zero of=${dev} bs=512 count=1
+	if [ $INSTSF = 1 ] ; then
+		pts=`mktemp`
+		fdisk -l -o device,start,end ${dev} |grep ^${fs_dev}1 > $pts || fatal "fdisk probe failed"
+		read tmp fat_start fat_end < $pts
+		fdisk -l -o device ${dev} |grep ^${fs_dev} > $pts
+	else
+		dd if=/dev/zero of=${dev} bs=512 count=1
+	fi
 	(
-	# Partition for storage of u-boot variables and backup kernel
-	printf "n\np\n1\n\n+${FSZ}M\n"
+	if [ $INSTSF = 1 ] ; then
+		# Start by deleting all the other partitions
+		for p in `cat $pts |sed -e "s#${fs_dev}##" |sort -rn`; do
+			printf "d\n$p\n"
+		done
+		printf "n\np\n1\n\n${fat_end}\n"
+	else
+		# Partition for storage of u-boot variables and backup kernel
+		printf "n\np\n1\n\n+${FSZ}M\n"
+	fi
 	# Create extend partition
 	printf "n\ne\n2\n\n\n"
 	if [ "${INSTFLUX}" = 1 ] ; then
@@ -320,11 +346,17 @@ ufdisk_partition() {
 			printf "n\nl\n\n\n"
 		fi
 	fi
-	# Fix partition 1 to adjust for boot loader
-	printf "d\n1\nn\np\n1\n${BLM}\n\nt\n1\nc\n"
+	if [ $INSTSF = 1 ] ; then
+		# Restore partition 1
+		printf "d\n1\nn\np\n1\n${fat_start}\n${fat_end}\nt\n1\nc\n"
+	else
+		# Fix partition 1 to adjust for boot loader
+		printf "d\n1\nn\np\n1\n${BLM}\n\nt\n1\nc\n"
+	fi
 	printf "p\n"
 	printf "w\n"
-	) | fdisk -W always -t dos ${dev}
+	) | fdisk -W never -t dos ${dev}
+	sync
 }
 
 ##################
@@ -357,6 +389,12 @@ if [ "$INSTDATE" != "" ] ; then
 fi
 
 # Customize here for network
+if [ "$IP" != "" ] ; then
+	for e in `echo "$IP"|awk -F: '{print $8" "$9}'`; do
+		echo nameserver $e >> /etc/resolv.conf
+	done
+fi
+
 if [ "$INSTNET" = dhcp ] ; then
 	do_dhcp
 fi
@@ -392,6 +430,16 @@ if [ $fail = 1 ] ; then
 	fatal "Error device instdev=$INSTDEV not found"
 fi
 
+fs_dev=${INSTDEV}
+
+if [ "${fs_dev#/dev/mmcblk}" != ${fs_dev} ] ; then
+       fs_dev="${INSTDEV}p"
+elif [ "${fs_dev#/dev/nbd}" != ${fs_dev} ] ; then
+       fs_dev="${INSTDEV}p"
+elif [ "${fs_dev#/dev/loop}" != ${fs_dev} ] ; then
+       fs_dev="${INSTDEV}p"
+fi
+
 # Customize here for disk partitioning
 
 dev=${INSTDEV}
@@ -409,16 +457,6 @@ fi
 blockdev --rereadpt ${dev}
 
 # Customize here for disk formatting
-
-fs_dev=${INSTDEV}
-
-if [ "${fs_dev#/dev/mmcblk}" != ${fs_dev} ] ; then
-       fs_dev="${INSTDEV}p"
-elif [ "${fs_dev#/dev/nbd}" != ${fs_dev} ] ; then
-       fs_dev="${INSTDEV}p"
-elif [ "${fs_dev#/dev/loop}" != ${fs_dev} ] ; then
-       fs_dev="${INSTDEV}p"
-fi
 
 if [ "$INSTPT" != "0" ] ; then
 	INSTFMT=1
@@ -443,8 +481,12 @@ if [ "$BL" = "grub" -a "$INSTFMT" != "0" ] ; then
 		fi
 	fi
 elif [ "$INSTFMT" != 0 ] ; then
-	if [ "$INSTAB" = "1" ] ; then
+	if [ $INSTSF = 1 ] ; then
+		dosfslabel ${fs_dev}1 boot
+	else
 		mkfs.vfat -n boot ${fs_dev}1
+	fi
+	if [ "$INSTAB" = "1" ] ; then
 		mkfs.ext4 -F -L otaboot ${fs_dev}5
 		mkfs.ext4 -F -L otaroot ${fs_dev}6
 		mkfs.ext4 -F -L otaboot_b ${fs_dev}7
@@ -453,7 +495,6 @@ elif [ "$INSTFMT" != 0 ] ; then
 			mkfs.ext4 -F -L fluxdata ${fs_dev}9
 		fi
 	else
-		mkfs.vfat -n boot ${fs_dev}1
 		mkfs.ext4 -F -L otaboot ${fs_dev}5
 		mkfs.ext4 -F -L otaroot ${fs_dev}6
 		if [ "${INSTFLUX}" = 1 ] ; then
