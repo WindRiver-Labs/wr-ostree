@@ -1,4 +1,4 @@
-From 6573eabbb73ce5545720bc2cb498e829128f2006 Mon Sep 17 00:00:00 2001
+From 5f373d8a5e8a4df2b41e56778c37f1e400046f23 Mon Sep 17 00:00:00 2001
 From: Jiang Lu <lu.jiang@windriver.com>
 Date: Thu, 31 Jan 2019 15:27:03 +0800
 Subject: [PATCH] Make UEFI watchdog behaviour configurable
@@ -14,15 +14,15 @@ efi-watchdog (enable|disable) <code> <timeout>
 
 Signed-off-by: Jiang Lu <lu.jiang@windriver.com>
 ---
- docs/grub.texi            | 11 ++++++++
- grub-core/kern/efi/init.c | 68 +++++++++++++++++++++++++++++++++++++++++++++++
+ docs/grub.texi            | 11 +++++++
+ grub-core/kern/efi/init.c | 68 +++++++++++++++++++++++++++++++++++++++
  2 files changed, 79 insertions(+)
 
 diff --git a/docs/grub.texi b/docs/grub.texi
-index e935af3..71c607e 100644
+index 87795075a87d..d1e0c1e219af 100644
 --- a/docs/grub.texi
 +++ b/docs/grub.texi
-@@ -3818,6 +3818,7 @@ you forget a command, you can run the command @command{help}
+@@ -3897,6 +3897,7 @@ you forget a command, you can run the command @command{help}
  * distrust::                    Remove a pubkey from trusted keys
  * drivemap::                    Map a drive to another
  * echo::                        Display a line of text
@@ -30,7 +30,7 @@ index e935af3..71c607e 100644
  * eval::                        Evaluate agruments as GRUB commands
  * export::                      Export an environment variable
  * false::                       Do nothing, unsuccessfully
-@@ -4234,6 +4235,16 @@ When interpreting backslash escapes, backslash followed by any other
+@@ -4313,6 +4314,16 @@ When interpreting backslash escapes, backslash followed by any other
  character will print that character.
  @end deffn
  
@@ -48,7 +48,7 @@ index e935af3..71c607e 100644
  @node eval
  @subsection eval
 diff --git a/grub-core/kern/efi/init.c b/grub-core/kern/efi/init.c
-index 2c31847..67676fd 100644
+index 3dfdf2d22b02..656d914e6dc4 100644
 --- a/grub-core/kern/efi/init.c
 +++ b/grub-core/kern/efi/init.c
 @@ -25,9 +25,73 @@
@@ -135,12 +135,12 @@ index 2c31847..67676fd 100644
  }
  
  void (*grub_efi_net_config) (grub_efi_handle_t hnd, 
-@@ -80,4 +147,5 @@ grub_efi_fini (void)
- {
+@@ -81,4 +148,5 @@ grub_efi_fini (void)
    grub_efidisk_fini ();
    grub_console_fini ();
+   grub_efi_memory_fini ();
 +  grub_unregister_command (cmd_list);
  }
 -- 
-2.7.4
+2.22.0
 
