@@ -644,12 +644,22 @@ fi
 
 # Modify fstab if not using fluxdata
 # Caution... If someone resets the /etc/fstab with OSTree this change is lost...
+mkdir /var1
 if [ "$INSTFLUX" != "1" ] ; then
 	sed -i -e 's/^LABEL=fluxdata.*//' ${PHYS_SYSROOT}/boot/?/ostree/etc/fstab
 	if [ "$INSTAB" = 1 ] ; then
 		sed -i -e 's/^LABEL=fluxdata.*//' ${PHYS_SYSROOT}_b/boot/?/ostree/etc/fstab
 	fi
+	mount --bind ${PHYS_SYSROOT}/ostree/deploy/${INSTOS}/var /var1
+else
+	mount -o $mount_flags LABEL=fluxdata /var1
 fi
+if [ -d ${PHYS_SYSROOT}/boot/0/ostree/var ] ; then
+	cp -a ${PHYS_SYSROOT}/boot/0/ostree/var/* /var1/ 2> /dev/null
+elif [ -d ${PHYS_SYSROOT}/ostree/1/var ] ; then
+	cp -a ${PHYS_SYSROOT}/ostree/1/var/* /var1/ 2> /dev/null
+fi
+umount /var1
 
 if [ "$INSTPOST" = "ishell" ] ; then
 	echo " Entering interactive install shell, please exit to contine when done"
