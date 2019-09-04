@@ -184,7 +184,7 @@ do_install() {
 }
 
 do_deploy() {
-	install -Dm 0644 ${WORKDIR}/boot.scr ${DEPLOYDIR}/boot.scr
+	install -Dm 0644 ${WORKDIR}/boot.scr ${DEPLOYDIR}/${MLPREFIX}boot.scr
 }
 addtask do_deploy after do_compile before do_build
 
