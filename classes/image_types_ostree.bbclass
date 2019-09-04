@@ -207,6 +207,7 @@ IMAGE_CMD_ostree () {
 		mv home usr/homedirs/home
 		mkdir var/home
 		ln -sf var/home home
+		echo "d /var/home 0755 root root -" >>${tmpfiles_conf}
 	fi
 
 	echo "d /var/rootdirs/opt 0755 root root -" >>${tmpfiles_conf}

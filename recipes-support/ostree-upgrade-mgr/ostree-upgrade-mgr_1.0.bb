@@ -24,3 +24,16 @@ do_install() {
 }
 
 RDEPENDS_${PN} += "watchdog"
+
+pkg_postinst_ontarget_${PN}() {
+	if [ ! -d /var/home ] ; then
+		mkdir -p /var/home
+	fi
+
+	# 1-time only copy of any static home directories
+	for dir in $(ls -1 /usr/homedirs/home); do
+		if [ ! -d /home/$dir ] ; then
+			cp -a /usr/homedirs/home/$dir /home/
+		fi
+	done
+}
