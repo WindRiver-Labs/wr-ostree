@@ -261,7 +261,7 @@ ostree_upgrade() {
 		fi
 	fi
 
-	OSTREE_ETC_MERGE_DIR=/etc ostree admin --sysroot=$UPGRADE_ROOTFS_DIR deploy --os=${os} ${branch}
+	OSTREE_ETC_MERGE_DIR=/etc ostree admin --sysroot=$UPGRADE_ROOTFS_DIR deploy --os=${os} ${remote}:${branch}
 	if [ $? -ne 0 ]; then
 		fatal "Ostree deploy failed"
 	fi
