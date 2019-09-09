@@ -5,7 +5,9 @@ LIC_FILES_CHKSUM = "file://LICENSE;md5=65d26fcc2f35ea6a181ac777e42db1ea"
 
 S = "${WORKDIR}/git"
 
-SRC_URI = "gitsm://github.com/advancedtelematic/sota-tools.git;branch=master"
+SRC_URI = "gitsm://github.com/advancedtelematic/sota-tools.git;branch=master \
+           file://0001-tools-CMakeLists.txt-append-boost_log_setup-to-Boost.patch \
+"
 SRCREV = "4d7f22f50ab43be5bee61ad3e96cd9db4ef3a372"
 
 inherit cmake

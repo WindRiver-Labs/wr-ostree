@@ -1,0 +1,36 @@
+From f80a265615910dd101df4c24af16abcc188f837e Mon Sep 17 00:00:00 2001
+From: Liwei Song <liwei.song@windriver.com>
+Date: Mon, 9 Sep 2019 03:57:26 -0400
+Subject: [PATCH] tools/CMakeLists.txt: append boost_log_setup to
+ Boost_LIBRARIES
+
+Issue: LINUXEXEC-2232
+
+Fix the build error:
+undefined reference to `boost::log::v2_mt_posix::basic_formatter<char> boost::log::v2_mt_posix::parse_formatter<char>(char const*, char const*)'
+
+The undefined function is in boost_log_setup, so append it to
+Boost_LIBRARIES can fix the error.
+
+Upstream-Status: Will send to upstream latter
+
+Signed-off-by: Liwei Song <liwei.song@windriver.com>
+---
+ tools/CMakeLists.txt | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/tools/CMakeLists.txt b/tools/CMakeLists.txt
+index 86d01ea6efab..f6caf1b1f284 100644
+--- a/tools/CMakeLists.txt
++++ b/tools/CMakeLists.txt
+@@ -11,6 +11,7 @@ set (GARAGE_PUSH_SRCS
+   treehub_server.cc
+ )
+ 
++list(APPEND Boost_LIBRARIES boost_log_setup)
+ add_executable(garage-push ${GARAGE_PUSH_SRCS})
+ target_link_libraries(garage-push ${CURL_LIBRARIES} ${GLIB2_LIBRARIES} ${Boost_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+ 
+-- 
+2.22.0
+
