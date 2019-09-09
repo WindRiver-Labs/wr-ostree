@@ -18,45 +18,58 @@
 # This is a reference implementation for initramfs install
 # The kernel arguments to use an install are as follows:
 #
-#REQUIRED:
-# rdinit=/install		- Activates the installer
-# instdev=/dev/YOUR_DEVCICE	- Which device to install to
-# instname=OSTREE_REMOTE_NAME	- Remote name like wrlinux
-# instbr=OSTREE_BRANCH_NAME	- Branch for OSTree to use
-# insturl=OSTREE_URL		- URL to OSTree repository
-#
-#OPTIONAL:
-# bl=booloader                  - grub, ufsd(u-boot fdisk sd)
-# instab=0			- Do not use the AB layout, only use A
-# instnet=0			- Do not invoke udhcpc or dhclient
-#	If the above is 0, use the kernel arg:
-#	ip=<client-ip>:<server-ip>:<gw-ip>:<netmask>:<hostname>:\
-#	<device>:<autoconf>:<dns0-ip>:<dns1-ip>
-# instflux=0			- Do not create/use the fluxdata partition
-# instsh=1			- Start a debug shell
-# instsh=2			- Use verbose logging
-# instsh=3			- Use verbose logging and start shell
-# instpost=halt			- Halt at the end of install vs reboot
-# instpost=exit			- exit at the end of install vs reboot
-# instpost=shell		- shell at the end of install vs reboot
-# instos=OSTREE_OS_NAME		- Use alternate OS name vs wrlinux
-# instsbd=1			- Turn on the skip-boot-diff configuration
-# instsf=1			- Skip fat partition format
-# instfmt=1			- Set to 0 to skip partition formatting
-# instpt=1			- Set to 0 to skip disk partitioning
-# instgpg=0			- Turn off OSTree GnuPG signing checks
-# instdate=YYYYMMDDhhmm		- Argument to date -s to force set time
-# dhcpargs=DHCP_ARGS		- Arguments to pass to udhcpc
-# ecurl=URL_TO_SCRIPT		- Download+execute script before disk prep
-# ecurlarg=ARGS_TO_ECURL_SCRIPT	- Arguments to pass to ecurl script
-# lcurl=URL_TO_SCRIPT		- Download+execute script after install
-# lcurlarg=ARGS_TO_ECURL_SCRIPT	- Arugments to pass to lcurl script
-# Disk sizing
-# BLM=#				- Blocks of boot magic area to skip
-# 				  ARM BSPs with SD cards usually need this
-# FSZ=#				- fdisk size of fat partition
-# BSZ=#				- fdisk size of boot partition
-# RSZ=#				- fdisk size of root partition
+
+helptxt() {
+	cat <<EOF
+Usage: This script is intended to run from the initramfs use the ostree
+binaries in the initramfs to install a file system onto a disk device.
+
+The arguments to this script are passed through the boot arguments.
+
+REQUIRED:
+ rdinit=/install		- Activates the installer
+ instdev=/dev/YOUR_DEVCICE	- Which device to install to
+ instname=OSTREE_REMOTE_NAME	- Remote name like wrlinux
+ instbr=OSTREE_BRANCH_NAME	- Branch for OSTree to use
+ insturl=OSTREE_URL		- URL to OSTree repository
+
+OPTIONAL:
+ bl=booloader                  - grub, ufsd(u-boot fdisk sd)
+ instab=0			- Do not use the AB layout, only use A
+ instnet=0			- Do not invoke udhcpc or dhclient
+   If the above is 0, use the kernel arg:
+    ip=<client-ip>::<gw-ip>:<netmask>:<hostname>:<device>:off:<dns0-ip>:<dns1-ip>
+   Example:
+    ip=10.0.2.15::10.0.2.1:255.255.255.0:tgt:eth0:off:10.0.2.3:8.8.8.8
+ instflux=0			- Do not create/use the fluxdata partition
+ instsh=1			- Start a debug shell
+ instsh=2			- Use verbose logging
+ instsh=3			- Use verbose logging and start shell
+ instsh=4			- Display the help text and start a shell
+ instpost=halt			- Halt at the end of install vs reboot
+ instpost=exit			- exit at the end of install vs reboot
+ instpost=shell		- shell at the end of install vs reboot
+ instos=OSTREE_OS_NAME		- Use alternate OS name vs wrlinux
+ instsbd=1			- Turn on the skip-boot-diff configuration
+ instsf=1			- Skip fat partition format
+ instfmt=1			- Set to 0 to skip partition formatting
+ instpt=1			- Set to 0 to skip disk partitioning
+ instgpg=0			- Turn off OSTree GnuPG signing checks
+ instdate=YYYYMMDDhhmm		- Argument to date -s to force set time
+ dhcpargs=DHCP_ARGS		- Arguments to pass to udhcpc
+ ecurl=URL_TO_SCRIPT		- Download+execute script before disk prep
+ ecurlarg=ARGS_TO_ECURL_SCRIPT	- Arguments to pass to ecurl script
+ lcurl=URL_TO_SCRIPT		- Download+execute script after install
+ lcurlarg=ARGS_TO_ECURL_SCRIPT	- Arugments to pass to lcurl script
+ Disk sizing
+ BLM=#				- Blocks of boot magic area to skip
+				  ARM BSPs with SD cards usually need this
+ FSZ=#				- fdisk size of fat partition
+ BSZ=#				- fdisk size of boot partition
+ RSZ=#				- fdisk size of root partition
+
+EOF
+}
 
 log_info() { echo "$0[$$]: $*" >&2; }
 log_error() { echo "$0[$$]: ERROR $*" >&2; }
@@ -361,12 +374,20 @@ ufdisk_partition() {
 
 ##################
 
+if [ $# -gt 0 ] ; then
+	helptxt
+	exit 0
+fi
+
 early_setup
 
 [ -z "$CONSOLE" ] && CONSOLE="/dev/console"
 [ -z "$INIT" ] && INIT="/sbin/init"
 
-if [ "$INSTSH" = 1 -o "$INSTSH" = 3 ] ; then
+if [ "$INSTSH" = 1 -o "$INSTSH" = 3 -o "$INSTSH" = 4 ] ; then
+	if [ "$INSTSH" = 4 ] ; then
+		helptxt
+	fi
 	echo "Starting boot shell.  You can execute the install with:"
 	echo "     INSTPOST=exit INSTSH=0 bash -v -x /install"
 	shell_start exec
