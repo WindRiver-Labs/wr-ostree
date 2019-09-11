@@ -1,10 +1,15 @@
 # OSTree deployment
 
+OSTREE_GPG_DEP = "${@'' if (d.getVar('GPG_BIN', True) or '').startswith('/') else 'gnupg-native:do_populate_sysroot pinentry-native:do_populate_sysroot'}"
+GPG_BIN ??= ""
+GPG_PATH ??= ""
+
 do_image_ostree[depends] = "ostree-native:do_populate_sysroot \
                         openssl-native:do_populate_sysroot \
 			coreutils-native:do_populate_sysroot \
                         virtual/kernel:do_deploy \
-                        ${OSTREE_INITRAMFS_IMAGE}:do_image_complete"
+                        ${OSTREE_INITRAMFS_IMAGE}:do_image_complete \
+                        ${OSTREE_GPG_DEP}"
 
 #export REPRODUCIBLE_TIMESTAMP_ROOTFS ??= "`date --date="20${WRLINUX_YEAR_VERSION}-01-01 +${WRLINUX_WW_VERSION}weeks" +%s`"
 export BUILD_REPRODUCIBLE_BINARIES = "1"
@@ -35,12 +40,18 @@ repo_apache_config () {
      echo "</Directory>") > ${DEPLOY_DIR_IMAGE}/${IMAGE_LINK_NAME}.rootfs.ostree.http.conf
 }
 
-python check_rpm_public_key () {
+python ostree_check_rpm_public_key () {
     gpg_path = d.getVar('GPG_PATH', True)
+    if not gpg_path:
+        gpg_path = d.getVar('TMPDIR', True) + '/.gnupg'
 
+    if not os.path.exists(gpg_path):
+        status, output = oe.utils.getstatusoutput('mkdir -m 0700 -p %s' % gpg_path)
+        if status:
+            raise bb.build.FuncFailed('Failed to create gpg keying %s: %s' %
+                                      (gpg_path, output))
     gpg_bin = d.getVar('GPG_BIN', True) or \
               bb.utils.which(os.getenv('PATH'), 'gpg')
-    d.setVar('OSTREE_GPG_BIN', gpg_bin)
     gpg_keyid = d.getVar('OSTREE_GPGID', True)
 
     # Check RPM_GPG_NAME and RPM_GPG_PASSPHRASE
@@ -56,28 +67,11 @@ python check_rpm_public_key () {
             (gpg_bin, gpg_path, d.getVar('OSTREE_GPG_PASSPHRASE', True), gpg_key)
     status, output = oe.utils.getstatusoutput(cmd)
     if status:
-        d.setVar('GPG_PATH', '')
-        d.setVar('OSTREE_GPGID', '')
-        return
+        bb.fatal('Could not import GPG key for ostree signing')
 }
-check_rpm_public_key[lockfiles] = "${TMPDIR}/check_rpm_public_key.lock"
-
-python () {
-    gpg_path = d.getVar('GPG_PATH', True)
-    if not gpg_path:
-        gpg_path = d.getVar('TMPDIR', True) + '/.gnupg'
-        d.setVar('GPG_PATH', gpg_path)
-
-    if not os.path.exists(gpg_path):
-        status, output = oe.utils.getstatusoutput('mkdir -m 0700 -p %s' % gpg_path)
-        if status:
-            raise bb.build.FuncFailed('Failed to create gpg keying %s: %s' %
-                                      (gpg_path, output))
-
-    is_image = bb.data.inherits_class('image', d)
-    if is_image:
-        bb.build.exec_func("check_rpm_public_key", d)
-}
+ostree_check_rpm_public_key[lockfiles] = "${TMPDIR}/check_rpm_public_key.lock"
+do_package_write_rpm[prefuncs] += "ostree_check_rpm_public_key"
+do_rootfs[prefuncs] += "ostree_check_rpm_public_key"
 
 create_tarball_and_ostreecommit[vardepsexclude] = "DATETIME"
 create_tarball_and_ostreecommit() {
@@ -110,45 +104,56 @@ create_tarball_and_ostreecommit() {
 			--subject="Commit-id: ${_image_basename}-${MACHINE}-${DATETIME}"
 	else
 		# Setup gpg key for signing
-		if [ -n "${OSTREE_GPGID}" ] && [ -n "${OSTREE_GPG_PASSPHRASE}" ] && [ -n "${GPG_PATH}" ] ; then
-			gpg_ver=`${OSTREE_GPG_BIN} --version | head -1 | awk '{ print $3 }' | awk -F. '{ print $1 }'`
+		if [ -n "${OSTREE_GPGID}" ] && [ -n "${OSTREE_GPG_PASSPHRASE}" ] && [ -n "$gpg_path" ] ; then
+			gpg_ver=`$gpg_bin --version | head -1 | awk '{ print $3 }' | awk -F. '{ print $1 }'`
 			echo '#!/bin/bash' > ${WORKDIR}/gpg
+			echo 'exarg=""' >> ${WORKDIR}/gpg
 			if [ "$gpg_ver" = "1" ] ; then
 				# GPGME has to be tricked into running a helper script to provide a passphrase when using gpg 1
-				echo 'exarg=""' >> ${WORKDIR}/gpg
 				echo 'echo "$@" |grep -q batch && exarg="--passphrase ${OSTREE_GPG_PASSPHRASE}"' >> ${WORKDIR}/gpg
 			elif [ "$gpg_ver" = "2" ] ; then
-				gpg_connect=$(dirname $(which ${OSTREE_GPG_BIN}))/gpg-connect-agent
+				gpg_connect=$(dirname $gpg_bin)/gpg-connect-agent
 				if [ ! -f $gpg_connect ] ; then
 					bb.fatal "ERROR Could not locate gpg-connect-agent at: $gpg_connect"
 				fi
-				if [ -f "${GPG_PATH}/gpg-agent.conf" ] ; then
-					if ! grep -q allow-loopback-pin "${GPG_PATH}/gpg-agent.conf" ; then
-						echo allow-loopback-pinentry >> "${GPG_PATH}/gpg-agent.conf"
-						$gpg_connect --homedir ${GPG_PATH} reloadagent /bye
+				if [ -f "$gpg_path/gpg-agent.conf" ] ; then
+					if ! grep -q allow-loopback-pin "$gpg_path/gpg-agent.conf" ; then
+						echo allow-loopback-pinentry >> "$gpg_path/gpg-agent.conf"
+						$gpg_connect --homedir $gpg_path reloadagent /bye
 					fi
 				else
-					echo allow-loopback-pinentry > "${GPG_PATH}/gpg-agent.conf"
-					$gpg_connect --homedir ${GPG_PATH} reloadagent /bye
+					echo allow-loopback-pinentry > "$gpg_path/gpg-agent.conf"
+					$gpg_connect --homedir $gpg_path reloadagent /bye
 				fi
-				${OSTREE_GPG_BIN} --homedir=${GPG_PATH} -o /dev/null -u "${OSTREE_GPGID}" --pinentry=loopback --passphrase ${OSTREE_GPG_PASSPHRASE} -s /dev/null
+				$gpg_bin --homedir=$gpg_path -o /dev/null -u "${OSTREE_GPGID}" --pinentry=loopback --passphrase ${OSTREE_GPG_PASSPHRASE} -s /dev/null
 			fi
-			echo 'exec ${OSTREE_GPG_BIN} $exarg $@' >> ${WORKDIR}/gpg
+			echo "exec $gpg_bin \$exarg \$@" >> ${WORKDIR}/gpg
 			chmod 700 ${WORKDIR}/gpg
 		fi
 		PATH="${WORKDIR}:$PATH" ostree --repo=${OSTREE_REPO} commit \
 			--tree=dir=${OSTREE_ROOTFS} \
 			--skip-if-unchanged \
 			--gpg-sign="${OSTREE_GPGID}" \
-			--gpg-homedir=${GPG_PATH} \
+			--gpg-homedir=$gpg_path \
 			--branch=${_image_basename} \
 			--timestamp=${_timestamp} \
 			--subject="Commit-id: ${_image_basename}-${MACHINE}-${DATETIME}"
-		rm -f ${WORKDIR}/gpg
         fi
 }
 
 IMAGE_CMD_ostree () {
+	gpg_path="${GPG_PATH}"
+	if [ -z "$gpg_path" ] ; then
+		gpg_path="${TMPDIR}/.gnupg"
+	fi
+	gpg_bin="${GPG_BIN}"
+	if [ -z "$gpg_bin" ] ; then
+		gpg_bin=`which gpg`
+	fi
+	if [ "${gpg_bin#/}" = "$gpg_bin" ] ; then
+		bb.fatal "The GPG_BIN variable must be an absolute path to the gpg binary"
+	fi
+
 	if [ -z "$OSTREE_REPO" ]; then
 		bbfatal "OSTREE_REPO should be set in your local.conf"
 	fi
@@ -324,11 +329,11 @@ IMAGE_CMD_ostree () {
 
 	#deploy the GPG pub key
 	if [ -n "${OSTREE_GPGID}" ]; then
-		if [ -f ${GPG_PATH}/pubring.gpg ]; then
-			cp ${GPG_PATH}/pubring.gpg usr/share/ostree/trusted.gpg.d/pubring.gpg
+		if [ -f $gpg_path/pubring.gpg ]; then
+			cp $gpg_path/pubring.gpg usr/share/ostree/trusted.gpg.d/pubring.gpg
 		fi
-		if [ -f ${GPG_PATH}/pubring.kbx ]; then
-			cp ${GPG_PATH}/pubring.kbx usr/share/ostree/trusted.gpg.d/pubkbx.gpg
+		if [ -f $gpg_path/pubring.kbx ]; then
+			cp $gpg_path/pubring.kbx usr/share/ostree/trusted.gpg.d/pubkbx.gpg
 		fi
 	fi
 
