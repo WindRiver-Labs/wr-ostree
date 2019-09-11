@@ -23,7 +23,9 @@ S = "${WORKDIR}/git"
 
 BBCLASSEXTEND = "native nativesdk"
 
+OSTREE_GIT_DEP = "${@'' if (d.getVar('GPG_BIN', True) or '').startswith('/') else 'gnupg-native gpgme-native'}"
 DEPENDS += "attr libarchive glib-2.0 pkgconfig gpgme fuse libsoup-2.4 e2fsprogs gtk-doc-native curl bison-native"
+DEPENDS_append_class-native = " ${OSTREE_GIT_DEP}"
 DEPENDS_append = "${@bb.utils.contains('DISTRO_FEATURES', 'systemd', ' systemd', '', d)}"
 DEPENDS_remove_class-native = "systemd-native"
 
