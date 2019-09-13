@@ -75,12 +75,16 @@ PACKAGE_INSTALL_append = " \
 ROOTFS_POSTPROCESS_COMMAND += "add_gpg_key;"
 
 add_gpg_key() {
+	gpg_path="${GPG_PATH}"
+	if [ -z "$gpg_path" ] ; then
+		gpg_path="${TMPDIR}/.gnupg"
+	fi
 	if [ -n "${OSTREE_GPGID}" ] ; then
-		if [ -f ${GPG_PATH}/pubring.gpg ]; then
-			cp ${GPG_PATH}/pubring.gpg ${IMAGE_ROOTFS}/usr/share/ostree/trusted.gpg.d/pubring.gpg
+		if [ -f $gpg_path/pubring.gpg ]; then
+			cp $gpg_path/pubring.gpg ${IMAGE_ROOTFS}/usr/share/ostree/trusted.gpg.d/pubring.gpg
 		fi
-		if [ -f ${GPG_PATH}/pubring.kbx ]; then
-			cp ${GPG_PATH}/pubring.kbx ${IMAGE_ROOTFS}/usr/share/ostree/trusted.gpg.d/pubkbx.gpg
+		if [ -f $gpg_path/pubring.kbx ]; then
+			cp $gpg_path/pubring.kbx ${IMAGE_ROOTFS}/usr/share/ostree/trusted.gpg.d/pubkbx.gpg
 		fi
 	fi
 }
