@@ -45,7 +45,7 @@ do_deploy_append_class-target() {
     efi_target=`echo ${GRUB_IMAGE} | sed 's/^grub-efi-//'` 
 
     if [ "${@bb.utils.contains('DISTRO_FEATURES', 'efi-secure-boot', '1', '0', d)}" = "0" ]; then
-        install -m 644 ${B}/${GRUB_IMAGE} ${D}${EFI_BOOT_PATH}/${efi_target}
+        install -m 644 ${B}/${GRUB_IMAGE_PREFIX}${GRUB_IMAGE} ${D}${EFI_BOOT_PATH}/${efi_target}
     fi
 }
 
