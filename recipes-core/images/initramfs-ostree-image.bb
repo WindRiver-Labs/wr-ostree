@@ -23,6 +23,7 @@ PACKAGE_INSTALL = "ostree \
   util-linux-lsblk \
   util-linux-fdisk \
   util-linux-fsck \
+  util-linux-blockdev \
   dosfstools \
   curl \
   udev \
