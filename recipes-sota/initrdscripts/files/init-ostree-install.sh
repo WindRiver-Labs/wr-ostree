@@ -127,7 +127,6 @@ fatal() {
     echo >$CONSOLE
     if [ "$INSTPOST" = "exit" ] ; then exit 1 ; fi
     sleep 60
-    echo b > /proc/sysrq-trigger
     exec sh
 }
 
