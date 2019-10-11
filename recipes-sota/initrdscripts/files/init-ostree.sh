@@ -117,10 +117,10 @@ expand_fluxdata() {
 		[ -z ${datapart} ] && return 0
 	}
 
-	datadev=$(lsblk $datapart -n -o PKNAME | head -n 1)
+	datadev=$(lsblk $datapart -n -o NAME | head -n 1)
 	datadevnum=$(echo ${datapart} | sed 's/\(.*\)\(.\)$/\2/')
 
-	disk_sect=`fdisk -l /dev/$datadev | head -1 |awk '{print $7}'`
+	disk_sect=`fdisk -l /dev/$datadev | head -n 1 |awk '{print $7}'`
 	part_end=`fdisk -l /dev/$datadev | grep ^${datapart} | awk '{print $3}'`
 	disk_end=$(expr $disk_sect - 1026)
 	if [ $part_end -ge $disk_end ]; then
@@ -128,7 +128,7 @@ expand_fluxdata() {
 	fi
 
 	echo "Expanding partition for ${fluxdata_label} ..."
-	parted -s /dev/$datadev -- resizepart $datadevnum 100%
+	parted -s /dev/$datadev -- resizepart 1 100%
 
 	echo "Expanding FS for ${fluxdata_label} ..."
 	resize2fs -f ${datapart}
