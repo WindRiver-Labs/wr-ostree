@@ -31,7 +31,7 @@ setenv mmcpart_r \$B
 setenv rootpart_r ostree_root=LABEL=otaroot\${ex}\${labelpre}
 setenv bootpart_r ostree_boot=LABEL=otaboot\${ex}\${labelpre}
 setenv bpart A
-if fatload mmc \${mmcdev}:1 \${fdt_addr} boot_ab_flag;then setexpr.l bpartv *\${fdt_addr}; if test \${bpartv} = 42333231;then setenv bpart B;fi;fi
+if fatload mmc \${mmcdev}:1 \${fdt_addr} boot_ab_flag;then setexpr.l bpartv *\${fdt_addr} \& 0xffffffff; if test \${bpartv} = 42333231;then setenv bpart B;fi;fi
 setenv obpart \${bpart}
 setexpr fdt_addr1 \${fdt_addr} + 1
 setexpr fdt_addr2 \${fdt_addr} + 2
@@ -103,7 +103,7 @@ setenv mmcpart_r \$B
 setenv rootpart_r ostree_root=LABEL=otaroot\${ex}\${labelpre}
 setenv bootpart_r ostree_boot=LABEL=otaboot\${ex}\${labelpre}
 setenv bpart A
-if fatload mmc \${mmcdev}:1 \${fdt_addr} boot_ab_flag;then setexpr.l bpartv *\${fdt_addr}; if test \${bpartv} = 42333231;then setenv bpart B;fi;fi
+if fatload mmc \${mmcdev}:1 \${fdt_addr} boot_ab_flag;then setexpr.l bpartv *\${fdt_addr} \& 0xffffffff; if test \${bpartv} = 42333231;then setenv bpart B;fi;fi
 setenv obpart \${bpart}
 setexpr fdt_addr1 \${fdt_addr} + 1
 setexpr fdt_addr2 \${fdt_addr} + 2
