@@ -34,10 +34,7 @@ OSTREE_ARCH_WKS_x86 ??= "ostree-grub"
 OSTREE_ARCH_WKS_x86-64 ??= "ostree-grub"
 
 OSTREE_ARCH_WKS_arm ??= "ostree-uboot-sd"
-OSTREE_ARCH_WKS_arm ??= "ostree-uboot-sd"
-
 OSTREE_ARCH_WKS_aarch64 ??= "ostree-uboot-sd"
-OSTREE_ARCH_WKS_aarch6aarch64 ??= "ostree-uboot-sd"
 
 OSTREE_AB_WKS ??= "${@oe.utils.conditional('OSTREE_USE_AB', '1', '-ab', '-noab', d)}"
 
