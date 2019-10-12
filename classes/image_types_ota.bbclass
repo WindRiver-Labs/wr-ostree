@@ -148,7 +148,7 @@ IMAGE_CMD_otaimg () {
 			printf "123A" >  ${WORKDIR}/rootfs_ota_uboot/boot_ab_flag
 			# The first 0 is the boot count, the second zero is the boot entry default
 			printf '00WR' >  ${WORKDIR}/rootfs_ota_uboot/boot_cnt
-			if [ "$INSTAB" != "1" ] ; then
+			if [ "${INSTAB}" != "1" ] ; then
 				printf '1' >  ${WORKDIR}/rootfs_ota_uboot/no_ab
 			fi
 		fi
