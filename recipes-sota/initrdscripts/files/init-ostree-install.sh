@@ -323,8 +323,13 @@ ufdisk_partition() {
 	(
 	if [ $INSTSF = 1 ] ; then
 		# Start by deleting all the other partitions
+		fpt=$(cat $pts |sed -e "s#${fs_dev}##" | head -n 1)
 		for p in `cat $pts |sed -e "s#${fs_dev}##" |sort -rn`; do
-			printf "d\n$p\n"
+			if [ $p -gt $fpt ]; then
+				printf "d\n$p\n"
+			else
+				printf "d\n"
+			fi
 		done
 		printf "n\np\n1\n\n${fat_end}\n"
 	else
