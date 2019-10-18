@@ -3,11 +3,9 @@ From: Hongxu Jia <hongxu.jia@windriver.com>
 Date: Wed, 20 Jun 2018 10:22:09 +0800
 Subject: [PATCH 11/12] tweak regex of ostree-system-generator for wrlinux.
 
-wrlinux generate grub.cfg based on Yocto rather than ostree's
-ostree-grub-generator.
-
-And wrlinux has boot params ostree="/boot/0/ostree" which is a
-synlink point to "../../ostree/boot.0/wrlinux".
+The wrlinux has boot params ostree="/boot/0/ostree" on grub,
+or ostree="/ostree/0" on uboot which is a synlink point to
+the dir contains "boot.0/wrlinux/***".
 
 So tweak regex of ostree-system-generator for wrlinux.
 
@@ -34,7 +32,7 @@ index ce40a698..d263a4a6 100644
    if (g_once_init_enter (&regex_initialized))
      {
 -      regex = g_regex_new ("^/ostree/boot.[01]/([^/]+)/", 0, 0, NULL);
-+      regex = g_regex_new ("/ostree/boot.[01]/([^/]+)/", 0, 0, NULL);
++      regex = g_regex_new ("boot.[01]/wrlinux/([^/]+)/", 0, 0, NULL);
        g_assert (regex);
        g_once_init_leave (&regex_initialized, 1);
      }
