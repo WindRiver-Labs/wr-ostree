@@ -4,4 +4,4 @@ part / --source rootfs --rootfs-dir=${WORKDIR}/rootfs_ota_boot --ondisk sda --fs
 part / --source rootfs --rootfs-dir=${WORKDIR}/rootfs_ota --ondisk sda --fstype=ext4 --label otaroot --align 4 @OSTREE_WKS_ROOT_SIZE@
 part / --source rootfs --rootfs-dir=${WORKDIR}/rootfs_ota_boot --ondisk sda --fstype=ext4 --label otaboot_b --align 4 ${OSTREE_WKS_BOOT_SIZE}
 part / --source rootfs --rootfs-dir=${WORKDIR}/rootfs_ota --ondisk sda --fstype=ext4 --label otaroot_b --align 4 @OSTREE_WKS_ROOT_SIZE@
-part / --source rootfs --rootfs-dir=${WORKDIR}/rootfs_ota_var --ondisk sda --fstype=ext4 --label ${OSTREE_FLUX_PART} --align 4 ${OSTREE_WKS_FLUX_SIZE} 
+part / --source rootfs --rootfs-dir=${WORKDIR}/rootfs_ota_var --ondisk sda --fstype=ext4 --label ${OSTREE_FLUX_PART} --align 4 @OSTREE_WKS_FLUX_SIZE@
