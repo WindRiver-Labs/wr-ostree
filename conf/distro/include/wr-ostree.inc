@@ -44,6 +44,20 @@ OSTREE_AB_WKS ??= "${@oe.utils.conditional('OSTREE_USE_AB', '1', '-ab', '-noab',
 #OSTREE_WKS_ROOT_SIZE = "--size=1024M --overhead-factor 1"
 #OSTREE_WKS_FLUX_SIZE = "--size=1024M --overhead-factor 1"
 
+python do_write_wks_template_prepend () {
+    template_body = d.getVar('_WKS_TEMPLATE')
+
+    root_size = d.getVar("OSTREE_WKS_ROOT_SIZE") or None
+    if root_size is None:
+        # KB --> MB
+        _size = get_rootfs_size(d)//1024 + 1
+        root_size = "--size=%dM --overhead-factor 1" % _size
+    template_body = template_body.replace("@OSTREE_WKS_ROOT_SIZE@", str(root_size))
+
+    d.setVar("_WKS_TEMPLATE", template_body)
+    bb.debug(1, "_WKS_TEMPLATE %s" % template_body)
+}
+
 OSTREE_WKS_EFI_SIZE ??= "--size=32M"
 OSTREE_WKS_BOOT_SIZE ??= ""
 OSTREE_WKS_ROOT_SIZE ??= ""
