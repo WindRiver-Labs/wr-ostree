@@ -67,7 +67,7 @@ python ostree_check_rpm_public_key () {
             (gpg_bin, gpg_path, d.getVar('OSTREE_GPG_PASSPHRASE', True), gpg_key)
     status, output = oe.utils.getstatusoutput(cmd)
     if status:
-        bb.fatal('Could not import GPG key for ostree signing')
+        bb.fatal('Could not import GPG key for ostree signing: %s' % output)
 }
 ostree_check_rpm_public_key[lockfiles] = "${TMPDIR}/check_rpm_public_key.lock"
 do_package_write_rpm[prefuncs] += "ostree_check_rpm_public_key"
