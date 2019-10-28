@@ -8,8 +8,9 @@ do_image_ostree[depends] = "ostree-native:do_populate_sysroot \
                         openssl-native:do_populate_sysroot \
 			coreutils-native:do_populate_sysroot \
                         virtual/kernel:do_deploy \
-                        ${OSTREE_INITRAMFS_IMAGE}:do_image_complete \
-                        ${OSTREE_GPG_DEP}"
+                        ${OSTREE_INITRAMFS_IMAGE}:do_image_complete"
+
+do_prepare_recipe_sysroot[depends] += "${OSTREE_GPG_DEP}"
 
 #export REPRODUCIBLE_TIMESTAMP_ROOTFS ??= "`date --date="20${WRLINUX_YEAR_VERSION}-01-01 +${WRLINUX_WW_VERSION}weeks" +%s`"
 export BUILD_REPRODUCIBLE_BINARIES = "1"
