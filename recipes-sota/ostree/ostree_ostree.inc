@@ -13,3 +13,7 @@ SRC_URI+= "\
            file://0012-deploy-using-etc-in-runtime-as-merge-source.patch \
            file://0001-ostree-bootloader-uboot.c-Create-links-to-the-deploy.patch \
 "
+
+SRC_URI_append_x86-64 = " \
+           file://0001-deploy-Handle-a-read-only-boot-efi.patch \
+"
