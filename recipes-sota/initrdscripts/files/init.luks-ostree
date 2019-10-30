@@ -193,8 +193,6 @@ luks_detect() {
     # return if no partition labeled as "luksxxx"
     LUKS_LABEL_TO_BE_CREATED="$(blkid -s LABEL | grep LABEL=\"${LUKS_PREFIX_LABEL} | awk -F: '{ print $2 }' | cut -f 2 -d "\"" |xargs)"
 
-
-    print_verbose "oops LUKS_LABEL_TO_BE_CREATED is : ${LUKS_LABEL_TO_BE_CREATED}"
     [ -z "${LUKS_LABEL_TO_BE_CREATED}" ] && return 0
 
     print_verbose "LUKS_LABEL_TO_BE_CREATED is : ${LUKS_LABEL_TO_BE_CREATED}"
@@ -549,6 +547,9 @@ if [ $? -eq 0 ]; then
 	umount_dir ${TMP_MNT_ROOT}
 	umount_dir ${TMP_MNT_FLUXDATA}
 	sync && rm -rf $TMP_MNT
+	if [ "$NO_PCR_EXTEND" != "1" ] ; then
+		tpm2_pcrextend -T device 7:sha512=abc00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000abc
+	fi
 	exit 0
     }
 fi
