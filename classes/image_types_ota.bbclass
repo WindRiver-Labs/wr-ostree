@@ -96,7 +96,12 @@ IMAGE_CMD_otaimg () {
 			mkdir -p ${PHYS_SYSROOT}/boot/efi/EFI/BOOT
 			if [ -n "${@bb.utils.contains('DISTRO_FEATURES', 'efi-secure-boot', 'Y', '', d)}" ]; then
 				cp ${DEPLOY_DIR_IMAGE}/grubx64.efi ${PHYS_SYSROOT}/boot/efi/EFI/BOOT/bootx64.efi
-				cp ${DEPLOY_DIR_IMAGE}/grub.cfg.p7b ${PHYS_SYSROOT}/boot/efi/EFI/BOOT/
+				if [ -f ${DEPLOY_DIR_IMAGE}/grub.cfg.p7b ] ; then
+					cp ${DEPLOY_DIR_IMAGE}/grub.cfg.p7b ${PHYS_SYSROOT}/boot/efi/EFI/BOOT/
+				fi
+				if [ -f ${DEPLOY_DIR_IMAGE}/grub.cfg.sig ] ; then
+					cp ${DEPLOY_DIR_IMAGE}/grub.cfg.sig ${PHYS_SYSROOT}/boot/efi/EFI/BOOT/
+				fi
 			else
 				cp ${DEPLOY_DIR_IMAGE}/grub-efi-bootx64.efi ${PHYS_SYSROOT}/boot/efi/EFI/BOOT/bootx64.efi
 			fi
