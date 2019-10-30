@@ -30,16 +30,14 @@ The following table summarizes the valid Wind River Linux distros for this layer
   +--------------+-------------+-------------+
   | valid/distro |   wrlinux   | wrlinux-cgl |
   +--------------+-------------+-------------+
-  |    valid     |      Y      |      N      |
+  |    valid     |      Y      |      Y      |
   +--------------+-------------+-------------+
 
-Due to ostree rootfs structure limitation, the following feature
-can work with ostree:
+Due to ostree rootfs structure limitation, only the following feature
+are validated with ostree enabled:
 
   feature/efi-secure-boot
-  feature/ima
-  feature/encrypted-storage
-  feature/initramfs-integrated (did not work with efi-secure-boot)
+  feature/initramfs-integrated (not working with efi-secure-boot)
 
 
 License
