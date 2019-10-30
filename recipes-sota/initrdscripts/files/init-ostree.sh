@@ -97,6 +97,8 @@ read_args() {
 				INIT=$optarg ;;
 			ostree_boot=*)
 				OSTREE_BOOT_DEVICE=$optarg ;;
+			debugfatal)
+				DEBUGFATAL=1 ;;
 			flux=*)
 				OSTREE_LABEL_FLUXDATA=$optarg ;;
 		esac
@@ -139,8 +141,11 @@ fatal() {
 	echo $1 >$CONSOLE
 	echo >$CONSOLE
 	sleep 5
+	if [ "$DEBUGFATAL" = "1" ] ; then
+		exec /bin/sh
+	fi
 	echo b > /proc/sysrq-trigger
-	exec sh
+	while [ 1 ] ; do sleep 60 ; done
 }
 
 #######################################
@@ -156,21 +161,14 @@ udevadm settle --timeout=3
 
 mkdir -p $ROOT_MOUNT/
 
-sleep ${ROOT_DELAY}
+if [ "${ROOT_DELAY}" != "0" ] ;then
+    sleep ${ROOT_DELAY}
+fi
 
-[ -z $OSTREE_ROOT_DEVICE ] && fatal "No OSTREE root device specified, please add 'ostree_root=LABEL=xyz' in bootline!" || {
-	echo "Waiting for low speed devices to be ready ..."
-	OSTREE_LABEL_ROOT=$(echo $OSTREE_ROOT_DEVICE | cut -f 2 -d'=')
-	retry=0
-	# For LUKS, we might wait for MAX_TIMEOUT_FOR_WAITING_LOWSPEED_DEVICE/10s
-	while [ $retry -lt $MAX_TIMEOUT_FOR_WAITING_LOWSPEED_DEVICE ] ; do
-		retry=$(($retry+1))
-		blkid -t LABEL=$OSTREE_LABEL_ROOT && break
-		blkid -t LABEL=luks$OSTREE_LABEL_ROOT && break
-		#echo "sleep to wait for $OSTREE_ROOT_DEVICE"
-		sleep 0.1
-	done
-}
+[ -z $OSTREE_ROOT_DEVICE ] && fatal "No OSTREE root device specified, please add 'ostree_root=LABEL=xyz' in bootline!"
+
+OSTREE_LABEL_ROOT=$(echo $OSTREE_ROOT_DEVICE | cut -f 2 -d'=')
+
 try_to_mount_rootfs() {
 	local mount_flags="rw,noatime,iversion"
 	mount_flags="${mount_flags},${ROOT_FLAGS}"
@@ -181,7 +179,7 @@ try_to_mount_rootfs() {
 expand_fluxdata
 
 [ -x /init.luks-ostree ] && {
-	/init.luks-ostree $OSTREE_LABEL_ROOT $OSTREE_LABEL_FLUXDATA && echo "LUKS init done." || fatal "Couldn't init LUKS, dropping to shell"
+	/init.luks-ostree $OSTREE_LABEL_ROOT $OSTREE_LABEL_FLUXDATA && echo "LUKS init done." || fatal "Couldn't init LUKS."
 }
 
 echo "Waiting for root device to be ready..."
