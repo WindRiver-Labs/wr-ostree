@@ -41,6 +41,9 @@ OPTIONAL:
     ip=<client-ip>::<gw-ip>:<netmask>:<hostname>:<device>:off:<dns0-ip>:<dns1-ip>
    Example:
     ip=10.0.2.15::10.0.2.1:255.255.255.0:tgt:eth0:off:10.0.2.3:8.8.8.8
+ LUKS=0				- Do not create encrypted volumes
+ LUKS=1				- Encrypt var volume (requires TPM)
+ LUKS=2				- Encrypt var and and root volumes (requires TPM)
  instflux=0			- Do not create/use the fluxdata partition
  instsh=1			- Start a debug shell
  instsh=2			- Use verbose logging
@@ -90,7 +93,7 @@ do_mount_fs() {
 	[[ -e /proc/filesystems ]] && { grep -q "$1" /proc/filesystems || { log_error "Unknown filesystem"; return 1; } }
 	[[ -d "$2" ]] || mkdir -p "$2"
 	[[ -e /proc/mounts ]] && { grep -q -e "^$1 $2 $1" /proc/mounts && { log_info "$2 ($1) already mounted"; return 0; } }
-	mount -t "$1" "$1" "$2"
+	mount -t "$1" "$1" "$2" || fatal "Error mounting $2"
 }
 
 early_setup() {
@@ -125,12 +128,11 @@ udev_daemon() {
 fatal() {
     echo $1 >$CONSOLE
     echo >$CONSOLE
+    if [ "$INSTPOST" = "shell" ] ; then shell_start ; fi
     if [ "$INSTPOST" = "exit" ] ; then exit 1 ; fi
     sleep 60
-    if [ "$INSTPOST" != "shell" ]; then
-       echo b > /proc/sysrq-trigger
-    fi
-    exec sh
+    echo b > /proc/sysrq-trigger
+    while [ 1 ] ; do sleep 60 ; done
 }
 
 # Global Variable setup
@@ -138,6 +140,7 @@ BLM=2506
 FSZ=32
 BSZ=200
 RSZ=1400
+LUKS=0
 _UDEV_DAEMON=`udev_daemon`
 INSTDATE=${INSTDATE=""}
 INSTSH=${INSTSH=""}
@@ -225,6 +228,8 @@ read_args() {
 				if [ "$LCURL" = "" ] ; then LCURL=$optarg; fi ;;
 			lcurlarg=*)
 				if [ "$LCURLARG" = "" ] ; then LCURLARG=$optarg; fi ;;
+			LUKS=*)
+				LUKS=$optarg ;;
 			BLM=*)
 				BLM=$optarg ;;
 			FSZ=*)
@@ -357,7 +362,7 @@ ufdisk_partition() {
 			# Create Boot and Root A partition
 			printf "n\nl\n\n+${BSZ}M\n"
 			printf "n\nl\n\n+${RSZ}M\n"
-			# Create Boot and Root A partition
+			# Create Boot and Root b partition
 			printf "n\nl\n\n+${BSZ}M\n"
 			printf "n\nl\n\n+${RSZ}M\n"
 		else
@@ -491,21 +496,47 @@ if [ "$INSTPT" != "0" ] ; then
 fi
 
 if [ "$BL" = "grub" -a "$INSTFMT" != "0" ] ; then
-	if [ "$INSTAB" = "1" ] ; then
-		mkfs.vfat -n otaefi ${fs_dev}1
-		mkfs.ext4 -F -L otaboot ${fs_dev}2
-		mkfs.ext4 -F -L otaboot_b ${fs_dev}3
-		mkfs.ext4 -F -L otaroot ${fs_dev}4
-		mkfs.ext4 -F -L otaroot_b ${fs_dev}5
-		if [ "${INSTFLUX}" = 1 ] ; then
-			mkfs.ext4 -F -L fluxdata ${fs_dev}6
-		fi
+	FLUXPART=6
+	if [ $INSTSF = 1 ] ; then
+		dosfslabel ${fs_dev}1 otaefi
 	else
 		mkfs.vfat -n otaefi ${fs_dev}1
-		mkfs.ext4 -F -L otaboot ${fs_dev}2
-		mkfs.ext4 -F -L otaroot ${fs_dev}3
-		if [ "${INSTFLUX}" = 1 ] ; then
-			mkfs.ext4 -F -L fluxdata ${fs_dev}4
+	fi
+	mkfs.ext4 -F -L otaboot ${fs_dev}2
+	dashe="-e"
+	if [ "$INSTAB" = "1" ] ; then
+		mkfs.ext4 -F -L otaboot_b ${fs_dev}3
+		if [ $LUKS -gt 1 ] ; then
+			echo Y | luks-setup.sh -f $dashe -d ${fs_dev}4 -n luksotaroot || \
+				fatal "Cannot create LUKS volume luksotaroot"
+			dashe=""
+			echo Y | luks-setup.sh -f -d ${fs_dev}5 -n luksotaroot_b || \
+				fatal "Cannot create LUKS volume luksotaroot_b"
+			mkfs.ext4 -F -L otaroot /dev/mapper/luksotaroot
+			mkfs.ext4 -F -L otaroot_b /dev/mapper/luksotaroot_b
+		else
+			mkfs.ext4 -F -L otaroot ${fs_dev}4
+			mkfs.ext4 -F -L otaroot_b ${fs_dev}5
+		fi
+	else
+		if [ $LUKS -gt 1 ] ; then
+			echo Y | luks-setup.sh -f $dashe -d ${fs_dev}3 -n luksotaroot || \
+				fatal "Cannot create LUKS volume luksotaroot"
+			dashe=""
+			mkfs.ext4 -F -L otaroot /dev/mapper/luksotaroot
+		else
+			mkfs.ext4 -F -L otaroot ${fs_dev}3
+		fi
+		FLUXPART=4
+	fi
+	if [ "${INSTFLUX}" = 1 ] ; then
+		if [ $LUKS -gt 0 ] ; then
+			echo Y | luks-setup.sh -f $dashe -d ${fs_dev}${FLUXPART} -n luksfluxdata || \
+				fatal "Cannot create LUKS volume luksfluxdata"
+			dashe=""
+			mkfs.ext4 -F -L fluxdata /dev/mapper/luksfluxdata
+		else
+			mkfs.ext4 -F -L fluxdata ${fs_dev}${FLUXPART}
 		fi
 	fi
 elif [ "$INSTFMT" != 0 ] ; then
@@ -514,20 +545,19 @@ elif [ "$INSTFMT" != 0 ] ; then
 	else
 		mkfs.vfat -n boot ${fs_dev}1
 	fi
+	FLUXPART=9
 	if [ "$INSTAB" = "1" ] ; then
 		mkfs.ext4 -F -L otaboot ${fs_dev}5
 		mkfs.ext4 -F -L otaroot ${fs_dev}6
 		mkfs.ext4 -F -L otaboot_b ${fs_dev}7
 		mkfs.ext4 -F -L otaroot_b ${fs_dev}8
-		if [ "${INSTFLUX}" = 1 ] ; then
-			mkfs.ext4 -F -L fluxdata ${fs_dev}9
-		fi
 	else
 		mkfs.ext4 -F -L otaboot ${fs_dev}5
 		mkfs.ext4 -F -L otaroot ${fs_dev}6
-		if [ "${INSTFLUX}" = 1 ] ; then
-			mkfs.ext4 -F -L fluxdata ${fs_dev}7
-		fi
+		FLUXPART=7
+	fi
+	if [ "${INSTFLUX}" = 1 ] ; then
+		mkfs.ext4 -F -L fluxdata ${fs_dev}${FLUXPART}
 	fi
 fi
 
@@ -543,7 +573,7 @@ for arg in ${OSTREE_KERNEL_ARGS}; do
 done
 
 mkdir -p ${PHYS_SYSROOT}
-mount -o $mount_flags "${OSTREE_ROOT_DEVICE}" "${PHYS_SYSROOT}"
+mount -o $mount_flags "${OSTREE_ROOT_DEVICE}" "${PHYS_SYSROOT}" || fatal "Error mouting ${OSTREE_ROOT_DEVICE}"
 
 ostree admin --sysroot=${PHYS_SYSROOT} init-fs ${PHYS_SYSROOT}
 ostree admin --sysroot=${PHYS_SYSROOT} os-init ${INSTOS}
@@ -564,10 +594,10 @@ if [ ! -d "${PHYS_SYSROOT}/boot" ] ; then
    mkdir -p ${PHYS_SYSROOT}/boot
 fi
 
-mount "${OSTREE_BOOT_DEVICE}" "${PHYS_SYSROOT}/boot"
+mount "${OSTREE_BOOT_DEVICE}" "${PHYS_SYSROOT}/boot"  || fatal "Error mouting ${OSTREE_BOOT_DEVICE}"
 
 mkdir -p ${PHYS_SYSROOT}/boot/efi
-mount ${fs_dev}1 ${PHYS_SYSROOT}/boot/efi
+mount ${fs_dev}1 ${PHYS_SYSROOT}/boot/efi || fatal "Error mouting ${fs_dev}1"
 
 # Prep for Install
 mkdir -p ${PHYS_SYSROOT}/boot/loader.0
@@ -603,7 +633,7 @@ fi
 
 if [ "$INSTAB" = "1" ] ; then
 	mkdir -p ${PHYS_SYSROOT}_b
-	mount -o $mount_flags "${OSTREE_ROOT_DEVICE}_b" "${PHYS_SYSROOT}_b"
+	mount -o $mount_flags "${OSTREE_ROOT_DEVICE}_b" "${PHYS_SYSROOT}_b"  || fatal "Error mouting ${OSTREE_ROOT_DEVICE}_b"
 
 	ostree admin --sysroot=${PHYS_SYSROOT}_b init-fs ${PHYS_SYSROOT}_b
 	ostree admin --sysroot=${PHYS_SYSROOT}_b os-init ${INSTOS}
@@ -613,7 +643,7 @@ if [ "$INSTAB" = "1" ] ; then
 		mkdir -p ${PHYS_SYSROOT}_b/boot
 	fi
 
-	mount "${OSTREE_BOOT_DEVICE}_b" "${PHYS_SYSROOT}_b/boot"
+	mount "${OSTREE_BOOT_DEVICE}_b" "${PHYS_SYSROOT}_b/boot" || fatal "Error mouting ${OSTREE_BOOT_DEVICE}_b"
 
 
 	mkdir -p ${PHYS_SYSROOT}_b/boot/efi
@@ -657,6 +687,8 @@ if [ -e ${PHYS_SYSROOT}/boot/loader/uEnv.txt ] ; then
 	printf '00WR' > ${PHYS_SYSROOT}/boot/efi/boot_cnt
 	if [ "$INSTAB" != "1" ] ; then
 		printf '1' > ${PHYS_SYSROOT}/boot/efi/no_ab
+	else
+		rm -f  ${PHYS_SYSROOT}/boot/efi/no_ab
 	fi
 
 fi
@@ -708,6 +740,12 @@ if [ "$INSTAB" = 1 ] ; then
 	umount ${PHYS_SYSROOT}_b/boot/efi ${PHYS_SYSROOT}_b/boot ${PHYS_SYSROOT}_b
 fi
 umount ${PHYS_SYSROOT}/boot/efi ${PHYS_SYSROOT}/boot ${PHYS_SYSROOT}
+
+for e in otaboot otaboot_b otaroot otaroot_b fluxdata; do
+	if [ -e /dev/mapper/luks${e} ] ; then
+		cryptsetup luksClose luks${e}
+	fi
+done
 
 udevadm control -e
 
