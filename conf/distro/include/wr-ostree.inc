@@ -1,4 +1,4 @@
-BANNER[feature_ostree-sample-keys] = "${@'WARNING: You are using the example Wind River gpg signing keys.  These keys are provided as samples and are unsafe to use in production.  Please consider running "layers/meta-secure-core/meta-signing-key/scripts/create-user-key-store.sh".  This script can generate a complete set of new keys and print the variables you should set in the local.conf.' if d.getVar('WR_KEYS_DIR') == d.getVar('WR_SAMPLE_KEYS_DIR') else ''}"
+BANNER[feature_ostree-sample-keys] = "${@'WARNING: You are using the example Wind River gpg signing keys.  These keys are provided as samples and are unsafe to use in production.  Please consider running "layers/meta-secure-core/meta-signing-key/scripts/create-user-key-store.sh".  This script can generate a complete set of new keys and print the variables you should set in the local.conf.' if d.getVar('OSTREE_GPGDIR') == (d.getVar('WR_SAMPLE_KEYS_DIR') + "/rpm_keys") else ''}"
 
 OSTREE_INITRAMFS_IMAGE ?= "initramfs-ostree-image"
 OSTREE_REPO ?= "${DEPLOY_DIR_IMAGE}/ostree_repo"
@@ -149,7 +149,6 @@ OSTREE_WKS_FILE ??= "${OSTREE_ARCH_WKS}${OSTREE_AB_WKS}.wks.in"
 
 
 # Grub settings for ostree
-#   OSTREE_GRUB_USER ??= "root"
-# Default password is root
-#   OSTREE_GRUB_PW ??= "password_pbkdf2 root grub.pbkdf2.sha512.10000.4039B6F2AC3D0E349479D2573BC4B206E022E9308DBCBA8F42FBBBF64B699B79A5426CE58503ACBB37CA4116CA1B95C89BEC5F804CB91C8ED5A7381C9E03EDE8.69E763E475CF993A6B4954F9BA863E45E8DFAF2BCEBEAAB21319DC766287FA1A621807F6E2AAD9277A6BA3B9B56A14C0918C441EE47BE304D23ADA562CA018E9"
-
+OSTREE_GRUB_USER ??= "root"
+# Default password is root found in the file below, which is a generated hash
+OSTREE_GRUB_PW_FILE ??= "${WR_KEYS_DIR}/boot_keys/boot_cfg_pw"

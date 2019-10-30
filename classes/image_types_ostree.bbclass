@@ -55,7 +55,7 @@ python ostree_check_rpm_public_key () {
               bb.utils.which(os.getenv('PATH'), 'gpg')
     gpg_keyid = d.getVar('OSTREE_GPGID', True)
 
-    # Check RPM_GPG_NAME and RPM_GPG_PASSPHRASE
+    # Check OSTREE_GPG_NAME and OSTREE_GPG_PASSPHRASE
     cmd = "%s --homedir %s --list-keys \"%s\"" % \
             (gpg_bin, gpg_path, gpg_keyid)
     bb.note(cmd)
@@ -72,7 +72,7 @@ python ostree_check_rpm_public_key () {
     if status:
         bb.fatal('Could not import GPG key for ostree signing: %s' % output)
 }
-ostree_check_rpm_public_key[lockfiles] = "${TMPDIR}/check_rpm_public_key.lock"
+ostree_check_rpm_public_key[lockfiles] = "${TMPDIR}/gpg_key.lock"
 do_package_write_rpm[prefuncs] += "ostree_check_rpm_public_key"
 do_rootfs[prefuncs] += "ostree_check_rpm_public_key"
 
@@ -307,11 +307,15 @@ IMAGE_CMD_ostree () {
         cp ${DEPLOY_DIR_IMAGE}/${OSTREE_KERNEL} usr/lib/ostree-boot/vmlinuz-${checksum}
         cp ${DEPLOY_DIR_IMAGE}/${OSTREE_INITRAMFS_IMAGE}-${MACHINE}${RAMDISK_EXT} usr/lib/ostree-boot/initramfs-${checksum}
 	if [ -n "${@bb.utils.contains('DISTRO_FEATURES', 'efi-secure-boot', 'Y', '', d)}" ]; then
-		cp ${DEPLOY_DIR_IMAGE}/${OSTREE_KERNEL}.p7b usr/lib/ostree-boot/vmlinuz.p7b
-		cp ${DEPLOY_DIR_IMAGE}/${OSTREE_INITRAMFS_IMAGE}-${MACHINE}${RAMDISK_EXT}.p7b usr/lib/ostree-boot/initramfs.p7b
+		if [ -f ${DEPLOY_DIR_IMAGE}/${OSTREE_KERNEL}.p7b ] ; then
+			cp ${DEPLOY_DIR_IMAGE}/${OSTREE_KERNEL}.p7b usr/lib/ostree-boot/vmlinuz.p7b
+			cp ${DEPLOY_DIR_IMAGE}/${OSTREE_INITRAMFS_IMAGE}-${MACHINE}${RAMDISK_EXT}.p7b usr/lib/ostree-boot/initramfs.p7b
+		fi
+		if [ -f ${DEPLOY_DIR_IMAGE}/${OSTREE_KERNEL}.sig ] ; then
+			cp ${DEPLOY_DIR_IMAGE}/${OSTREE_KERNEL}.sig usr/lib/ostree-boot/vmlinuz.sig
+			cp ${DEPLOY_DIR_IMAGE}/${OSTREE_INITRAMFS_IMAGE}-${MACHINE}${RAMDISK_EXT}.sig usr/lib/ostree-boot/initramfs.sig
+		fi
 	fi
-#	cp ${DEPLOY_DIR_IMAGE}/${OSTREE_KERNEL}.p7b usr/lib/ostree-boot/vmlinuz.p7b
-#	cp ${DEPLOY_DIR_IMAGE}/${OSTREE_INITRAMFS_IMAGE}-${MACHINE}${RAMDISK_EXT}.p7b usr/lib/ostree-boot/initramfs.p7b
         if [ -d boot/efi ]; then
 	   	cp -a boot/efi usr/lib/ostree-boot/
 	fi
