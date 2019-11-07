@@ -139,6 +139,7 @@ fatal() {
 	echo $1 >$CONSOLE
 	echo >$CONSOLE
 	sleep 5
+	echo b > /proc/sysrq-trigger
 	exec sh
 }
 
