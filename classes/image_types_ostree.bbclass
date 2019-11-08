@@ -41,33 +41,16 @@ repo_apache_config () {
      echo "</Directory>") > ${DEPLOY_DIR_IMAGE}/${IMAGE_LINK_NAME}.rootfs.ostree.http.conf
 }
 
-def get_gpg_path(d):
-    import tempfile
-
-    gpg_realpath = d.getVar('GPG_PATH', True)
-    if not gpg_realpath:
-        gpg_realpath = d.getVar('TMPDIR', True) + '/.gnupg'
-    if not os.path.exists(gpg_realpath):
-        status, output = oe.utils.getstatusoutput('mkdir -m 0700 -p %s' % gpg_realpath)
-        if status:
-            raise bb.build.FuncFailed('Failed to create realpath %s: %s' %
-                                      (gpg_realpath, output))
-
-    gpg_path = os.path.join(tempfile.mkdtemp(prefix="gnupg"), ".gnupg")
-    if not os.path.islink(gpg_path):
-        status, output = oe.utils.getstatusoutput('ln -snf %s %s' % (gpg_realpath, gpg_path))
-        if status:
-            raise bb.build.FuncFailed('Failed to create symlink %s -> %s: %s' %
-                                      (gpg_path, gpg_realpath, output))
-
-    return gpg_path
-
 python ostree_check_rpm_public_key () {
-    import shutil
-    import os.path
+    gpg_path = d.getVar('GPG_PATH', True)
+    if not gpg_path:
+        gpg_path = d.getVar('TMPDIR', True) + '/.gnupg'
 
-    gpg_path = get_gpg_path(d)
-
+    if not os.path.exists(gpg_path):
+        status, output = oe.utils.getstatusoutput('mkdir -m 0700 -p %s' % gpg_path)
+        if status:
+            raise bb.build.FuncFailed('Failed to create gpg keying %s: %s' %
+                                      (gpg_path, output))
     gpg_bin = d.getVar('GPG_BIN', True) or \
               bb.utils.which(os.getenv('PATH'), 'gpg')
     gpg_keyid = d.getVar('OSTREE_GPGID', True)
@@ -77,7 +60,6 @@ python ostree_check_rpm_public_key () {
             (gpg_bin, gpg_path, gpg_keyid)
     status, output = oe.utils.getstatusoutput(cmd)
     if not status:
-        shutil.rmtree(os.path.dirname(gpg_path))
         return
 
     # Import RPM_GPG_NAME if not found
@@ -87,8 +69,6 @@ python ostree_check_rpm_public_key () {
     status, output = oe.utils.getstatusoutput(cmd)
     if status:
         bb.fatal('Could not import GPG key for ostree signing: %s' % output)
-
-    shutil.rmtree(os.path.dirname(gpg_path))
 }
 ostree_check_rpm_public_key[lockfiles] = "${TMPDIR}/check_rpm_public_key.lock"
 do_package_write_rpm[prefuncs] += "ostree_check_rpm_public_key"
@@ -163,14 +143,10 @@ create_tarball_and_ostreecommit() {
 }
 
 IMAGE_CMD_ostree () {
-	gpg_realpath="${GPG_PATH}"
-	if [ -z "$gpg_realpath" ] ; then
-		gpg_realpath="${TMPDIR}/.gnupg"
+	gpg_path="${GPG_PATH}"
+	if [ -z "$gpg_path" ] ; then
+		gpg_path="${TMPDIR}/.gnupg"
 	fi
-	tmpdir=`mktemp -d --suffix gnupg`
-	ln -snf "$gpg_realpath" "$tmpdir/.gnupg"
-	gpg_path="$tmpdir/.gnupg"
-
 	gpg_bin="${GPG_BIN}"
 	if [ -z "$gpg_bin" ] ; then
 		gpg_bin=`which gpg`
@@ -401,7 +377,7 @@ IMAGE_CMD_ostree () {
 	ostree summary -u --repo=${OSTREE_REPO} 
 	repo_apache_config
 
-	rm -rf ${OSTREE_ROOTFS} $tmpdir
+	rm -rf ${OSTREE_ROOTFS}
 }
 
 IMAGE_TYPEDEP_ostreepush = "ostree"
