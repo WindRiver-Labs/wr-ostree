@@ -58,6 +58,7 @@ python ostree_check_rpm_public_key () {
     # Check RPM_GPG_NAME and RPM_GPG_PASSPHRASE
     cmd = "%s --homedir %s --list-keys \"%s\"" % \
             (gpg_bin, gpg_path, gpg_keyid)
+    bb.note(cmd)
     status, output = oe.utils.getstatusoutput(cmd)
     if not status:
         return
@@ -66,6 +67,7 @@ python ostree_check_rpm_public_key () {
     gpg_key = d.getVar('OSTREE_GPGDIR', True) + '/' + 'RPM-GPG-PRIVKEY-' + gpg_keyid
     cmd = '%s --batch --homedir %s --passphrase %s --import "%s"' % \
             (gpg_bin, gpg_path, d.getVar('OSTREE_GPG_PASSPHRASE', True), gpg_key)
+    bb.note(cmd)
     status, output = oe.utils.getstatusoutput(cmd)
     if status:
         bb.fatal('Could not import GPG key for ostree signing: %s' % output)
@@ -396,4 +398,15 @@ IMAGE_CMD_ostreepush () {
 			    --cacert=${STAGING_ETCDIR_NATIVE}/ssl/certs/ca-certificates.crt
 
 	fi
+}
+
+python __anonymous() {
+    gpg_path = d.getVar('GPG_PATH', True)
+    if not gpg_path:
+        gpg_path = d.getVar('TMPDIR', True) + '/.gnupg'
+    if len(gpg_path) > 80:
+        msg =  "The default GPG_PATH '%s'\n" % gpg_path
+        msg += "of %d characters is too long.\n" % len(gpg_path)
+        msg += "Due to GPG homedir path length limit, please set GPG_PATH shorter than 80 characters"
+        raise bb.parse.SkipRecipe(msg)
 }
