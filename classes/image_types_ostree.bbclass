@@ -101,7 +101,7 @@ create_tarball_and_ostreecommit() {
 		       "or you tried to use an invalid GPG database.  " \
 		       "It could also be possible that OSTREE_GPGID, OSTREE_GPG_PASSPHRASE, " \
 		       "WR_KEYS_DIR has a bad value."
-		ostree --repo=${OSTREE_REPO} commit \
+		flock ${OSTREE_REPO}.lock ostree --repo=${OSTREE_REPO} commit \
 			--tree=dir=${OSTREE_ROOTFS} \
 			--skip-if-unchanged \
 			--branch=${_image_basename} \
@@ -135,7 +135,7 @@ create_tarball_and_ostreecommit() {
 			echo "exec $gpg_bin \$exarg \$@" >> ${WORKDIR}/gpg
 			chmod 700 ${WORKDIR}/gpg
 		fi
-		PATH="${WORKDIR}:$PATH" ostree --repo=${OSTREE_REPO} commit \
+		PATH="${WORKDIR}:$PATH" flock ${OSTREE_REPO}.lock ostree --repo=${OSTREE_REPO} commit \
 			--tree=dir=${OSTREE_ROOTFS} \
 			--skip-if-unchanged \
 			--gpg-sign="${OSTREE_GPGID}" \
@@ -362,7 +362,7 @@ IMAGE_CMD_ostree () {
 	cd ${WORKDIR}
 
 	if [ ! -d ${OSTREE_REPO} ]; then
-		ostree --repo=${OSTREE_REPO} init --mode=archive-z2
+		flock ${OSTREE_REPO}.lock ostree --repo=${OSTREE_REPO} init --mode=archive-z2
 	fi
 
 	# Preserve OSTREE_BRANCHNAME for future information
@@ -382,7 +382,7 @@ IMAGE_CMD_ostree () {
 	echo -n "${OSTREE_BRANCHNAME}" > ${OSTREE_ROOTFS}/usr/share/sota/branchname
 	create_tarball_and_ostreecommit "${OSTREE_BRANCHNAME}" "$timestamp"
 
-	ostree summary -u --repo=${OSTREE_REPO} 
+	flock ${OSTREE_REPO}.lock ostree summary -u --repo=${OSTREE_REPO}
 	repo_apache_config
 
 	rm -rf ${OSTREE_ROOTFS}
