@@ -53,7 +53,9 @@ python ostree_check_rpm_public_key () {
                                       (gpg_path, output))
     gpg_bin = d.getVar('GPG_BIN', True) or \
               bb.utils.which(os.getenv('PATH'), 'gpg')
-    gpg_keyid = d.getVar('OSTREE_GPGID', True)
+    gpg_keyid = d.getVar('OSTREE_GPGID', True) or ''
+    if gpg_keyid == "":
+        return
 
     # Check OSTREE_GPG_NAME and OSTREE_GPG_PASSPHRASE
     cmd = "%s --homedir %s --list-keys \"%s\"" % \
@@ -94,10 +96,10 @@ create_tarball_and_ostreecommit() {
 
 	# Commit the result
 	if [ -z "${OSTREE_GPGID}" ]; then
-		bbwarn "Ostree repo created without gpg.\n" \
-		       "This usually indicates a failure to find /usr/bin/gpg,"
-		       "or you tried to use an invalid GPG database.  "
-		       "It could also be possible that OSTREE_GPGID, OSTREE_GPG_PASSPHRASE, "
+		bbwarn "You are using an unsupported configuration by using ostree repo without gpg. " \
+		       "This usually indicates a failure to find /usr/bin/gpg, " \
+		       "or you tried to use an invalid GPG database.  " \
+		       "It could also be possible that OSTREE_GPGID, OSTREE_GPG_PASSPHRASE, " \
 		       "WR_KEYS_DIR has a bad value."
 		ostree --repo=${OSTREE_REPO} commit \
 			--tree=dir=${OSTREE_ROOTFS} \
