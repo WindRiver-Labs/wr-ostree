@@ -31,17 +31,17 @@ setenv mmcpart_r \$B
 setenv rootpart_r ostree_root=LABEL=otaroot\${ex}\${labelpre}
 setenv bootpart_r ostree_boot=LABEL=otaboot\${ex}\${labelpre}
 setenv bpart A
-if fatload mmc \${mmcdev}:1 \${fdt_addr} boot_ab_flag;then setexpr.l bpartv *\${fdt_addr} \& 0xffffffff; if test \${bpartv} = 42333231;then setenv bpart B;fi;fi
+if fatload mmc \${mmcdev}:1 \${loadaddr} boot_ab_flag;then setexpr.l bpartv *\${loadaddr} \& 0xffffffff; if test \${bpartv} = 42333231;then setenv bpart B;fi;fi
 setenv obpart \${bpart}
-setexpr fdt_addr1 \${fdt_addr} + 1
-setexpr fdt_addr2 \${fdt_addr} + 2
-setexpr bct_addr \${fdt_addr} + 200
-setexpr bct_addr1 \${fdt_addr} + 201
+setexpr loadaddr1 \${loadaddr} + 1
+setexpr loadaddr2 \${loadaddr} + 2
+setexpr bct_addr \${loadaddr} + 200
+setexpr bct_addr1 \${loadaddr} + 201
 mw.l \${bct_addr} 52573030
 setenv cntv 30
 setenv bdef 30
 setenv switchab if test \\\${bpart} = B\\;then setenv bpart A\\;else setenv bpart B\\;fi
-if fatload mmc \${mmcdev}:1 \${fdt_addr} boot_cnt;then setexpr.w cntv0 *\${fdt_addr2};if test \${cntv0} = 5257;then setexpr.b cntv *\${fdt_addr};setexpr.b bdef *\${fdt_addr1};fi;fi
+if fatload mmc \${mmcdev}:1 \${loadaddr} boot_cnt;then setexpr.w cntv0 *\${loadaddr2};if test \${cntv0} = 5257;then setexpr.b cntv *\${loadaddr};setexpr.b bdef *\${loadaddr1};fi;fi
 if test \${bdef} = 31;then run switchab;fi
 if test \${cntv} > \${bretry};then run switchab;setenv cntv 30;if test \${bdef} = 31; then setenv bdef 30;else setenv bdef 31;fi;else setexpr.b cntv \${cntv} + 1;fi
 mw.b \${bct_addr} \${cntv}
@@ -103,17 +103,17 @@ setenv mmcpart_r \$B
 setenv rootpart_r ostree_root=LABEL=otaroot\${ex}\${labelpre}
 setenv bootpart_r ostree_boot=LABEL=otaboot\${ex}\${labelpre}
 setenv bpart A
-if fatload mmc \${mmcdev}:1 \${fdt_addr} boot_ab_flag;then setexpr.l bpartv *\${fdt_addr} \& 0xffffffff; if test \${bpartv} = 42333231;then setenv bpart B;fi;fi
+if fatload mmc \${mmcdev}:1 \${loadaddr} boot_ab_flag;then setexpr.l bpartv *\${loadaddr} \& 0xffffffff; if test \${bpartv} = 42333231;then setenv bpart B;fi;fi
 setenv obpart \${bpart}
-setexpr fdt_addr1 \${fdt_addr} + 1
-setexpr fdt_addr2 \${fdt_addr} + 2
-setexpr bct_addr \${fdt_addr} + 200
-setexpr bct_addr1 \${fdt_addr} + 201
+setexpr loadaddr1 \${loadaddr} + 1
+setexpr loadaddr2 \${loadaddr} + 2
+setexpr bct_addr \${loadaddr} + 200
+setexpr bct_addr1 \${loadaddr} + 201
 mw.l \${bct_addr} 52573030
 setenv cntv 30
 setenv bdef 30
 setenv switchab if test \\\${bpart} = B\\;then setenv bpart A\\;else setenv bpart B\\;fi
-if fatload mmc \${mmcdev}:1 \${fdt_addr} boot_cnt;then setexpr.w cntv0 *\${fdt_addr2};if test \${cntv0} = 5257;then setexpr.b cntv *\${fdt_addr};setexpr.b bdef *\${fdt_addr1};fi;fi
+if fatload mmc \${mmcdev}:1 \${loadaddr} boot_cnt;then setexpr.w cntv0 *\${loadaddr2};if test \${cntv0} = 5257;then setexpr.b cntv *\${loadaddr};setexpr.b bdef *\${loadaddr1};fi;fi
 if test \${bdef} = 31;then run switchab;fi
 if test \${cntv} > \${bretry};then run switchab;setenv cntv 30;if test \${bdef} = 31; then setenv bdef 30;else setenv bdef 31;fi;else setexpr.b cntv \${cntv} + 1;fi
 mw.b \${bct_addr} \${cntv}
@@ -144,14 +144,20 @@ setenv ostver 2
 else
 setenv ostver 1
 fi
+if test \${skip_script_wd} != yes; then setenv wdttimeout 120000; fi
 setenv loadkernel ext4load mmc \${mmcdev}:\${mmcpart} \${loadaddr} \${ostver}/vmlinuz
 setenv loadramdisk ext4load mmc \${mmcdev}:\${mmcpart} \${initrd_addr} \${ostver}/initramfs
-setenv loaddtb ext4load mmc \${mmcdev}:\${mmcpart} \${fdt_addr} \${ostver}/\${fdt_file}
-if test \${skip_script_wd} != yes; then setenv wdttimeout 120000; fi
-run loadramdisk
-run loaddtb
-run loadkernel
+if test -n \${use_fdtdtb} && test \${use_fdtdtb} = 1; then
+fdt addr \${fdt_addr}
+setenv bootargs
+fdt get value bootargs /chosen bootargs
+setenv bootargs "\${bootargs} \${bootpart} ostree=/ostree/\${ostver} \${rootpart} console=\${console},\${baudrate} \${smp} flux=fluxdata\${labelpre}" 
+else
+setenv loaddtb ext4load mmc \${mmcdev}:\${mmcpart} \${fdt_addr} \${ostver}/\${fdt_file};run loaddtb
 setenv bootargs \${bootpart} ostree=/ostree/\${ostver} \${rootpart} console=\${console},\${baudrate} \${smp} flux=fluxdata\${labelpre} 
+fi
+run loadramdisk
+run loadkernel
 ${OSTREE_UBOOT_CMD} \${loadaddr} \${initrd_addr} \${fdt_addr}
 EOF
 }
