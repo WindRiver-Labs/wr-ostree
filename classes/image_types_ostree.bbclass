@@ -3,6 +3,7 @@
 OSTREE_GPG_DEP = "${@'' if (d.getVar('GPG_BIN', True) or '').startswith('/') else 'gnupg-native:do_populate_sysroot pinentry-native:do_populate_sysroot'}"
 GPG_BIN ??= ""
 GPG_PATH ??= ""
+OSTREE_COMMIT_DEV ??= "0"
 
 do_image_ostree[depends] = "ostree-native:do_populate_sysroot \
                         openssl-native:do_populate_sysroot \
@@ -367,9 +368,11 @@ IMAGE_CMD_ostree () {
 
 	# Preserve OSTREE_BRANCHNAME for future information
 	mkdir -p ${OSTREE_ROOTFS}/usr/share/sota/
-	echo -n "${OSTREE_BRANCHNAME}-dev" > ${OSTREE_ROOTFS}/usr/share/sota/branchname
 	timestamp=`date +%s`
-	create_tarball_and_ostreecommit "${OSTREE_BRANCHNAME}-dev" "$timestamp"
+	if [ "${OSTREE_COMMIT_DEV}" = "1" ] ; then
+		echo -n "${OSTREE_BRANCHNAME}-dev" > ${OSTREE_ROOTFS}/usr/share/sota/branchname
+		create_tarball_and_ostreecommit "${OSTREE_BRANCHNAME}-dev" "$timestamp"
+	fi
 
 	if [ "${OSTREE_NORPMDATA}" = 1 ] || [ ! -e ${OSTREE_ROOTFS}/usr/bin/rpm ] ; then
 		# Clean up package management data for factory deploy
@@ -398,11 +401,12 @@ IMAGE_CMD_ostreepush () {
 			    --credentials=${OSTREE_PUSH_CREDENTIALS} \
 			    --cacert=${STAGING_ETCDIR_NATIVE}/ssl/certs/ca-certificates.crt
 
-		garage-push --repo=${OSTREE_REPO} \
-			    --ref=${OSTREE_BRANCHNAME}-dev \
-			    --credentials=${OSTREE_PUSH_CREDENTIALS} \
-			    --cacert=${STAGING_ETCDIR_NATIVE}/ssl/certs/ca-certificates.crt
-
+		if [ "${OSTREE_COMMIT_DEV}" = "1" ] ; then
+			garage-push --repo=${OSTREE_REPO} \
+				    --ref=${OSTREE_BRANCHNAME}-dev \
+				    --credentials=${OSTREE_PUSH_CREDENTIALS} \
+				    --cacert=${STAGING_ETCDIR_NATIVE}/ssl/certs/ca-certificates.crt
+		fi
 	fi
 }
 
