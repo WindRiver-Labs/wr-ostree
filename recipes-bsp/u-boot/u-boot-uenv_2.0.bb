@@ -9,7 +9,7 @@ DEPENDS = "u-boot-mkimage-native"
 
 inherit deploy
 
-DEFAULT_DTB ?= ""
+DEFAULT_DTB ??= ""
 OSTREE_UBOOT_CMD ??= "bootz"
 OSTREE_BOOTSCR ??= "fs_links"
 
@@ -166,7 +166,7 @@ do_compile() {
 
     default_dtb="${DEFAULT_DTB}"
     if [ "$default_dtb" = "" ] ; then
-        for k in ${KERNEL_DEVICETREE}; do
+        for k in `echo ${KERNEL_DEVICETREE} |grep -v dtbo`; do
             default_dtb="$(basename $k)"
 	    break;
 	done

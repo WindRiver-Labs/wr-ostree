@@ -333,7 +333,12 @@ IMAGE_CMD_ostree () {
 
         for i in ${KERNEL_DEVICETREE}; do
 		if [ -f ${DEPLOY_DIR_IMAGE}/$(basename $i) ]; then
-			cp ${DEPLOY_DIR_IMAGE}/$(basename $i) usr/lib/ostree-boot/
+			if [ "$(dirname $i)" = "overlays" ] ; then
+				[ ! -d usr/lib/ostree-boot/overlays ] && mkdir -p usr/lib/ostree-boot/overlays
+				cp ${DEPLOY_DIR_IMAGE}/$(basename $i) usr/lib/ostree-boot/overlays
+			else
+				cp ${DEPLOY_DIR_IMAGE}/$(basename $i) usr/lib/ostree-boot/
+			fi
 		fi
         done 
 
