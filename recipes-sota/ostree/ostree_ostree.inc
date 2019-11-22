@@ -12,6 +12,7 @@ SRC_URI+= "\
            file://0011-tweak-regex-of-ostree-system-generator-for-wrlinux.patch \
            file://0012-deploy-using-etc-in-runtime-as-merge-source.patch \
            file://0001-ostree-bootloader-uboot.c-Create-links-to-the-deploy.patch \
+	   file://0001-ostree-sysroot-deploy-if-OSTREE_ETC_MERGE_DIR-none-s.patch \
 "
 
 SRC_URI_append_x86-64 = " \
