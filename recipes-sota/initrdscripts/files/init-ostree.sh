@@ -30,12 +30,13 @@ MOUNT="/bin/mount"
 UMOUNT="/bin/umount"
 ROOT_DELAY="0"
 OSTREE_SYSROOT=""
-#OSTREE_LABEL_BOOT="otaboot"
 OSTREE_BOOT_DEVICE="LABEL=otaboot"
 OSTREE_LABEL_FLUXDATA="fluxdata"
 SKIP_BOOT_DIFF=""
+ALLOW_RM_VAR=1
 # The timeout (tenth of a second) for rootfs on low speed device
 MAX_TIMEOUT_FOR_WAITING_LOWSPEED_DEVICE=60
+datapart=""
 
 # Copied from initramfs-framework. The core of this script probably should be
 # turned into initramfs-framework modules to reduce duplication.
@@ -169,6 +170,43 @@ fi
 
 OSTREE_LABEL_ROOT=$(echo $OSTREE_ROOT_DEVICE | cut -f 2 -d'=')
 
+rm_var_check() {
+    [ $ALLOW_RM_VAR != 1 -o ! -e /sysroot/ostree/repo/RESETVAR ] && return
+    e=`cat /sysroot/ostree/repo/RESETVAR`
+    rm -f /sysroot/ostree/repo/RESETVAR
+    if [ -e /sysroot/ostree/repo/RESETVAR ] ; then
+	    echo "ERROR removing /sysroot/ostree/repo/RESETVAR"
+	    return
+    fi
+    if [ -n $datapart ] ; then
+	    if [ "$e" = "ERASE" ] ; then
+		    echo "Erasing /var..."
+		    mount -o rw,noatime,iversion $datapart /var
+		    if [ $? != 0 ] ; then
+			    echo "Error could not mount"
+			    return
+		    fi
+		    (shopt -s dotglob ; rm -rf /var/*)
+		    cp -a /sysroot/var/* /var
+		    umount /var
+	    elif [ "$e" = "FORMAT" ] ; then
+		    t=`lsblk -o FSTYPE -n $datapart`
+		    if [ -z "$t" ] ; then
+			    echo "Error unknown partition type falling back to ext4"
+			    t=ext4
+		    fi
+		    mkfs.$t -F -L $fluxdata_label $datapart
+		    mount -o rw,noatime,iversion $datapart /var
+		    if [ $? != 0 ] ; then
+			    echo "Error could not mount"
+			    return
+		    fi
+		    cp -a /sysroot/var/* /var
+		    umount /var
+	    fi
+    fi
+}
+
 try_to_mount_rootfs() {
 	local mount_flags="rw,noatime,iversion"
 	mount_flags="${mount_flags},${ROOT_FLAGS}"
@@ -176,7 +214,6 @@ try_to_mount_rootfs() {
 	mount -o $mount_flags "${OSTREE_ROOT_DEVICE}" "${ROOT_MOUNT}" 2>/dev/null && return 0
 }
 
-expand_fluxdata
 
 [ -x /init.luks-ostree ] && {
 	/init.luks-ostree $OSTREE_LABEL_ROOT $OSTREE_LABEL_FLUXDATA && echo "LUKS init done." || fatal "Couldn't init LUKS."
@@ -205,26 +242,17 @@ if [ -z ${OSTREE_DEPLOY} ]; then
 	fatal
 fi
 
+expand_fluxdata
+
 sed "/LABEL=otaboot[\t ]*\/boot[\t ]/s/LABEL=otaboot/${OSTREE_BOOT_DEVICE}/g" -i ${ROOT_MOUNT}/etc/fstab
 sed "/LABEL=otaboot_b[\t ]*\/boot[\t ]/s/LABEL=otaboot_b/${OSTREE_BOOT_DEVICE}/g" -i ${ROOT_MOUNT}/etc/fstab
 sed "/LABEL=fluxdata[\t ]*\/var[\t ]/s/LABEL=fluxdata/LABEL=${OSTREE_LABEL_FLUXDATA}/g" -i ${ROOT_MOUNT}/etc/fstab
-
-udevadm control -e
-
-cd $ROOT_MOUNT
-for x in dev proc sys; do
-	log_info "Moving /$x to new rootfs"
-	mount --move "/$x" "$x"
-done
 
 # If we pass args to bash, it will assume they are text files
 # to source and run.
 if [ "$INIT" == "/bin/bash" ] || [ "$INIT" == "/bin/sh" ]; then
 	CMDLINE=""
 fi
-
-# Start checking ostree contents
-mount -t proc none /proc
 
 # Check for skip-boot-diff
 if [ "${SKIP_BOOT_DIFF}" != "" ] ; then
@@ -267,7 +295,15 @@ if [ ${skip} -lt 2 ] ; then
 	fi
 fi
 
-umount /proc
+rm_var_check
+
+udevadm control -e
+
+cd $ROOT_MOUNT
+for x in dev proc sys; do
+	log_info "Moving /$x to new rootfs"
+	mount --move "/$x" "$x"
+done
 
 # !!! The Big Fat Warnings !!!
 #

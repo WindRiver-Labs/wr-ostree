@@ -12,6 +12,7 @@ OSTREE_FDISK_BLM ??= ""
 OSTREE_FDISK_FSZ ??= ""
 OSTREE_FDISK_BSZ ??= ""
 OSTREE_FDISK_RSZ ??= ""
+OSTREE_ALLOW_RM_VAR ??= ""
 
 RDEPENDS_${PN} = "parted e2fsprogs-mke2fs"
 
@@ -32,10 +33,11 @@ do_install() {
 	if [ "${OSTREE_FDISK_RSZ}" != "" ] ; then
 		sed -i -e 's/^RSZ=.*/RSZ=${OSTREE_FDISK_RSZ}/' ${D}/install
 	fi
-
         install -m 0755 ${WORKDIR}/init-ostree.sh ${D}/init
+	if [ "${OSTREE_ALLOW_RM_VAR}" != "" ] ; then
+		sed -i -e 's/^ALLOW_RM_VAR=.*/ALLOW_RM_VAR=${OSTREE_ALLOW_RM_VAR}/' ${D}/init
+	fi
 	install -m 0755 ${WORKDIR}/init.luks-ostree ${D}/init.luks-ostree
-
 	# Create device nodes expected by some kernels in initramfs
 	# before even executing /init.
 	install -d ${D}/dev
