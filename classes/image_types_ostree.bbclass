@@ -4,6 +4,7 @@ OSTREE_GPG_DEP = "${@'' if (d.getVar('GPG_BIN', True) or '').startswith('/') els
 GPG_BIN ??= ""
 GPG_PATH ??= ""
 OSTREE_COMMIT_DEV ??= "0"
+OSTREE_CREATE_TARBALL ??= "0"
 
 do_image_ostree[depends] = "ostree-native:do_populate_sysroot \
                         openssl-native:do_populate_sysroot \
@@ -87,13 +88,15 @@ create_tarball_and_ostreecommit() {
 	# The timestamp format of ostree requires
 	_timestamp=`LC_ALL=C date --date=@$_timestamp`
 
-	# Create a tarball that can be then commited to OSTree repo
-	OSTREE_TAR=${DEPLOY_DIR_IMAGE}/${_image_basename}-${MACHINE}-${DATETIME}.rootfs.ostree.tar.bz2
-	tar -C ${OSTREE_ROOTFS} --xattrs --xattrs-include='*' -cjf ${OSTREE_TAR} .
-	sync
+	if [ ${OSTREE_CREATE_TARBALL} = "1" ] ; then
+		# Create a tarball that can be then commited to OSTree repo
+		OSTREE_TAR=${DEPLOY_DIR_IMAGE}/${_image_basename}-${MACHINE}-${DATETIME}.rootfs.ostree.tar.bz2
+		tar -C ${OSTREE_ROOTFS} --xattrs --xattrs-include='*' -cjf ${OSTREE_TAR} .
+		sync
 
-	ln -snf ${_image_basename}-${MACHINE}-${DATETIME}.rootfs.ostree.tar.bz2 \
-	    ${DEPLOY_DIR_IMAGE}/${_image_basename}-${MACHINE}.rootfs.ostree.tar.bz2
+		ln -snf ${_image_basename}-${MACHINE}-${DATETIME}.rootfs.ostree.tar.bz2 \
+		    ${DEPLOY_DIR_IMAGE}/${_image_basename}-${MACHINE}.rootfs.ostree.tar.bz2
+	fi
 
 	# Commit the result
 	if [ -z "${OSTREE_GPGID}" ]; then
