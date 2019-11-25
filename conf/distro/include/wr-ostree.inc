@@ -124,6 +124,9 @@ OSTREE_SD_UBOOT_WIC4 ??= ""
 # Not all BSPs will need this, so it can be unset by the BSP
 OSTREE_SD_BOOT_ALIGN ??= "4"
 
+# Copy the IMAGE_BOOT_FILES when generating the ostree boot partition
+OSTREE_COPY_IMAGE_BOOT_FILES ??= "0"
+
 # Use this WKS file with wic (WKS_FILE = "${OSTREE_WKS_FILE}" should be set in the feature
 # template or local.conf
 OSTREE_WKS_FILE ??= "${OSTREE_ARCH_WKS}${OSTREE_AB_WKS}.wks.in"
