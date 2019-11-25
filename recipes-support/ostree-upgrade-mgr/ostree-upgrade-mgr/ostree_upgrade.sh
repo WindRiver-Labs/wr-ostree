@@ -34,6 +34,10 @@ BOOTMODE_VAR="boot_mode"
 BOOT_VAR="boot_part"
 ROOT_VAR="root_part"
 MOUNT_FLAG="noatime,iversion"
+DO_PULL=1
+DO_REBOOT=0
+MERGE_DIR=/etc
+RESET_VAR=0
 
 cleanup() {
 	for d in $CLEANUP_MOUNTS ; do
@@ -197,30 +201,7 @@ fatal() {
 	exit 1
 }
 
-ostree_upgrade() {
-	local branch
-	local remote
-
-	branch=`ostree config --repo=$UPGRADE_ROOTFS_DIR/ostree/repo get upgrade.branch 2> /dev/null`
-	remote=`ostree config --repo=$UPGRADE_ROOTFS_DIR/ostree/repo get upgrade.remote 2> /dev/null`
-	os=`ostree config --repo=$UPGRADE_ROOTFS_DIR/ostree/repo get upgrade.os 2> /dev/null`
-
-	if [ "${os}" = "" ] ; then
-	    os=`ls /ostree/deploy |head -1`
-	fi
-
-	if [ "${os}" = "" ] ; then
-	    echo "Error deploy OS is not defined, please configure it via:"
-	    fatal " ostree config set upgrade.os <DEPLOY_OS_NAME>"
-	fi
-
-	# Perform repairs, if needed on the upgrade ostree repository
-	repair=0
-	[ $DEBUG_SKIP_FSCK = 1 ] || ostree fsck -a --delete --repo=$UPGRADE_ROOTFS_DIR/ostree/repo
-	if [ $? != 0 ] ; then
-		repair=1
-	fi
-
+ostree_pull() {
 	lcache="--localcache-repo=/sysroot/ostree/repo"
 
 	if [ "${NO_AB}" != "1" ] ; then
@@ -260,8 +241,50 @@ ostree_upgrade() {
 			fatal "Error: Upgrade partition ostree repo could not be repaired"
 		fi
 	fi
+}
 
-	OSTREE_ETC_MERGE_DIR=/etc ostree admin --sysroot=$UPGRADE_ROOTFS_DIR deploy --os=${os} ${remote}:${branch}
+ostree_upgrade() {
+	local branch
+	local remote
+
+	branch=`ostree config --repo=$UPGRADE_ROOTFS_DIR/ostree/repo get upgrade.branch 2> /dev/null`
+	remote=`ostree config --repo=$UPGRADE_ROOTFS_DIR/ostree/repo get upgrade.remote 2> /dev/null`
+	os=`ostree config --repo=$UPGRADE_ROOTFS_DIR/ostree/repo get upgrade.os 2> /dev/null`
+
+	if [ "${os}" = "" ] ; then
+	    os=`ls /ostree/deploy |head -1`
+	fi
+
+	if [ "${os}" = "" ] ; then
+	    echo "Error deploy OS is not defined, please configure it via:"
+	    fatal " ostree config set upgrade.os <DEPLOY_OS_NAME>"
+	fi
+
+	# Perform repairs, if needed on the upgrade ostree repository
+	repair=0
+	[ $DEBUG_SKIP_FSCK = 1 ] || ostree fsck -a --delete --repo=$UPGRADE_ROOTFS_DIR/ostree/repo
+	if [ $? != 0 ] ; then
+		repair=1
+	fi
+
+	if [ $DO_PULL = 1 ] ; then
+		ostree_pull
+	else
+		if [ "${NO_AB}" != "1" ] ; then
+			echo "INFO: Syncing partition repositories"
+			# Still actually require a pull to sync across volumes
+			if [ -e /sysroot/ostree/repo/refs/remotes/${remote}/${branch} ] ; then
+				cp /sysroot/ostree/repo/refs/remotes/${remote}/${branch}  /sysroot/ostree/repo/refs/heads
+			fi
+			ostree --repo=$UPGRADE_ROOTFS_DIR/ostree/repo pull-local --remote=${remote} /sysroot/ostree/repo ${branch}
+			res=$?
+			if [ $res != 0 ] ; then
+				fatal "ostree pull-local failed"
+			fi
+		fi
+	fi
+
+	OSTREE_ETC_MERGE_DIR=$MERGE_DIR ostree admin --sysroot=$UPGRADE_ROOTFS_DIR deploy --os=${os} ${remote}:${branch}
 	if [ $? -ne 0 ]; then
 		fatal "Ostree deploy failed"
 	fi
@@ -296,13 +319,86 @@ update_env() {
 }
 
 run_upgrade() {
+	if [ -e /ostree/repo/RESETVAR ] ; then
+		rm -f /ostree/repo/RESETVAR
+	fi
 	prepare_upgrade
 	ostree_upgrade
 	update_env
+	rm -f $UPGRADE_ROOTFS_DIR/ostree/repo/RESETVAR
+	if [ $RESET_VAR = 1 ] ; then
+		echo "ERASE" > $UPGRADE_ROOTFS_DIR/ostree/repo/RESETVAR
+	fi
+	if [ $RESET_VAR = 2 ] ; then
+		echo "FORMAT" > $UPGRADE_ROOTFS_DIR/ostree/repo/RESETVAR
+	fi
 	cleanup
-
-	exit 0
-
 }
 
+
+usage() {
+	cat<<EOF
+usage: $0 [args]
+
+  This command wraps the ostree admin commands and handles the upgrade
+  using a single or multi-partition device in order to obtain the
+  specified branch configured in /sysroot/ostree/repo/config.
+
+  Optional commands:
+
+  -b   reboot after completion
+  -e   Erase the /var volume on the next reboot
+  -E   FORMAT the /var volume when on a separate partition on the next reboot
+  -f   Force /etc to be entirely reset to the initial deploy state
+  -r   Redeploy the current branch without doing a network pull
+  -s   Skip the fsck integrity checks
+
+  -F   Local Factory reset, uses -b -e -f -r -s
+  -U   Factory upgrade reset, uses -b -e -f -s
+
+EOF
+	exit 0
+}
+
+while getopts "beEfhFrsU" opt; do
+	case ${opt} in
+		b)
+			DO_REBOOT=1
+			;;
+		e)
+			RESET_VAR=1
+			;;
+		E)
+			RESET_VAR=2
+			;;
+		f)
+			MERGE_DIR=none
+			;;
+		r)
+			DO_PULL=0
+			;;
+		s)
+			DEBUG_SKIP_FSCK=1
+			;;
+		F)
+			DO_REBOOT=1
+			RESET_VAR=1
+			MERGE_DIR=none
+			DO_PULL=0
+			DEBUG_SKIP_FSCK=1
+			;;
+		U)
+			DO_REBOOT=1
+			RESET_VAR=1
+			MERGE_DIR=none
+			DEBUG_SKIP_FSCK=1
+			;;
+		*) usage
+			;;
+	esac
+done
+
 run_upgrade
+if [ $DO_REBOOT = 1 ] ; then
+	reboot
+fi

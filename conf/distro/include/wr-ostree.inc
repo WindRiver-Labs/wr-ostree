@@ -144,6 +144,11 @@ OSTREE_WKS_FILE ??= "${OSTREE_ARCH_WKS}${OSTREE_AB_WKS}.wks.in"
 # Size of the Root partition
 # OSTREE_FDISK_RSZ ??= ""
 
+# Allow the var directory to be erased via the initramfs boot, when
+# using "ostree_upgrade.sh -e".  The default is 1, but for very secure
+# targets this could be a dangerous operation so it is configurable.
+# OSTREE_ALLOW_RM_VAR = "0"
+
 # What uboot command should be used to start the kernel in the boot.scr file
 # OSTREE_UBOOT_CMD ??= "bootz"
 
