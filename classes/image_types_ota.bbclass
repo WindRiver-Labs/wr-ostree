@@ -156,6 +156,27 @@ IMAGE_CMD_otaimg () {
 			if [ "${INSTAB}" != "1" ] ; then
 				printf '1' >  ${WORKDIR}/rootfs_ota_uboot/no_ab
 			fi
+
+			if [ "$OSTREE_COPY_IMAGE_BOOT_FILES" = "1" ] ; then
+				# Copy IMAGE_BOOT_FILES
+				set -f
+				bfiles="${IMAGE_BOOT_FILES}"
+				for f in $bfiles; do
+					set +f
+	                                argFROM=$(echo "$f" |sed -e 's#;.*##')
+	                                argTO=$(echo "$f" |sed -e 's#.*;##')
+					if [ "$argFROM" != "$argTO" ] ; then
+						if [ ! -e ${WORKDIR}/rootfs_ota_uboot/$argTO ] ; then
+							d=$(dirname ${WORKDIR}/rootfs_ota_uboot/$argTO)
+							[ ! -d $d ] && mkdir $d
+							cp ${DEPLOY_DIR_IMAGE}/$argFROM ${WORKDIR}/rootfs_ota_uboot/$argTO
+						fi
+					else
+						cp ${DEPLOY_DIR_IMAGE}/$f ${WORKDIR}/rootfs_ota_uboot
+					fi
+				done
+				set +f
+			fi
 		fi
 
                 #create an image with the free space equal the rootfs size
