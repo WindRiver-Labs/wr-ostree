@@ -20,6 +20,9 @@ OSTREE_GPGID ?= "Wind-River-Linux-Sample"
 OSTREE_GPG_PASSPHRASE ?= "windriver"
 OSTREE_GPGDIR ?= "${WR_KEYS_DIR}/rpm_keys"
 
+# Generate rootfs.ostree.tar.bz2 files which could be used to build a new repo
+# OSTREE_CREATE_TARBALL = "1"
+
 # Configuration of image upgrade and install variables
 
 OSTREE_USE_AB ??= "1"
