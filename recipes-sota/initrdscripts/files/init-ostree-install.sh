@@ -83,7 +83,7 @@ do_dhcp() {
 	if [ -f /sbin/udhcpc ] ; then
 		/sbin/udhcpc ${DCHPARGS}
 	else
-		dhcpcd ${DCHPARGS}
+		dhclient ${DCHPARGS}
 	fi
 }
 

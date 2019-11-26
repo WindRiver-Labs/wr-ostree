@@ -1,23 +1,23 @@
 # Netboot initramfs image.
 DESCRIPTION = "OSTree initramfs image"
 
-INITRAMFS_FEATURES = "busybox"
+INITRAMFS_FEATURES ??= "busybox"
 
 PkgsBusyBox = "busybox busybox-udhcpc"
-PkgsCoreUtils = "coreutils dhcp-client"
+PkgsCoreUtils = "coreutils dhcp-client util-linux-umount util-linux-switch-root iproute2"
 
 INITRAMFS_PKGS = "${@bb.utils.contains('INITRAMFS_FEATURES', 'busybox', "${PkgsBusyBox}", "${PkgsCoreUtils}", d)}"
 
 PACKAGE_INSTALL = "ostree \
   ostree-switchroot \
   initramfs-ostree \
-  busybox \
   bash \
   kmod \
   bzip2 \
   gnupg \
   kbd \
   util-linux \
+  util-linux-setsid \
   util-linux-mount \
   util-linux-blkid \
   util-linux-lsblk \
