@@ -177,6 +177,17 @@ IMAGE_CMD_otaimg () {
 				done
 				set +f
 			fi
+			# Modify the boot.scr
+			if [ -e ${WORKDIR}/rootfs_ota_uboot/boot.scr ] ; then
+				tail -c+73 ${WORKDIR}/rootfs_ota_uboot/boot.scr > ${WORKDIR}/rootfs_ota_uboot/boot.scr.raw
+				if [ -e /bin/perl ] ; then
+					/bin/perl -p -i -e "s#^( *setenv BRANCH) .*#\$1 ${OSTREE_BRANCHNAME}# if (\$_ !~ /oBRANCH/) " ${WORKDIR}/rootfs_ota_uboot/boot.scr.raw
+				else
+					/usr/bin/perl -p -i -e "s#^( *setenv BRANCH) .*#\$1 ${OSTREE_BRANCHNAME}# if (\$_ !~ /oBRANCH/) " ${WORKDIR}/rootfs_ota_uboot/boot.scr.raw
+				fi
+				mkimage -A arm -T script -O linux -d ${WORKDIR}/rootfs_ota_uboot/boot.scr.raw ${WORKDIR}/rootfs_ota_uboot/boot.scr
+				rm -f ${WORKDIR}/rootfs_ota_uboot/boot.scr.raw
+			fi
 		fi
 
                 #create an image with the free space equal the rootfs size
