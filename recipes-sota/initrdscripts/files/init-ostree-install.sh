@@ -675,14 +675,14 @@ fi
 mkdir /var1
 if [ "$INSTFLUX" != "1" ] ; then
 	if [ "$BL" = "grub" ] ; then
-		sed -i -e 's/^LABEL=fluxdata.*//' ${PHYS_SYSROOT}/boot/?/ostree/etc/fstab
+		sed -i -e "s#^LABEL=fluxdata.*#${PHYS_SYSROOT}/ostree/deploy/${INSTOS}/var /var none bind 0 0#" ${PHYS_SYSROOT}/boot/?/ostree/etc/fstab
 		if [ "$INSTAB" = 1 ] ; then
-			sed -i -e 's/^LABEL=fluxdata.*//' ${PHYS_SYSROOT}_b/boot/?/ostree/etc/fstab
+			sed -i -e "s#^LABEL=fluxdata.*#${PHYS_SYSROOT}/ostree/deploy/${INSTOS}/var /var none bind 0 0#" ${PHYS_SYSROOT}_b/boot/?/ostree/etc/fstab
 		fi
 	elif [ "$BL" = "ufsd" ] ; then
-		sed -i -e 's/^LABEL=fluxdata.*//' ${PHYS_SYSROOT}/ostree/?/etc/fstab
+		sed -i -e "s#^LABEL=fluxdata.*#${PHYS_SYSROOT}/ostree/deploy/${INSTOS}/var /var none bind 0 0#" ${PHYS_SYSROOT}/ostree/?/etc/fstab
 		if [ "$INSTAB" = 1 ] ; then
-			sed -i -e 's/^LABEL=fluxdata.*//' ${PHYS_SYSROOT}_b/ostree/?/etc/fstab
+			sed -i -e "s#^LABEL=fluxdata.*#${PHYS_SYSROOT}/ostree/deploy/${INSTOS}/var /var none bind 0 0#" ${PHYS_SYSROOT}_b/ostree/?/etc/fstab
 		fi
 	else
 		fatal "Error: bl=$BL is not supported"
