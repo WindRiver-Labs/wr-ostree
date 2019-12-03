@@ -12,6 +12,10 @@ inherit deploy
 DEFAULT_DTB ??= ""
 OSTREE_UBOOT_CMD ??= "bootz"
 OSTREE_BOOTSCR ??= "fs_links"
+OSTREE_NET_INSTALL ??= "1"
+OSTREE_NETINST_ARGS ??= "instab=${OSTREE_USE_AB}"
+OSTREE_NETINST_BRANCH ??= "core-image-minimal"
+OSTREE_NETINST_DEV ??= "/dev/mmcblk0"
 
 bootscr_env_import() {
 	cat <<EOF > ${WORKDIR}/uEnv.txt
@@ -86,10 +90,14 @@ EOF
 }
 
 bootscr_fs_links() {
+	NETINST_ARGS="${OSTREE_NETINST_ARGS}"
+
 	cat <<EOF > ${WORKDIR}/uEnv.txt
 setenv machine_name ${MACHINE}
+test -n \${fdtcontroladdr} && setenv fdt_addr \${fdtcontroladdr}
 setenv bretry 32
 if test \${skip_script_fdt} != yes; then setenv fdt_file $default_dtb; fi
+setenv ninst ${OSTREE_NET_INSTALL}
 setenv A 5
 setenv B 7
 setenv ex _b
@@ -115,20 +123,58 @@ setenv bdef 30
 setenv switchab if test \\\${bpart} = B\\;then setenv bpart A\\;else setenv bpart B\\;fi
 if fatload mmc \${mmcdev}:1 \${loadaddr} boot_cnt;then setexpr.w cntv0 *\${loadaddr2};if test \${cntv0} = 5257;then setexpr.b cntv *\${loadaddr};setexpr.b bdef *\${loadaddr1};fi;fi
 if test \${bdef} = 31;then run switchab;fi
-if test \${cntv} > \${bretry};then run switchab;setenv cntv 30;if test \${bdef} = 31; then setenv bdef 30;else setenv bdef 31;fi;else setexpr.b cntv \${cntv} + 1;fi
+if test \${cntv} -gt \${bretry};then run switchab;setenv cntv 30;if test \${bdef} = 31; then setenv bdef 30;else setenv bdef 31;fi;else setexpr.b cntv \${cntv} + 1;fi
 mw.b \${bct_addr} \${cntv}
 mw.b \${bct_addr1} \${bdef}
 fatwrite mmc \${mmcdev}:1 \${bct_addr} boot_cnt 4
-if test \${no_menu} != yes; then
- if test \${bdef} = 30;then
-  setenv bootmenu_0 Boot Primary volume \${bpart}=
-  setenv bootmenu_1 Boot Rollback=setenv bdef 31\;run switchab
- else
-  setenv bootmenu_0 Boot Rollback \${bpart}=
-  setenv bootmenu_1 Boot Primary volume=setenv bdef 30\;run switchab
- fi
- bootmenu \${menutimeout}
+if test -n \${oURL}; then
+ setenv URL "\${oURL}"
+else
+ setenv URL "${OSTREE_REMOTE_URL}"
 fi
+if test -n \${oBRANCH}; then
+ setenv BRANCH \${oBRANCH}
+else
+ setenv BRANCH ${OSTREE_NETINST_BRANCH}
+fi
+setenv netinstpre "fdt addr \${fdt_addr};"
+setenv instdef "$NETINST_ARGS"
+if test -n \${nistargs}; then
+ setenv netinst "\${ninstargs}"
+else
+ setenv netinst "\${netinstpre}fatload mmc \${mmcdev}:1 \${loadaddr} Image;fatload mmc \${mmcdev}:1 \${initrd_addr} initramfs; setenv bootargs \\"\${instdef\} \${exnetargs}\\";${OSTREE_UBOOT_CMD} \${loadaddr} \${initrd_addr} \${fdt_addr}"
+fi
+setenv autoinst echo "!!!Autostarting network install, you have 5 seconds to reset the board!!!"\;sleep 5\;run netinst
+if test "\${no_autonetinst}" != 1 && test -n \${URL} ; then
+ if test "\${ex}" != "_b"; then
+  if test ! -e mmc \${mmcdev}:\$mmcpart 1/vmlinuz && test ! -e mmc \${mmcdev}:\$mmcpart 2/vmlinuz; then
+    run autoinst
+  fi
+ else
+  if test ! -e mmc \${mmcdev}:\$mmcpart 1/vmlinuz && test ! -e mmc \${mmcdev}:\$mmcpart_r 1/vmlinuz; then
+    run autoinst
+  fi
+ fi
+fi
+if test \${no_menu} != yes; then
+ setenv go 0
+ if test \${bdef} = 30;then
+  setenv bootmenu_0 Boot Primary volume \${bpart}=setenv go 1
+  setenv bootmenu_1 Boot Rollback=setenv bdef 31\;run switchab\;setenv go 1
+ else
+  setenv bootmenu_0 Boot Rollback \${bpart}=\;setenv go 1
+  setenv bootmenu_1 Boot Primary volume=setenv bdef 30\;run switchab\;setenv go 1
+ fi
+ if test -n \${URL} && test \${ninst} = 1; then
+  setenv bootmenu_2 Re-install from network=run netinst
+ else
+  setenv bootmenu_2
+ fi
+ if bootmenu \${menutimeout}; then echo ""; else setenv go 1; fi
+else
+ setenv go 1
+fi
+if test \${go} = 1; then
 if test \${bdef} = 30;then echo "==Booting default \${bpart}==";else echo "==Booting Rollback \${bpart}==";fi
 if test \${bpart} = B; then
  setenv mmcpart \$B;
@@ -147,18 +193,21 @@ fi
 if test \${skip_script_wd} != yes; then setenv wdttimeout 120000; fi
 setenv loadkernel ext4load mmc \${mmcdev}:\${mmcpart} \${loadaddr} \${ostver}/vmlinuz
 setenv loadramdisk ext4load mmc \${mmcdev}:\${mmcpart} \${initrd_addr} \${ostver}/initramfs
-if test -n \${use_fdtdtb} && test \${use_fdtdtb} = 1; then
-fdt addr \${fdt_addr}
-setenv bootargs
-fdt get value bootargs /chosen bootargs
-setenv bootargs "\${bootargs} \${bootpart} ostree=/ostree/\${ostver} \${rootpart} console=\${console},\${baudrate} \${smp} flux=fluxdata\${labelpre}" 
+setenv bootargs \${bootpart} ostree=/ostree/\${ostver} \${rootpart} console=\${console},\${baudrate} \${smp} flux=fluxdata\${labelpre}
+if test -n \${use_fdtdtb} && test \${use_fdtdtb} -ge 1; then
+ fdt addr \${fdt_addr}
+ if test \${use_fdtdtb} -ge 2; then
+  setenv bootargs
+  fdt get value bootargs /chosen bootargs
+  setenv bootargs "\${bootargs} \${bootpart} ostree=/ostree/\${ostver} \${rootpart} console=\${console},\${baudrate} \${smp} flux=fluxdata\${labelpre}"
+ fi
 else
-setenv loaddtb ext4load mmc \${mmcdev}:\${mmcpart} \${fdt_addr} \${ostver}/\${fdt_file};run loaddtb
-setenv bootargs \${bootpart} ostree=/ostree/\${ostver} \${rootpart} console=\${console},\${baudrate} \${smp} flux=fluxdata\${labelpre} 
+ setenv loaddtb ext4load mmc \${mmcdev}:\${mmcpart} \${fdt_addr} \${ostver}/\${fdt_file};run loaddtb
 fi
 run loadramdisk
 run loadkernel
 ${OSTREE_UBOOT_CMD} \${loadaddr} \${initrd_addr} \${fdt_addr}
+fi
 EOF
 }
 

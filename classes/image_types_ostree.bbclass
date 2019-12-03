@@ -9,8 +9,11 @@ OSTREE_CREATE_TARBALL ??= "0"
 do_image_ostree[depends] = "ostree-native:do_populate_sysroot \
                         openssl-native:do_populate_sysroot \
 			coreutils-native:do_populate_sysroot \
+                        wic-tools:do_build \
                         virtual/kernel:do_deploy \
-                        ${OSTREE_INITRAMFS_IMAGE}:do_image_complete"
+                        ${OSTREE_INITRAMFS_IMAGE}:do_image_complete \
+                        ${@'grub:do_populate_sysroot' if d.getVar('OSTREE_BOOTLOADER_INCLUDE', True) == 'grub' else ''} \
+                        ${@'virtual/bootloader:do_deploy u-boot-tools-native:do_populate_sysroot' if d.getVar('OSTREE_BOOTLOADER_INCLUDE', True) == 'u-boot' else ''}"
 
 do_prepare_recipe_sysroot[depends] += "${OSTREE_GPG_DEP}"
 
@@ -332,6 +335,19 @@ IMAGE_CMD_ostree () {
 
         if [ -f ${DEPLOY_DIR_IMAGE}/boot.scr ]; then
 		cp ${DEPLOY_DIR_IMAGE}/boot.scr usr/lib/ostree-boot/boot.scr
+		# Modify the boot.scr
+		if [ -e usr/lib/ostree-boot/boot.scr ] ; then
+			tail -c+73 usr/lib/ostree-boot/boot.scr > usr/lib/ostree-boot/boot.scr.raw
+			if [ -e /bin/perl ] ; then
+				/bin/perl -p -i -e "s#^( *setenv BRANCH) .*#\$1 ${OSTREE_BRANCHNAME}# if (\$_ !~ /oBRANCH/) " usr/lib/ostree-boot/boot.scr.raw
+			else
+				/usr/bin/perl -p -i -e "s#^( *setenv BRANCH) .*#\$1 ${OSTREE_BRANCHNAME}# if (\$_ !~ /oBRANCH/) " usr/lib/ostree-boot/boot.scr.raw
+			fi
+			mkimage -A arm -T script -O linux -d usr/lib/ostree-boot/boot.scr.raw usr/lib/ostree-boot/boot.scr
+			rm -f usr/lib/ostree-boot/boot.scr.raw
+		fi
+		mkdir -p boot
+		cp usr/lib/ostree-boot/boot.scr boot/
         fi
 
         for i in ${KERNEL_DEVICETREE}; do
