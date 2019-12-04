@@ -72,8 +72,7 @@ BAD_RECOMMENDATIONS += "busybox-syslog"
 PACKAGE_INSTALL_append = " \
 	${@bb.utils.contains('DISTRO_FEATURES', 'luks', 'packagegroup-luks-initramfs', '', d)} \
 "
-
-ROOTFS_POSTPROCESS_COMMAND += "add_gpg_key;"
+ROOTFS_POSTPROCESS_COMMAND += "ostree_check_rpm_public_key;add_gpg_key;"
 
 add_gpg_key() {
 	gpg_path="${GPG_PATH}"
@@ -81,11 +80,17 @@ add_gpg_key() {
 		gpg_path="${TMPDIR}/.gnupg"
 	fi
 	if [ -n "${OSTREE_GPGID}" ] ; then
+		FAIL=1
 		if [ -f $gpg_path/pubring.gpg ]; then
 			cp $gpg_path/pubring.gpg ${IMAGE_ROOTFS}/usr/share/ostree/trusted.gpg.d/pubring.gpg
+			FAIL=0
 		fi
 		if [ -f $gpg_path/pubring.kbx ]; then
 			cp $gpg_path/pubring.kbx ${IMAGE_ROOTFS}/usr/share/ostree/trusted.gpg.d/pubkbx.gpg
+			FAIL=0
+		fi
+		if $FAIL = 1; then
+			bb.fatal "Could not locate the public gpg signing key for OSTree"
 		fi
 	fi
 }
