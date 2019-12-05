@@ -67,9 +67,9 @@ OPTIONAL:
  Disk sizing
  BLM=#				- Blocks of boot magic area to skip
 				  ARM BSPs with SD cards usually need this
- FSZ=#				- fdisk size of fat partition
- BSZ=#				- fdisk size of boot partition
- RSZ=#				- fdisk size of root partition
+ FSZ=#				- fdisk MB size of fat partition
+ BSZ=#				- fdisk MB size of boot partition
+ RSZ=#				- fdisk MB size of root partition
 
 EOF
 }
@@ -78,6 +78,13 @@ log_info() { echo "$0[$$]: $*" >&2; }
 log_error() { echo "$0[$$]: ERROR $*" >&2; }
 
 PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/lib/ostree:/usr/lib64/ostree
+
+lreboot() {
+	echo b > /proc/sysrq-trigger
+	while [ 1 ] ; do
+		sleep 60
+	done
+}
 
 do_dhcp() {
 	if [ -f /sbin/udhcpc ] ; then
@@ -130,9 +137,7 @@ fatal() {
     echo >$CONSOLE
     if [ "$INSTPOST" = "shell" ] ; then shell_start ; fi
     if [ "$INSTPOST" = "exit" ] ; then exit 1 ; fi
-    sleep 60
-    echo b > /proc/sysrq-trigger
-    while [ 1 ] ; do sleep 60 ; done
+    lreboot
 }
 
 # Global Variable setup
@@ -270,63 +275,86 @@ shell_start() {
 	if [ "$1" = "exec" ] ; then
 		exec setsid sh -c "exec /bin/bash </dev/$c >/dev/$c 2>&1"
 	else
-		setsid sh -c "exec /bin/bash </dev/$c >/dev/$c 2>&1"
+		echo "trap lreboot EXIT; function lreboot { echo b > /proc/sysrq-trigger; while [ 1 ] ; do sleep 60; done }" > /debugrc
+		setsid sh -c "exec /bin/bash --rcfile /debugrc </dev/$c >/dev/$c 2>&1"
 	fi
 }
 
 grub_partition() {
-	if [ "$INSTAB" = 1 ] ; then
-		parted -s ${dev} mklabel gpt
-		parted -s ${dev} mkpart msdos 64s 32MB
-		parted -s ${dev} mkpart ext2 32MB 240MB
-		parted -s ${dev} mkpart ext2 240MB 448MB
-		if [ "${INSTFLUX}" = 1 ] ; then
-			parted -s ${dev} mkpart ext2 448MB 50%
-			parted -s ${dev} mkpart ext2 50% 95%
-			parted -s ${dev} mkpart ext2 95% 100%
-		else
-			parted -s ${dev} mkpart ext2 448MB 53%
-			parted -s ${dev} mkpart ext2 53% 100%
-		fi
-		parted -s ${dev} name 1 otaefi
-		parted -s ${dev} name 2 otaboot
-		parted -s ${dev} name 3 otaboot_b
-		parted -s ${dev} name 4 otaroot
-		parted -s ${dev} name 5 otaroot_b
-		if [ "${INSTFLUX}" = 1 ] ; then
-			parted -s ${dev} name 6 fluxdata
-			parted -s ${dev} resizepart 6 100%
-		fi
-		parted -s ${dev} set 1 esp on
-	else
-		parted -s ${dev} mklabel gpt
-		parted -s ${dev} mkpart msdos 64s 32MB
-		parted -s ${dev} mkpart ext2 32MB 240MB
-		if [ "${INSTFLUX}" = 1 ] ; then
-			parted -s ${dev} mkpart ext2 240MB 95%
-			parted -s ${dev} mkpart ext2 95% 100%
-		else
-			parted -s ${dev} mkpart ext2 240MB 100%
-		fi
-		parted -s ${dev} name 1 otaefi
-		parted -s ${dev} set 1 esp on
-		parted -s ${dev} name 2 otaboot
-		parted -s ${dev} name 3 otaroot
-		if [ "${INSTFLUX}" = 1 ] ; then
-			parted -s ${dev} name 4 fluxdata
-			parted -s ${dev} resizepart 4 100%
-		fi
+	local a
+	local p
+	local first
+	local last
+	lsz=`lsblk -n ${dev} -o LOG-SEC -d`
+	lsz=${lsz// /}
+	# EFI Partition
+	if [ ! -e ${fs_dev}1 ] ; then
+		echo "WARNING WARNING - ${fsdev}1 does not exist, creating"
+		INSTSF=0
 	fi
+	if [ $INSTSF = 1 ] ; then
+		for e in `sgdisk -p ${dev} 2> /dev/null |grep -A 1024 ^Number |grep -v ^Number |awk '{print $1}' |grep -v ^1\$`; do
+			a="$a -d $e"
+		done
+		a="$a -c 1:otaefi -t 1:EF00"
+		sgdisk -e $a ${dev}
+		first=`sgdisk -F ${dev}|grep -v Creating`
+	else
+		sgdisk -Z ${dev}
+		first=`sgdisk -F ${dev}|grep -v Creating`
+		vv="$first+($FSZ*1024*1024/$lsz)-1"
+		echo =$vv=
+		end=$(($first+($FSZ*1024*1024/$lsz)-1))
+		a="$a -n 1:$first:$end -c 1:otaefi -t 1:EF00"
+		first=$(($end+1))
+	fi
+	last=$(sgdisk -E ${dev} 2>/dev/null |grep -v Creating)
+	p=2
+	# Boot Partition(s)
+	end=$(($first+($BSZ*1024*1024/$lsz)-1))
+	a="$a -n $p:$first:$end -c $p:otaboot"
+	first=$(($end+1))
+	p=$((p+1))
+	if [ "$INSTAB" = 1 ] ; then
+		end=$(($first+($BSZ*1024*1024/$lsz)-1))
+		a="$a -n $p:$first:$end -c $p:otaboot_b"
+		first=$(($end+1))
+		p=$((p+1))
+	fi
+	# Root Partition(s)
+	end=$(($first+($RSZ*1024*1024/$lsz)-1))
+	a="$a -n $p:$first:$end -c $p:otaroot"
+	first=$(($end+1))
+	p=$((p+1))
+	if [ "$INSTAB" = 1 ] ; then
+		end=$(($first+($RSZ*1024*1024/$lsz)-1))
+		a="$a -n $p:$first:$end -c $p:otaroot_b"
+		first=$(($end+1))
+		p=$((p+1))
+	fi
+	if [ $first -gt $last ] ; then
+		fatal "ERROR: Disk is not big enough for requested layout"
+	fi
+	# Flux Partition
+	if [ "${INSTFLUX}" = 1 ] ; then
+		end=$last
+		a="$a -n $p:$first:$end -c $p:fluxdata"
+	fi
+	sgdisk $a -p ${dev}
 }
 
 ufdisk_partition() {
+	if [ ! -e ${fs_dev}1 ] ; then
+		echo "WARNING WARNING - ${fsdev}1 does not exist, creating"
+		INSTSF=0
+	fi
 	if [ $INSTSF = 1 ] ; then
 		pts=`mktemp`
 		fdisk -l -o device,start,end ${dev} |grep ^${fs_dev}1 > $pts || fatal "fdisk probe failed"
 		read tmp fat_start fat_end < $pts
 		fdisk -l -o device ${dev} |grep ^${fs_dev} > $pts
 	else
-		dd if=/dev/zero of=${dev} bs=512 count=1
+		sgdisk -Z ${dev}
 	fi
 	(
 	if [ $INSTSF = 1 ] ; then
@@ -400,9 +428,11 @@ if [ "$INSTSH" = 1 -o "$INSTSH" = 3 -o "$INSTSH" = 4 ] ; then
 	if [ "$INSTSH" = 4 ] ; then
 		helptxt
 	fi
-	echo "Starting boot shell.  You can execute the install with:"
+	echo "Starting boot shell.  System will reboot on exit"
+	echo "You can execute the install with:"
 	echo "     INSTPOST=exit INSTSH=0 bash -v -x /install"
 	shell_start exec
+	lreboot
 fi
 
 udevadm settle --timeout=3
@@ -756,15 +786,12 @@ echo 3 > /proc/sys/vm/drop_caches
 
 if [ "$INSTPOST" = "halt" ] ; then
 	echo o > /proc/sysrq-trigger
-	sleep 60
+	while [ 1 ] ; do sleep 60; done
 elif [ "$INSTPOST" = "shell" ] ; then
-	echo " Entering post-install debug shell"
+	echo " Entering post-install debug shell, exit to reboot."
 	shell_start
 elif [ "$INSTPOST" = "exit" ] ; then
 	exit 0
 fi
-echo b > /proc/sysrq-trigger
-while [ 1 ] ; do
-	sleep 60
-done
+lreboot
 exit 0
