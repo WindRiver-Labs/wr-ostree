@@ -109,18 +109,18 @@ read_args() {
 expand_fluxdata() {
 
 	fluxdata_label=$OSTREE_LABEL_FLUXDATA
-	[ -z $fluxdata_label ] && echo "No fluxdata partition found." && return 0
+	[ -z $fluxdata_label ] && return 0
 
 	# expanding FLUXDATA
 	datapart=$(blkid -s LABEL | grep "LABEL=\"$fluxdata_label\"" |head -n 1| awk -F: '{print $1}')
-
-	# no fluxdata or fluxdata is a LUKS(expanding done at LUKS creation)
+	# Check for luksfluxdata expansion if the volume is not set initialized
 	[ -z ${datapart} ] && {
 		datapart=$(blkid -s LABEL | grep "LABEL=\"luks$fluxdata_label\"" |head -n 1| awk -F: '{print $1}')
 		[ -z ${datapart} ] && return 0
 	}
 
 	datadev=$(lsblk $datapart -n -o PKNAME | head -n 1)
+	[ -z ${datadev} ] && return 0
 	datadevnum=$(echo ${datapart} | sed 's/\(.*\)\(.\)$/\2/')
 
 	disk_sect=`fdisk -l /dev/$datadev | head -n 1 |awk '{print $7}'`
@@ -131,8 +131,7 @@ expand_fluxdata() {
 	fi
 
 	echo "Expanding partition for ${fluxdata_label} ..."
-	echo w |fdisk /dev/$datadev
-	parted -s /dev/$datadev -- resizepart $datadevnum 100%
+	echo ", +" | sfdisk -N $datadevnum /dev/$datadev
 
 	echo "Expanding FS for ${fluxdata_label} ..."
 	resize2fs -f ${datapart}
@@ -214,6 +213,7 @@ try_to_mount_rootfs() {
 	mount -o $mount_flags "${OSTREE_ROOT_DEVICE}" "${ROOT_MOUNT}" 2>/dev/null && return 0
 }
 
+expand_fluxdata
 
 [ -x /init.luks-ostree ] && {
 	/init.luks-ostree $OSTREE_LABEL_ROOT $OSTREE_LABEL_FLUXDATA && echo "LUKS init done." || fatal "Couldn't init LUKS."
@@ -241,8 +241,6 @@ if [ -z ${OSTREE_DEPLOY} ]; then
 	echo "Unable to deploy ostree ${ROOT_MOUNT}"
 	fatal
 fi
-
-expand_fluxdata
 
 sed "/LABEL=otaboot[\t ]*\/boot[\t ]/s/LABEL=otaboot/${OSTREE_BOOT_DEVICE}/g" -i ${ROOT_MOUNT}/etc/fstab
 sed "/LABEL=otaboot_b[\t ]*\/boot[\t ]/s/LABEL=otaboot_b/${OSTREE_BOOT_DEVICE}/g" -i ${ROOT_MOUNT}/etc/fstab

@@ -14,7 +14,7 @@ OSTREE_FDISK_BSZ ??= ""
 OSTREE_FDISK_RSZ ??= ""
 OSTREE_ALLOW_RM_VAR ??= ""
 
-RDEPENDS_${PN} = "parted e2fsprogs-mke2fs"
+RDEPENDS_${PN} = "util-linux-sfdisk gptfdisk e2fsprogs-mke2fs"
 
 do_configure() {
 }
