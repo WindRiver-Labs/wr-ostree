@@ -73,17 +73,15 @@ modify_boot_scr() {
 	if [ -n "$INST_DEV" ] ; then
 		perl -p -i -e "s#instdev=.*?([ \"])#instdev=$INST_DEV\$1#" $OUTDIR/boot.scr.raw
 	fi
+	OLDPATH="$PATH"
+	PATH=$RECIPE_SYSROOT_NATIVE/usr/bin:$RECIPE_SYSROOT_NATIVE/bin:$PATH
 	which mkimage > /dev/null
 	if [ $? != 0 ] ; then
-		# Try again with the sysroot
-		PATH=$(ls -d $PWD/tmp*/sysroots-components/x86_64/u-boot-tools-native/usr/bin 2>/dev/null):$PATH
-		which mkimage > /dev/null
-		if [ $? != 0 ] ; then
-			fatal "ERROR: Could not locate mkimage utility"
-		fi
+		fatal "ERROR: Could not locate mkimage utility"
 	fi
 	mkimage -A arm -T script -O linux -d $OUTDIR/boot.scr.raw $OUTDIR/boot.scr || fatal "ERROR: mkimage failed"
 	rm -f $OUTDIR/boot.scr.raw
+	PATH="$OLDPATH"
 }
 
 do_cp_and_sig() {
@@ -97,14 +95,17 @@ do_cp_and_sig() {
 }
 
 sign_grub() {
+	OLDPATH="$PATH"
+	PATH=$RECIPE_SYSROOT_NATIVE/usr/bin:$RECIPE_SYSROOT_NATIVE/bin:$PATH
 	rm -rf grub-key; mkdir grub-key ; chmod 700 grub-key
-	echo allow-loopback-pinentry > grub-key/gpg-agent.conf 
-	gpg --batch  --passphrase "$BOOT_GPG_PASSPHRASE" --pinentry-mode loopback --homedir grub-key --import "$BOOT_KEYS_DIR/BOOT-GPG-PRIVKEY-$BOOT_GPG_NAME"
+	echo allow-loopback-pinentry > grub-key/gpg-agent.conf
+	gpg --batch  --passphrase "$BOOT_GPG_PASSPHRASE" --pinentry-mode loopback --homedir grub-key --import "$BOOT_KEYS_DIR/BOOT-GPG-PRIVKEY-$BOOT_GPG_NAME" || fatal "Error importing signing key"
 	for e in `ls $OUTDIR/EFI/BOOT/grub.cfg`; do
 		echo Signing: $e
 		rm -f $e.sig
-		echo "$BOOT_GPG_PASSPHRASE" | gpg --pinentry-mode loopback --homedir grub-key -u "$BOOT_GPG_NAME" --batch --detach-sign --passphrase-fd 0 $e
+		echo "$BOOT_GPG_PASSPHRASE" | gpg --pinentry-mode loopback --homedir grub-key -u "$BOOT_GPG_NAME" --batch --detach-sign --passphrase-fd 0 $e || fatal "Error signing $e"
 	done
+	PATH="$OLDPATH"
 }
 
 create_grub_cfg() {
@@ -122,10 +123,10 @@ create_grub_cfg() {
 	if [ "$INST_URL" != "" ] ; then
 		iurl="$INST_URL"
 	fi
-	# TODO
-	# - This needs to be fixed so that instsf=1 will work with grub
-        # - The super user password should be pulled in from the configuration
-	bootargs="console=ttyS0,115200 rdinit=/install instdev=$idev instname=wrlinux instbr=$INST_BRANCH insturl=$iurl instab=$OSTREE_USE_AB instsf=0 instsh=2 $EXTRA_INST_ARGS"
+	bootargs="console=ttyS0,115200 rdinit=/install $EXTRA_INST_ARGS instdev=$idev instname=wrlinux instbr=$INST_BRANCH insturl=$iurl instab=$OSTREE_USE_AB instsf=1"
+	if [ "$OSTREE_FLUX_PART" = "luksfluxdata" -a "$EXTRA_INST_ARGS" = "${EXTRA_INST_ARGS/LUKS/}" ] ; then
+		bootargs="$bootargs LUKS=1"
+	fi
 	echo "Using bootargs: $bootargs"
 	cat<<EOF> $OUTDIR/EFI/BOOT/grub.cfg
 set default="0"
@@ -136,8 +137,8 @@ set color_highlight='light-green/blue'
 get_efivar -f uint8 -s secured SecureBoot
 if [ "\${secured}" = "1" ]; then
     # Enable user authentication to make grub unlockable
-    set superusers="root"
-     password_pbkdf2 root grub.pbkdf2.sha512.10000.2ACE2378DE516E00A6722F4277A8D2573E252FE6EC2B768922849AFDDEC0AB87D0CA25951E572A0754540339EB4F45A6F7CD5C6F20823F75F268C823B3997237.9A9EB552ABB428FB82CE7351787FC225BCB13B1542C82B582D40424FF1BF4B292B547EE51F7495C9D3BEC51BAA008D7F2D1B8F533F7337B98DE74FD510948F04
+    set superusers="$OSTREE_GRUB_USER"
+     password_pbkdf2 $OSTREE_GRUB_USER $(cat $OSTREE_GRUB_PW_FILE)
 else
     get_efivar -f uint8 -s unprovisioned SetupMode
 
@@ -149,7 +150,7 @@ else
         }
     fi
 fi
-menuentry "OSTree Install /dev/vda" --unrestricted {
+menuentry "OSTree Install $idev" --unrestricted {
     set fallback=1
     efi-watchdog enable 0 180
     linux \${prefix}/bzImage $bootargs
@@ -364,8 +365,9 @@ echo "part / --source rootfs --rootfs-dir=$OUTDIR --ondisk sda --fstype=vfat --l
 write_wic
 exit 0
 
-# TODO... once the instsf=1 is fixed
+# TODO... 
 # Instructions for trail with a sample disk
 # ../layers/wr-ostree/scripts/bootfs.sh -n
 # qemu-img create -f raw img 10G
 # dd if=ustart.img of=img conv=notrunc
+# LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH swtpm socket --tpm2 --tpmstate dir=$PWD/my_tpm --ctrl type=unixio,path=$PWD/my_tpm/tpm-sock & qemu-system-x86_64 --enable-kvm --nographic -vnc :5 -drive file=OVMF_CODE.fd,format=raw,readonly,if=pflash,unit=0 -drive if=pflash,format=raw,unit=1,file=OVMF_VARS.fd -chardev "socket,id=chrtpm0,path=$PWD/my_tpm/tpm-sock" -tpmdev 'emulator,id=tpm0,chardev=chrtpm0' -device 'tpm-tis,tpmdev=tpm0' -drive file=img,if=virtio,format=raw -m 1024 -serial mon:stdio -netdev type=user,id=h1,tftp=bootfs,bootfile=EFI/BOOT/bootx64.efi -device e1000,netdev=h1,mac=00:55:55:01:01:01 -usbdevice tablet -cpu qemu64,+ssse3,+sse4.1,+sse4.2,+x2apic,rdrand -device virtio-rng-pci
