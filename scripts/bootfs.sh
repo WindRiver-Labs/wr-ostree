@@ -26,8 +26,11 @@ EXTRA_INST_ARGS=""
 INST_URL=""
 INST_BRANCH=""
 INST_DEV=""
+INSTL=/sysroot/boot/efi/ostree_repo
 SKIP_WIC=0
 OUTDIR=$PWD/bootfs
+LOCAL_REPO=0
+LOCAL_REPO_DIR=""
 
 usage() {
         cat<<EOF
@@ -35,6 +38,13 @@ usage: $0 [args]
 
 This command will build a small boot image which can be used for
 deployment with OSTree.
+
+Local Install Options:
+ -L       Create an image with a copy of the OSTree repository
+          from the deploy area, it will be used to for the initial
+          device install
+ -l <dir> Use a different directory for an install from a local
+          repository
 
 Network Install options:
  -b <branch>  branch to use for net install instbr=
@@ -127,6 +137,9 @@ create_grub_cfg() {
 	if [ "$OSTREE_FLUX_PART" = "luksfluxdata" -a "$EXTRA_INST_ARGS" = "${EXTRA_INST_ARGS/LUKS/}" ] ; then
 		bootargs="$bootargs LUKS=1"
 	fi
+	if [ $LOCAL_REPO = 1 ] ; then
+		bootargs="$bootargs instl=$INSTL"
+	fi
 	echo "Using bootargs: $bootargs"
 	cat<<EOF> $OUTDIR/EFI/BOOT/grub.cfg
 set default="0"
@@ -160,11 +173,11 @@ EOF
 }
 
 build_efi_area() {
-	bzimage=$(ls tmp*/deploy/images/*/bzImage)
-	initramfs=$(ls tmp*/deploy/images/*/initramfs-ostree-image*.cpio.gz |grep -v rootfs)
-	bootx64=$(ls tmp*/deploy/images/*/bootx64.efi 2> /dev/null)
-	lockdown=$(ls tmp*/deploy/images/*/LockDown.efi 2> /dev/null)
-	mmx64=$(ls tmp*/deploy/images/*/mmx64.efi 2> /dev/null)
+	bzimage=$(ls ${DEPLOY_DIR_IMAGE}/bzImage)
+	initramfs=$(ls ${DEPLOY_DIR_IMAGE}/initramfs-ostree-image*.cpio.gz |grep -v rootfs)
+	bootx64=$(ls ${DEPLOY_DIR_IMAGE}/bootx64.efi 2> /dev/null)
+	lockdown=$(ls ${DEPLOY_DIR_IMAGE}/LockDown.efi 2> /dev/null)
+	mmx64=$(ls ${DEPLOY_DIR_IMAGE}/mmx64.efi 2> /dev/null)
 
 	mkdir -p $OUTDIR/EFI/BOOT
 
@@ -199,6 +212,15 @@ build_bootfs() {
 	echo "Building: bootfs"
 	rm -rf $OUTDIR
 	$FAKEROOTCMD mkdir -p $OUTDIR
+	if [ $LOCAL_REPO = 1 ] ; then
+		if [ "$LOCAL_REPO_DIR" != "" ] ; then
+			cp -r ${LOCAL_REPO_DIR} $OUTDIR/ostree_repo || \
+				fatal "Could not copy ${LOCAL_REPO_DIR}"
+		else
+			cp -r ${DEPLOY_DIR_IMAGE}/ostree_repo $OUTDIR/ostree_repo || \
+				fatal "Could not copy ${DEPLOY_DIR_IMAGE}/ostree_rep"
+		fi
+	fi
 	# Copy IMAGE_BOOT_FILES
 	set -f
 	bfiles="${IMAGE_BOOT_FILES}"
@@ -219,18 +241,26 @@ build_bootfs() {
 		fi
 	done
 	set +f
-	# check for grub
-	grub=$(ls tmp*/deploy/images/*/grub*.efi 2> /dev/null)
 	if [ "$grub" != "" ] ; then
 		build_efi_area
 	fi
 }
 
 write_wic() {
-	if [ $SKIP_WIC = 1 ] ; then
-		return
+	echo "Writing: ustart.wks"
+
+	if [ "$grub" != "" ] ; then
+		echo "bootloader --ptable gpt" > ustart.wks
+	else
+		echo "bootloader --ptable msdos" > ustart.wks
 	fi
-	echo "Writing: ustart.img and ustart.img.bmap"
+	PARTSZ=""
+	if [ "$PARTSIZE" != "0" ] ; then
+		PARTSZ="--fixed-size=$PARTSIZE"
+	fi
+	echo "part / --source rootfs --rootfs-dir=$OUTDIR --ondisk sda --fstype=vfat --label boot --active --align 2048 $PARTSZ" >> ustart.wks
+
+echo "Writing: ustart.img and ustart.img.bmap"
 	rm -rf out-tmp
 	cmd="wic create -e ustart -v . -m -s ustart.wks -o out-tmp"
 	$cmd || fatal "Error running: $cmd"
@@ -251,7 +281,7 @@ write_wic() {
 	fi
 }
 
-while getopts "a:Bb:d:e:hNns:u:w" opt; do
+while getopts "a:Bb:d:e:hLl:Nns:u:w" opt; do
 	case ${opt} in
 		a)
 			EXTRA_INST_ARGS=$OPTARG
@@ -267,6 +297,13 @@ while getopts "a:Bb:d:e:hNns:u:w" opt; do
 			;;
 		e)
 			ENVFILE=$OPTARG
+			;;
+		l)
+			LOCAL_REPO_DIR=$OPTARG
+			LOCAL_REPO=1
+			;;
+		L)
+			LOCAL_REPO=1
 			;;
 		s)
 			PARTSIZE=$OPTARG
@@ -303,7 +340,7 @@ if [ "$ENVFILE" = "" -o "$ENVFILE" = "auto" ] ; then
 	# Generate an env file if possible...
 	latest=`ls -tr tmp*/deploy/images/*/ostree_repo/refs/heads/|tail -1`
 	if [ "$latest" = "" ] ; then
-		fatal "ERROR: No .env found in tmp*/deploy/images/*/*.env"
+		fatal "ERROR: No .env file or branch found the ostree_repo"
 	fi
 	ENVFILE=$PWD/$latest.env
 	if [ ! -e $ENVFILE ] ; then
@@ -330,11 +367,18 @@ eval `grep ^IMAGE_BASENAME $ENVFILE`
 eval `grep ^BOOT_ $ENVFILE`
 eval `grep ^OSTREE_ $ENVFILE | perl -p -e '($a,$b) = split(/=/,$_,2); $a =~ s/-/_/g; $_ = "$a=$b"'`
 
+grub=$(ls $DEPLOY_DIR_IMAGE/grub*.efi 2> /dev/null)
+
 if [ "$INST_URL" != "" ] ; then
 	OSTREE_REMOTE_URL="$INST_URL"
 fi
 if [ "$OSTREE_REMOTE_URL" = "" ] ; then
-	fatal 'ERROR: OSTREE_REMOTE_URL = "your_ostree_repo_url" must be defined in local.conf'
+	if [ $LOCAL_REPO = 1 ] ; then
+		OSTREE_REMOTE_URL=file://$INSTL
+		echo "WARNING: Setting url to: $OSTREE_REMOTE_URL"
+	else
+	    fatal 'ERROR: OSTREE_REMOTE_URL = "your_ostree_repo_url" must be defined in local.conf'
+	fi
 fi
 
 export PSEUDO_PREFIX=$RECIPE_SYSROOT_NATIVE/usr
@@ -349,20 +393,12 @@ fi
 [ $DO_BUILD_BOOTFS = 1 ] && build_bootfs
 [ $MODIFY_BOOT_SCR = 1 ] && modify_boot_scr
 
-echo "Writing: ustart.wks"
-
-if [ "$grub" != "" ] ; then
-	echo "bootloader --ptable gpt" > ustart.wks
+if [ $SKIP_WIC = 1 ] ; then
+	echo "bootfs.sh completed succesfully."
 else
-	echo "bootloader --ptable msdos" > ustart.wks
+	write_wic
 fi
-PARTSZ=""
-if [ "$PARTSIZE" != "0" ] ; then
-	PARTSZ="--fixed-size=$PARTSIZE"
-fi
-echo "part / --source rootfs --rootfs-dir=$OUTDIR --ondisk sda --fstype=vfat --label boot --active --align 2048 $PARTSZ" >> ustart.wks
 
-write_wic
 exit 0
 
 # TODO... 
