@@ -45,6 +45,7 @@ OPTIONAL:
  LUKS=1				- Encrypt var volume (requires TPM)
  LUKS=2				- Encrypt var and and root volumes (requires TPM)
  instflux=0			- Do not create/use the fluxdata partition
+ instl=DIR			- Local override ostree repo to install from
  instsh=1			- Start a debug shell
  instsh=2			- Use verbose logging
  instsh=3			- Use verbose logging and start shell
@@ -137,6 +138,7 @@ fatal() {
     echo >$CONSOLE
     if [ "$INSTPOST" = "shell" ] ; then shell_start ; fi
     if [ "$INSTPOST" = "exit" ] ; then exit 1 ; fi
+    sleep 10
     lreboot
 }
 
@@ -156,6 +158,7 @@ INSTPOST=${INSTPOST=""}
 INSTOS=${INSTOS=""}
 INSTNAME=${INSTNAME=""}
 BL=${BL=""}
+INSTL=${INSTL=""}
 INSTPT=${INSTPT=""}
 INSTFMT=${INSTFMT=""}
 INSTBR=${INSTBR=""}
@@ -190,13 +193,14 @@ read_args() {
 				if [ "$INSTSH" = "" ] ; then
 					INSTSH=$optarg
 					if [ "$INSTSH" = 2 -o "$INSTSH" = 3 ] ; then
-						set -x
-						set -v
+						set -xv
 					fi
 				fi
 				;;
 			ip=*)
 				IP=$optarg ;;
+			instl=*)
+				if [ "$INSTL" = "" ] ; then INSTL=$optarg; fi ;;
 			instdev=*)
 				if [ "$INSTDEV" = "" ] ; then INSTDEV=$optarg; fi ;;
 			instab=*)
@@ -649,7 +653,14 @@ ostree remote --repo=${PHYS_SYSROOT}/ostree/repo add ${do_gpg} ${INSTNAME} ${INS
 touch /etc/ssl/certs/ca-certificates.crt
 mkdir -p /var/volatile/tmp /var/volatile/run
 
-ostree pull --repo=${PHYS_SYSROOT}/ostree/repo ${INSTNAME} ${INSTBR} || fatal "Error: ostree pull failed"
+lpull=""
+if [ "$INSTL" != "" ] ; then
+	lpull="--url file://$INSTL"
+fi
+
+cmd="ostree pull $lpull --repo=${PHYS_SYSROOT}/ostree/repo ${INSTNAME} ${INSTBR}"
+echo running: $cmd
+$cmd || fatal "Error: ostree pull failed"
 export OSTREE_BOOT_PARTITION="/boot"
 ostree admin deploy ${kargs_list} --sysroot=${PHYS_SYSROOT} --os=${INSTOS} ${INSTNAME}:${INSTBR} || fatal "Error: ostree deploy failed"
 
@@ -690,7 +701,7 @@ if [ "$INSTAB" = "1" ] ; then
 		touch  ${PHYS_SYSROOT}_b/boot/loader/uEnv.txt
 	fi
 
-	ostree pull --repo=${PHYS_SYSROOT}_b/ostree/repo --localcache-repo=${PHYS_SYSROOT}/ostree/repo ${INSTNAME}:${INSTBR} || fatal "ostree pull failed"
+	ostree pull $lpull --repo=${PHYS_SYSROOT}_b/ostree/repo --localcache-repo=${PHYS_SYSROOT}/ostree/repo ${INSTNAME}:${INSTBR} || fatal "ostree pull failed"
 	ostree admin deploy ${kargs_list} --sysroot=${PHYS_SYSROOT}_b --os=${INSTOS} ${INSTBR} || fatal "ostree deploy failed"
 fi
 
