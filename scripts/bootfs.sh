@@ -76,7 +76,12 @@ modify_boot_scr() {
 	fi
 	# Strip off original header
 	tail -c+73 $OUTDIR/boot.scr > $OUTDIR/boot.scr.raw
-	perl -p -i -e "s#^( *setenv BRANCH) .*#\$1 $INST_BRANCH $EXTRA_INST_ARGS# if (\$_ !~ /oBRANCH/) " $OUTDIR/boot.scr.raw
+	if [ $LOCAL_REPO = 1 ] ; then
+		EXTRA_INST_ARGS="$EXTRA_INST_ARGS instl=$INSTL"
+	fi
+
+	perl -p -i -e "s#^( *setenv BRANCH) .*#\$1 $INST_BRANCH# if (\$_ !~ /oBRANCH/) " $OUTDIR/boot.scr.raw
+	perl -p -i -e "s#^( *setenv exinargs).*#\$1 $EXTRA_INST_ARGS#" $OUTDIR/boot.scr.raw
 	if [ -n "$INST_URL" ] ; then
 		perl -p -i -e "s#^( *setenv URL) .*#\$1 $INST_URL# if (\$_ !~ /oURL/) " $OUTDIR/boot.scr.raw
 	fi
@@ -260,13 +265,26 @@ write_wic() {
 	fi
 	echo "part / --source rootfs --rootfs-dir=$OUTDIR --ondisk sda --fstype=vfat --label boot --active --align 2048 $PARTSZ" >> ustart.wks
 
-echo "Writing: ustart.img and ustart.img.bmap"
+	echo "Writing: ustart.img and ustart.img.bmap"
 	rm -rf out-tmp
+	mkdir out-tmp
 	cmd="wic create -e ustart -v . -m -s ustart.wks -o out-tmp"
-	$cmd || fatal "Error running: $cmd"
+	$cmd 2>&1 > /dev/null | tee out-tmp/log 2>&1
+	if [ ${PIPESTATUS[0]} != 0 ] ; then
+		grep -q "is larger" out-tmp/log
+		if [ $? = 0 ] ; then
+			echo "Error with partition size too small"
+			echo "   To use automatic partition size cacluation please run bootfs.sh with:"
+                        echo "       -s 0"
+			echo "   Or use a number in MB that is large enough to hold all the data"
+			exit 1
+		else
+			fatal "Error running: $cmd"
+		fi
+	fi
 	mv out-tmp/*.direct ustart.img
 	mv out-tmp/*.bmap ustart.img.bmap
-	rmdir out-tmp
+	rm -rf out-tmp
 	if [ "$COMPRESS" = "1" ] ; then
 		echo "Compressing image and writing: ustart.img.gz"
 		gzip -f ustart.img

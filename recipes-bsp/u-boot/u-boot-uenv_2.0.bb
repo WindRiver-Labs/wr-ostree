@@ -137,14 +137,15 @@ if test -n \${oBRANCH}; then
 else
  setenv BRANCH ${OSTREE_NETINST_BRANCH}
 fi
+setenv exinargs
 setenv netinstpre "fdt addr \${fdt_addr};"
 setenv instdef "$NETINST_ARGS"
 if test -n \${nistargs}; then
  setenv netinst "\${ninstargs}"
 else
- setenv netinst "\${netinstpre}fatload mmc \${mmcdev}:1 \${loadaddr} Image;fatload mmc \${mmcdev}:1 \${initrd_addr} initramfs; setenv bootargs \\"\${instdef\} \${exnetargs}\\";${OSTREE_UBOOT_CMD} \${loadaddr} \${initrd_addr} \${fdt_addr}"
+ setenv netinst "\${netinstpre}fatload mmc \${mmcdev}:1 \${loadaddr} Image;fatload mmc \${mmcdev}:1 \${initrd_addr} initramfs; setenv bootargs \\"\${instdef} \${exinargs}\\";${OSTREE_UBOOT_CMD} \${loadaddr} \${initrd_addr} \${fdt_addr}"
 fi
-setenv autoinst echo "!!!Autostarting network install, you have 5 seconds to reset the board!!!"\;sleep 5\;run netinst
+setenv autoinst echo "!!!Autostarting ERASE and INSTALL, you have 5 seconds to reset the board!!!"\;sleep 5\;run netinst
 if test "\${no_autonetinst}" != 1 && test -n \${URL} ; then
  if test "\${ex}" != "_b"; then
   if test ! -e mmc \${mmcdev}:\$mmcpart 1/vmlinuz && test ! -e mmc \${mmcdev}:\$mmcpart 2/vmlinuz; then
@@ -166,7 +167,7 @@ if test \${no_menu} != yes; then
   setenv bootmenu_1 Boot Primary volume=setenv bdef 30\;run switchab\;setenv go 1
  fi
  if test -n \${URL} && test \${ninst} = 1; then
-  setenv bootmenu_2 Re-install from network=run netinst
+  setenv bootmenu_2 Re-install from ostree_repo=run netinst
  else
   setenv bootmenu_2
  fi
