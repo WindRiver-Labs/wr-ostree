@@ -71,6 +71,7 @@ BAD_RECOMMENDATIONS += "busybox-syslog"
 
 PACKAGE_INSTALL_append = " \
 	${@bb.utils.contains('DISTRO_FEATURES', 'luks', 'packagegroup-luks-initramfs', '', d)} \
+	${@bb.utils.contains('DISTRO_FEATURES', 'ima', 'packagegroup-ima-initramfs', '', d)} \
 "
 ROOTFS_POSTPROCESS_COMMAND += "ostree_check_rpm_public_key;add_gpg_key;"
 
