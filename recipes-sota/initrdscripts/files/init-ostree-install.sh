@@ -306,8 +306,6 @@ grub_partition() {
 	else
 		sgdisk -Z ${dev}
 		first=`sgdisk -F ${dev}|grep -v Creating`
-		vv="$first+($FSZ*1024*1024/$lsz)-1"
-		echo =$vv=
 		end=$(($first+($FSZ*1024*1024/$lsz)-1))
 		a="$a -n 1:$first:$end -c 1:otaefi -t 1:EF00"
 		first=$(($end+1))
