@@ -21,10 +21,10 @@
 
 helptxt() {
 	cat <<EOF
-Usage: This script is intended to run from the initramfs use the ostree
+Usage: This script is intended to run from the initramfs and use the ostree
 binaries in the initramfs to install a file system onto a disk device.
 
-The arguments to this script are passed through the boot arguments.
+The arguments to this script are passed through the kernel boot arguments.
 
 REQUIRED:
  rdinit=/install		- Activates the installer
@@ -416,7 +416,7 @@ ufdisk_partition() {
 
 ##################
 
-if [ $# -gt 0 ] ; then
+if [ "$1" = "-h" -o "$1" = "-?" ] ; then
 	helptxt
 	exit 0
 fi
