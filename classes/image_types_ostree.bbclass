@@ -6,6 +6,8 @@ GPG_PATH ??= ""
 OSTREE_COMMIT_DEV ??= "0"
 OSTREE_CREATE_TARBALL ??= "0"
 
+DEPENDS += "policycoreutils-native"
+
 do_image_ostree[depends] = "ostree-native:do_populate_sysroot \
                         openssl-native:do_populate_sysroot \
 			coreutils-native:do_populate_sysroot \
@@ -83,6 +85,17 @@ ostree_check_rpm_public_key[lockfiles] = "${TMPDIR}/gpg_key.lock"
 do_package_write_rpm[prefuncs] += "ostree_check_rpm_public_key"
 do_rootfs[prefuncs] += "ostree_check_rpm_public_key"
 
+selinx_set_labels (){
+    POL_TYPE=$(sed -n -e "s&^SELINUXTYPE[[:space:]]*=[[:space:]]*\([0-9A-Za-z_]\+\)&\1&p" ${OSTREE_ROOTFS}/usr/${sysconfdir}/selinux/config)
+    if ! setfiles -m -r ${OSTREE_ROOTFS} ${OSTREE_ROOTFS}/usr/${sysconfdir}/selinux/${POL_TYPE}/contexts/files/file_contexts ${OSTREE_ROOTFS}
+    then
+        bb.fatal "selinux_set_labels error."
+        exit 0
+    fi
+    rm ${OSTREE_ROOTFS}/.autorelabel
+
+}
+
 create_tarball_and_ostreecommit[vardepsexclude] = "DATETIME"
 create_tarball_and_ostreecommit() {
 	local _image_basename=$1
@@ -142,14 +155,26 @@ create_tarball_and_ostreecommit() {
 			echo "exec $gpg_bin \$exarg \$@" >> ${WORKDIR}/gpg
 			chmod 700 ${WORKDIR}/gpg
 		fi
-		PATH="${WORKDIR}:$PATH" flock ${OSTREE_REPO}.lock ostree --repo=${OSTREE_REPO} commit \
-			--tree=dir=${OSTREE_ROOTFS} \
-			--skip-if-unchanged \
-			--gpg-sign="${OSTREE_GPGID}" \
-			--gpg-homedir=$gpg_path \
-			--branch=${_image_basename} \
-			--timestamp=${_timestamp} \
-			--subject="Commit-id: ${_image_basename}-${MACHINE}-${DATETIME}"
+		if [ -n "${@bb.utils.contains('DISTRO_FEATURES', 'selinux', 'Y', '', d)}" ]; then
+			PATH="${WORKDIR}:$PATH" flock ${OSTREE_REPO}.lock ostree --repo=${OSTREE_REPO} commit \
+				--tree=dir=${OSTREE_ROOTFS} \
+				--selinux-policy ${OSTREE_ROOTFS} \
+				--skip-if-unchanged \
+				--gpg-sign="${OSTREE_GPGID}" \
+				--gpg-homedir=$gpg_path \
+				--branch=${_image_basename} \
+				--timestamp=${_timestamp} \
+				--subject="Commit-id: ${_image_basename}-${MACHINE}-${DATETIME}"
+		else
+			PATH="${WORKDIR}:$PATH" flock ${OSTREE_REPO}.lock ostree --repo=${OSTREE_REPO} commit \
+				--tree=dir=${OSTREE_ROOTFS} \
+				--skip-if-unchanged \
+				--gpg-sign="${OSTREE_GPGID}" \
+				--gpg-homedir=$gpg_path \
+				--branch=${_image_basename} \
+				--timestamp=${_timestamp} \
+				--subject="Commit-id: ${_image_basename}-${MACHINE}-${DATETIME}"
+		fi
         fi
 }
 
@@ -392,6 +417,11 @@ IMAGE_CMD_ostree () {
 
 	# Preserve OSTREE_BRANCHNAME for future information
 	mkdir -p ${OSTREE_ROOTFS}/usr/share/sota/
+
+	if [ -n "${@bb.utils.contains('DISTRO_FEATURES', 'selinux', 'Y', '', d)}" ]; then
+		selinx_set_labels
+	fi
+
 	timestamp=`date +%s`
 	if [ "${OSTREE_COMMIT_DEV}" = "1" ] ; then
 		echo -n "${OSTREE_BRANCHNAME}-dev" > ${OSTREE_ROOTFS}/usr/share/sota/branchname
