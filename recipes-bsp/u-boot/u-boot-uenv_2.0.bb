@@ -244,3 +244,4 @@ do_deploy() {
 }
 addtask do_deploy after do_compile before do_build
 
+COMPATIBLE_HOST = "(aarch64|arm).*-linux"
