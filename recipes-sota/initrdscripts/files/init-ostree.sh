@@ -163,7 +163,7 @@ udevadm settle --timeout=3
 mkdir -p $ROOT_MOUNT/
 
 if [ "${ROOT_DELAY}" != "0" ] ;then
-    sleep ${ROOT_DELAY}
+	sleep ${ROOT_DELAY}
 fi
 
 [ -z $OSTREE_ROOT_DEVICE ] && fatal "No OSTREE root device specified, please add 'ostree_root=LABEL=xyz' in bootline!"
@@ -171,40 +171,43 @@ fi
 OSTREE_LABEL_ROOT=$(echo $OSTREE_ROOT_DEVICE | cut -f 2 -d'=')
 
 rm_var_check() {
-    [ $ALLOW_RM_VAR != 1 -o ! -e /sysroot/ostree/repo/RESETVAR ] && return
-    e=`cat /sysroot/ostree/repo/RESETVAR`
-    rm -f /sysroot/ostree/repo/RESETVAR
-    if [ -e /sysroot/ostree/repo/RESETVAR ] ; then
-	    echo "ERROR removing /sysroot/ostree/repo/RESETVAR"
-	    return
-    fi
-    if [ -n $datapart ] ; then
-	    if [ "$e" = "ERASE" ] ; then
-		    echo "Erasing /var..."
-		    mount -o rw,noatime,iversion $datapart /var
-		    if [ $? != 0 ] ; then
-			    echo "Error could not mount"
-			    return
-		    fi
-		    (shopt -s dotglob ; rm -rf /var/*)
-		    cp -a /sysroot/var/* /var
-		    umount /var
-	    elif [ "$e" = "FORMAT" ] ; then
-		    t=`lsblk -o FSTYPE -n $datapart`
-		    if [ -z "$t" ] ; then
-			    echo "Error unknown partition type falling back to ext4"
-			    t=ext4
-		    fi
-		    mkfs.$t -F -L $fluxdata_label $datapart
-		    mount -o rw,noatime,iversion $datapart /var
-		    if [ $? != 0 ] ; then
-			    echo "Error could not mount"
-			    return
-		    fi
-		    cp -a /sysroot/var/* /var
-		    umount /var
-	    fi
-    fi
+	[ $ALLOW_RM_VAR != 1 -o ! -e /sysroot/ostree/repo/RESETVAR ] && return
+	e=`cat /sysroot/ostree/repo/RESETVAR`
+	rm -f /sysroot/ostree/repo/RESETVAR
+	if [ -e /sysroot/ostree/repo/RESETVAR ] ; then
+		echo "ERROR removing /sysroot/ostree/repo/RESETVAR"
+		return
+	fi
+	fluxdata_label=$OSTREE_LABEL_FLUXDATA
+	[ -z $fluxdata_label ] && return 0
+	datapart=$(blkid -s LABEL | grep "LABEL=\"$fluxdata_label\"" |head -n 1| awk -F: '{print $1}')
+	if [ -n $datapart ] ; then
+		if [ "$e" = "ERASE" ] ; then
+			echo "Erasing /var..."
+			mount -o rw,noatime,iversion $datapart /var
+			if [ $? != 0 ] ; then
+				echo "Error could not mount"
+				return
+			fi
+			(shopt -s dotglob ; rm -rf /var/*)
+			cp -a /sysroot/var/* /var
+			umount /var
+		elif [ "$e" = "FORMAT" ] ; then
+			t=`lsblk -o FSTYPE -n $datapart`
+			if [ -z "$t" ] ; then
+				echo "Error unknown partition type falling back to ext4"
+				t=ext4
+			fi
+			mkfs.$t -F -L $fluxdata_label $datapart
+			mount -o rw,noatime,iversion $datapart /var
+			if [ $? != 0 ] ; then
+				echo "Error could not mount"
+				return
+			fi
+			cp -a /sysroot/var/* /var
+			umount /var
+		fi
+	fi
 }
 
 try_to_mount_rootfs() {
