@@ -45,6 +45,7 @@ Local Install Options:
           device install
  -l <dir> Use a different directory for an install from a local
           repository
+ -l 0     Create a local repository with only the deploy branch
 
 Network Install options:
  -b <branch>  branch to use for net install instbr=
@@ -218,7 +219,20 @@ build_bootfs() {
 	rm -rf $OUTDIR
 	$FAKEROOTCMD mkdir -p $OUTDIR
 	if [ $LOCAL_REPO = 1 ] ; then
-		if [ "$LOCAL_REPO_DIR" != "" ] ; then
+		if [ "$LOCAL_REPO_DIR" = "0" ] ; then
+			echo "Creating new inst_ostree_repo with: $INST_BRANCH"
+			OLDPATH="$PATH"
+			PATH=$RECIPE_SYSROOT_NATIVE/usr/bin:$RECIPE_SYSROOT_NATIVE/bin:$PATH
+			rm -rf localfs inst_ostree_repo
+			repo=${DEPLOY_DIR_IMAGE}/ostree_repo
+			ostree init --repo=inst_ostree_repo --mode=archive-z2 || fatal "ostree repo init failed"
+			ostree config --repo=inst_ostree_repo set core.mode archive-z2 || fatal "ostree repo config failed"
+			ostree pull-local --repo=inst_ostree_repo $repo core-image-minimal || fatal "ostree repo pull-local failed"
+			ostree summary -u --repo=inst_ostree_repo || fatal "ostree repo summary failed"
+			PATH="$OLDPATH"
+			cp -r inst_ostree_repo $OUTDIR/ostree_repo || \
+				fatal "Could not copy ${LOCAL_REPO_DIR}"
+		elif [ "$LOCAL_REPO_DIR" != "" ] ; then
 			cp -r ${LOCAL_REPO_DIR} $OUTDIR/ostree_repo || \
 				fatal "Could not copy ${LOCAL_REPO_DIR}"
 		else
@@ -363,7 +377,11 @@ if [ "$ENVFILE" = "" -o "$ENVFILE" = "auto" ] ; then
 	ENVFILE=$PWD/$latest.env
 	if [ ! -e $ENVFILE ] ; then
 		echo "Running bitbake -e $latest > $ENVFILE"
-		bitbake -e $latest > $ENVFILE || fatal "Error running bitbake"
+		bitbake -e $latest > $ENVFILE
+		if [ $? != 0 ] ; then
+			rm $ENVFILE
+			fatal "Error running bitbake"
+		fi
 	else
 		echo "Using cached: $ENVFILE"
 	fi
@@ -371,7 +389,11 @@ fi
 
 if [ ! -e "$ENVFILE" -a "$ENVFILE" != "${ENVFILE%.env}" ] ; then
 	echo "Running bitbake -e ${ENVFILE%.env} > $ENVFILE"
-	bitbake -e -e ${ENVFILE%.env} > $ENVFILE || fatal "Error running bitbake"
+	bitbake -e ${ENVFILE%.env} > $ENVFILE
+	if [ $? != 0 ] ; then
+		rm $ENVFILE
+		fatal "Error running bitbake"
+	fi
 fi
 
 echo "Env settings from: $ENVFILE"
