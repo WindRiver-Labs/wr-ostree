@@ -157,7 +157,7 @@ IMAGE_CMD_otaimg () {
 				printf '1' >  ${WORKDIR}/rootfs_ota_uboot/no_ab
 			fi
 
-			if [ "$OSTREE_COPY_IMAGE_BOOT_FILES" = "1" ] ; then
+			if [ "${OSTREE_COPY_IMAGE_BOOT_FILES}" = "1" ] ; then
 				# Copy IMAGE_BOOT_FILES
 				set -f
 				bfiles="${IMAGE_BOOT_FILES}"
