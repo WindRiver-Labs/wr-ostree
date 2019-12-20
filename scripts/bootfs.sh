@@ -132,7 +132,7 @@ create_grub_cfg() {
 		cp $grubcfg $OUTDIR/EFI/BOOT/grub.cfg
 		return
 	fi
-	idev=/dev/vda
+	idev=/dev/vda,/dev/nbd,/dev/sda
 	if [ "$INST_DEV" != "" ] ; then
 		idev=$INST_DEV
 	fi

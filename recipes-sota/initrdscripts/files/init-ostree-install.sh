@@ -28,7 +28,8 @@ The arguments to this script are passed through the kernel boot arguments.
 
 REQUIRED:
  rdinit=/install		- Activates the installer
- instdev=/dev/YOUR_DEVCICE	- Which device to install to
+ instdev=/dev/YOUR_DEVCICE	- One or more devices separated by a comma
+	  where the first valid device found is used as the install device
  instname=OSTREE_REMOTE_NAME	- Remote name like wrlinux
  instbr=OSTREE_BRANCH_NAME	- Branch for OSTree to use
  insturl=OSTREE_URL		- URL to OSTree repository
@@ -485,9 +486,21 @@ fi
 retry=0
 fail=1
 while [ $retry -lt $MAX_TIMEOUT_FOR_WAITING_LOWSPEED_DEVICE ] ; do
-	if [ -e $INSTDEV ] ; then
-		fail=0
-		break
+	if [ "$INSTDEV" = "${INSTDEV//,/ }" ] ; then
+		if [ -e $INSTDEV ] ; then
+			fail=0
+			break
+		fi
+	else
+		for i in ${INSTDEV//,/ }; do
+			if [ -e $i ] ; then
+				INSTDEV=$i
+				echo "Installing to: $i"
+				fail=0
+				break
+			fi
+		done
+		[ fail = 0 ] && break
 	fi
 	retry=$(($retry+1))
 	sleep 0.1
