@@ -150,17 +150,18 @@ create_grub_cfg() {
 	fi
 	echo "Using bootargs: $bootargs"
 	cat<<EOF> $OUTDIR/EFI/BOOT/grub.cfg
-set default="0"
-set timeout=3
-set color_normal='light-gray/black'
-set color_highlight='light-green/blue'
+if [ "\${boot_part}" = "" ] ; then
+  set default="0"
+  set timeout=3
+  set color_normal='light-gray/black'
+  set color_highlight='light-green/blue'
 
-get_efivar -f uint8 -s secured SecureBoot
-if [ "\${secured}" = "1" ]; then
+  get_efivar -f uint8 -s secured SecureBoot
+  if [ "\${secured}" = "1" ]; then
     # Enable user authentication to make grub unlockable
     set superusers="$OSTREE_GRUB_USER"
      password_pbkdf2 $OSTREE_GRUB_USER $(cat $OSTREE_GRUB_PW_FILE)
-else
+  else
     get_efivar -f uint8 -s unprovisioned SetupMode
 
     if [ "\${unprovisioned}" = "1" ]; then
@@ -170,7 +171,9 @@ else
             chainloader \${prefix}/LockDown.efi
         }
     fi
+  fi
 fi
+
 menuentry "OSTree Install $idev" --unrestricted {
     set fallback=1
     efi-watchdog enable 0 180
@@ -210,8 +213,10 @@ build_efi_area() {
 		do_cp_and_sig $mmx64 $OUTDIR/EFI/BOOT/mmx64.efi
 	fi
 	create_grub_cfg
+	cp $OUTDIR/EFI/BOOT/grub.cfg $OUTDIR/EFI/BOOT/igrub.cfg
 	if [ "$lockdown" != "" ] ; then
 		sign_grub
+		cp $OUTDIR/EFI/BOOT/grub.cfg.sig $OUTDIR/EFI/BOOT/igrub.cfg.sig
 	fi
 }
 
