@@ -234,7 +234,7 @@ build_bootfs() {
 			repo=${DEPLOY_DIR_IMAGE}/ostree_repo
 			ostree init --repo=inst_ostree_repo --mode=archive-z2 || fatal "ostree repo init failed"
 			ostree config --repo=inst_ostree_repo set core.mode archive-z2 || fatal "ostree repo config failed"
-			ostree pull-local --repo=inst_ostree_repo $repo core-image-minimal || fatal "ostree repo pull-local failed"
+			ostree pull-local --repo=inst_ostree_repo $repo $INST_BRANCH || fatal "ostree repo pull-local failed"
 			ostree summary -u --repo=inst_ostree_repo || fatal "ostree repo summary failed"
 			PATH="$OLDPATH"
 			cp -r inst_ostree_repo $OUTDIR/ostree_repo || \
