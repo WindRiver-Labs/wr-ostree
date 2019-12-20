@@ -302,6 +302,7 @@ grub_partition() {
 		done
 		a="$a -c 1:otaefi -t 1:EF00"
 		sgdisk -e $a ${dev}
+		a=""
 		first=`sgdisk -F ${dev}|grep -v Creating`
 	else
 		sgdisk -Z ${dev}
