@@ -310,13 +310,23 @@ write_wic() {
 		echo "Compressing image and writing: ustart.img.gz"
 		gzip -f ustart.img
 	fi
-	echo "=================== SUCCESS ====================="
-	echo "==== Write image to device with command below ==="
-	echo "================================================="
+	echo "======================== SUCCESS ==============================="
+	echo "==== Write image to device with one of the command(s) below ===="
+	echo "================================================================"
+	if ! which ls > /dev/null ; then
+		echo "### NOTE: bmaptool is not in your path, so you should run:"
+		echo "  bitbake bmap-tools-native"
+		echo "  bitbake build-sysroots"
+		echo "  PATH=\$PWD/$(ls -trd tmp tmp-glibc 2> /dev/null |tail -1 )/sysroots/x86_64/usr/bin:\$PATH \\"
+	fi
 	if [ "$COMPRESS" = "1" ] ; then
-		echo "bmaptool copy --bmap ustart.img.bmap ustart.img.gz /dev/YOUR_DISK_DEVICE"
+		echo "   bmaptool copy --bmap ustart.img.bmap ustart.img.gz /dev/YOUR_DISK_DEVICE"
+		echo "### or run ###"
+		echo "   zcat ustart.img.gz | dd bs=1M of=/dev/YOUR_DISK_DEVICE"
 	else
-		echo "bmaptool copy --bmap ustart.img.bmap ustart.img /dev/YOUR_DISK_DEVICE"
+		echo "   bmaptool copy --bmap ustart.img.bmap ustart.img /dev/YOUR_DISK_DEVICE"
+		echo "### or run ###"
+		echo "   dd if=ustart.img bs=1M of=/dev/YOUR_DISK_DEVICE"
 	fi
 }
 
