@@ -47,6 +47,10 @@ cleanup() {
 	for d in $CLEANUP_DIRS ; do
 		rmdir $d
 	done
+
+	if [ -e /etc/.autorelabel ];then
+		rm /etc/.autorelabel -rf
+	fi
 }
 # get the label name for boot partition to be upgraded
 get_upgrade_part_label() {
@@ -318,10 +322,17 @@ update_env() {
 	fi
 }
 
+check_selinux() {
+	if [ -e /usr/sbin/selinuxenabled ];then
+		touch /etc/.autorelabel
+	fi
+}
+
 run_upgrade() {
 	if [ -e /ostree/repo/RESETVAR ] ; then
 		rm -f /ostree/repo/RESETVAR
 	fi
+	check_selinux
 	prepare_upgrade
 	ostree_upgrade
 	update_env
