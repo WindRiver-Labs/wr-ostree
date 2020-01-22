@@ -11,7 +11,7 @@ DEPENDS += "${@bb.utils.contains('DISTRO_FEATURES', 'selinux', 'policycoreutils-
 do_image_ostree[depends] = "ostree-native:do_populate_sysroot \
                         openssl-native:do_populate_sysroot \
 			coreutils-native:do_populate_sysroot \
-                        wic-tools:do_build \
+                        wic-tools:do_populate_sysroot \
                         virtual/kernel:do_deploy \
                         ${OSTREE_INITRAMFS_IMAGE}:do_image_complete \
                         ${@'grub:do_populate_sysroot' if d.getVar('OSTREE_BOOTLOADER_INCLUDE', True) == 'grub' else ''} \
