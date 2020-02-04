@@ -515,6 +515,8 @@ if [ "${fs_dev#/dev/mmcblk}" != ${fs_dev} ] ; then
        fs_dev="${INSTDEV}p"
 elif [ "${fs_dev#/dev/nbd}" != ${fs_dev} ] ; then
        fs_dev="${INSTDEV}p"
+elif [ "${fs_dev#/dev/nvme}" != ${fs_dev} ] ; then
+       fs_dev="${INSTDEV}p"
 elif [ "${fs_dev#/dev/loop}" != ${fs_dev} ] ; then
        fs_dev="${INSTDEV}p"
 fi
