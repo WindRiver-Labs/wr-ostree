@@ -143,6 +143,7 @@ IMAGE_CMD_otaimg () {
 		fi
 
 		if [ "${OSTREE_BOOTLOADER}" = "u-boot" ]; then
+			rm -rf ${WORKDIR}/rootfs_ota_uboot
 			mkdir -p ${WORKDIR}/rootfs_ota_uboot
 
 			bootdir=$(grep ^bootdir= ${PHYS_SYSROOT}/boot/loader/uEnv.txt)
@@ -153,7 +154,7 @@ IMAGE_CMD_otaimg () {
 			printf "123A" >  ${WORKDIR}/rootfs_ota_uboot/boot_ab_flag
 			# The first 0 is the boot count, the second zero is the boot entry default
 			printf '00WR' >  ${WORKDIR}/rootfs_ota_uboot/boot_cnt
-			if [ "${INSTAB}" != "1" ] ; then
+			if [ "${OSTREE_USE_AB}" != "1" ] ; then
 				printf '1' >  ${WORKDIR}/rootfs_ota_uboot/no_ab
 			fi
 
