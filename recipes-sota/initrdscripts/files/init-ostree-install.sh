@@ -294,7 +294,7 @@ grub_partition() {
 	lsz=${lsz// /}
 	# EFI Partition
 	if [ ! -e ${fs_dev}1 ] ; then
-		echo "WARNING WARNING - ${fsdev}1 does not exist, creating"
+		echo "WARNING WARNING - ${fs_dev}1 does not exist, creating"
 		INSTSF=0
 	fi
 	if [ $INSTSF = 1 ] ; then
@@ -349,7 +349,7 @@ grub_partition() {
 
 ufdisk_partition() {
 	if [ ! -e ${fs_dev}1 ] ; then
-		echo "WARNING WARNING - ${fsdev}1 does not exist, creating"
+		echo "WARNING WARNING - ${fs_dev}1 does not exist, creating"
 		INSTSF=0
 	fi
 	if [ $INSTSF = 1 ] ; then
@@ -644,6 +644,13 @@ fi
 
 mount "${OSTREE_BOOT_DEVICE}" "${PHYS_SYSROOT}/boot"  || fatal "Error mouting ${OSTREE_BOOT_DEVICE}"
 
+set -x
+mkdir /instboot
+blkid --label instboot
+if [ $? = 0 ] ; then
+	mount -r LABEL=instboot /instboot
+fi
+
 mkdir -p ${PHYS_SYSROOT}/boot/efi
 mount ${fs_dev}1 ${PHYS_SYSROOT}/boot/efi || fatal "Error mouting ${fs_dev}1"
 
@@ -669,7 +676,11 @@ mkdir -p /var/volatile/tmp /var/volatile/run
 
 lpull=""
 if [ "$INSTL" != "" ] ; then
-	lpull="--url file://$INSTL"
+	if [ -e /instboot${INSTL#/sysroot/boot/efi} ] ; then
+		lpull="--url file:///instboot${INSTL#/sysroot/boot/efi}"
+	else
+		lpull="--url file://$INSTL"
+	fi
 fi
 
 cmd="ostree pull $lpull --repo=${PHYS_SYSROOT}/ostree/repo ${INSTNAME} ${INSTBR}"
