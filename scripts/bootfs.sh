@@ -284,7 +284,7 @@ write_wic() {
 	if [ "$PARTSIZE" != "0" ] ; then
 		PARTSZ="--fixed-size=$PARTSIZE"
 	fi
-	echo "part / --source rootfs --rootfs-dir=$OUTDIR --ondisk sda --fstype=vfat --label boot --active --align 2048 $PARTSZ" >> ustart.wks
+	echo "part / --source rootfs --rootfs-dir=$OUTDIR --ondisk sda --fstype=vfat --label instboot --active --align 2048 $PARTSZ" >> ustart.wks
 
 	echo "Writing: ustart.img and ustart.img.bmap"
 	rm -rf out-tmp
