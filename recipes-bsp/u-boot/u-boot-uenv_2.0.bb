@@ -137,13 +137,22 @@ if test -n \${oBRANCH}; then
 else
  setenv BRANCH ${OSTREE_NETINST_BRANCH}
 fi
+setenv fdtargs
+setenv netinstpre
+if test -n \${use_fdtdtb} || test \${use_fdtdtb} -ge 1; then
+ fdt addr \${fdt_addr}
+ if test \${use_fdtdtb} -ge 2; then
+  fdt get value fdtargs /chosen bootargs
+ fi
+else
+ setenv netinstpre "fatload mmc \${mmcdev}:1 \${fdt_addr} \${fdt_file};"
+fi
 setenv exinargs
-setenv netinstpre "fdt addr \${fdt_addr};"
 setenv instdef "$NETINST_ARGS"
-if test -n \${nistargs}; then
+if test -n \${ninstargs}; then
  setenv netinst "\${ninstargs}"
 else
- setenv netinst "\${netinstpre}fatload mmc \${mmcdev}:1 \${loadaddr} Image;fatload mmc \${mmcdev}:1 \${initrd_addr} initramfs; setenv bootargs \\"\${instdef} \${exinargs}\\";${OSTREE_UBOOT_CMD} \${loadaddr} \${initrd_addr} \${fdt_addr}"
+ setenv netinst "\${netinstpre}fatload mmc \${mmcdev}:1 \${loadaddr} Image;fatload mmc \${mmcdev}:1 \${initrd_addr} initramfs; setenv bootargs \\"\${fdtargs} \${instdef} \${exinargs}\\";${OSTREE_UBOOT_CMD} \${loadaddr} \${initrd_addr} \${fdt_addr}"
 fi
 setenv autoinst echo "!!!Autostarting ERASE and INSTALL, you have 5 seconds to reset the board!!!"\;sleep 5\;run netinst
 if test "\${no_autonetinst}" != 1 && test -n \${URL} ; then
@@ -194,15 +203,8 @@ fi
 if test \${skip_script_wd} != yes; then setenv wdttimeout 120000; fi
 setenv loadkernel ext4load mmc \${mmcdev}:\${mmcpart} \${loadaddr} \${ostver}/vmlinuz
 setenv loadramdisk ext4load mmc \${mmcdev}:\${mmcpart} \${initrd_addr} \${ostver}/initramfs
-setenv bootargs \${bootpart} ostree=/ostree/\${ostver} \${rootpart} console=\${console},\${baudrate} \${smp} flux=fluxdata\${labelpre}
-if test -n \${use_fdtdtb} && test \${use_fdtdtb} -ge 1; then
- fdt addr \${fdt_addr}
- if test \${use_fdtdtb} -ge 2; then
-  setenv bootargs
-  fdt get value bootargs /chosen bootargs
-  setenv bootargs "\${bootargs} \${bootpart} ostree=/ostree/\${ostver} \${rootpart} console=\${console},\${baudrate} \${smp} flux=fluxdata\${labelpre}"
- fi
-else
+setenv bootargs \${fdtargs} \${bootpart} ostree=/ostree/\${ostver} \${rootpart} console=\${console},\${baudrate} \${smp} flux=fluxdata\${labelpre}
+if test ! -n \${use_fdtdtb} || test \${use_fdtdtb} -lt 1; then
  setenv loaddtb ext4load mmc \${mmcdev}:\${mmcpart} \${fdt_addr} \${ostver}/\${fdt_file};run loaddtb
 fi
 run loadramdisk
