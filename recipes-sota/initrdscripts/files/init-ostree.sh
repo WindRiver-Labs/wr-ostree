@@ -132,7 +132,7 @@ expand_fluxdata() {
 
 	echo "Expanding partition for ${fluxdata_label} ..."
 	echo ", +" | sfdisk -N $datadevnum /dev/$datadev
-	partprobe /dev/$datadev
+	blockdev --rereadpt /dev/$datadev
 
 	echo "Expanding FS for ${fluxdata_label} ..."
 	resize2fs -f ${datapart}

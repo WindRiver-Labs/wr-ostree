@@ -256,7 +256,7 @@ _luks_create() {
     }
 
     mkfs.${fs_type} /dev/mapper/${LUKS_PREFIX_LABEL}_${luks_rawdev_path##*/} -L ${label_name}
-    udevadm trigger && partprobe && sync
+    udevadm trigger && sync
 
     return 0
     
