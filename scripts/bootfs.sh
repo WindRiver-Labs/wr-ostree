@@ -411,9 +411,23 @@ if [ "$ENVFILE" = "" -o "$ENVFILE" = "auto" ] ; then
 	fi
 fi
 
+if [ ! -e "$ENVFILE" ] ; then
+	if [ "$ENVFILE" = "${ENVFILE%.env}" ] ; then
+		echo "Appending .env to $ENVFILE"
+		ENVFILE="$ENVFILE.env"
+	fi
+fi
+
+if [ -e "$ENVFILE" -a "conf/local.conf" -nt "$ENVFILE" ] ; then
+	echo "conf/local.conf is newer, removing $ENVFILE"
+	rm "$ENVFILE"
+fi
+
 if [ ! -e "$ENVFILE" -a "$ENVFILE" != "${ENVFILE%.env}" ] ; then
-	echo "Running bitbake -e ${ENVFILE%.env} > $ENVFILE"
-	bitbake -e ${ENVFILE%.env} > $ENVFILE
+	bbtarget=${ENVFILE%.env}
+	bbtarget=${bbtarget##*/}
+	echo "Running bitbake -e $bbtarget > $ENVFILE"
+	bitbake -e $bbtarget > $ENVFILE
 	if [ $? != 0 ] ; then
 		rm $ENVFILE
 		fatal "Error running bitbake"
