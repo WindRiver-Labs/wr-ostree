@@ -246,6 +246,13 @@ build_bootfs() {
 			cp -r ${DEPLOY_DIR_IMAGE}/ostree_repo $OUTDIR/ostree_repo || \
 				fatal "Could not copy ${DEPLOY_DIR_IMAGE}/ostree_rep"
 		fi
+		# Validate ostree_repo
+		local e
+		for e in config refs objects ; do
+			if [ ! -e $OUTDIR/ostree_repo/$e ] ; then
+				fatal "ERROR: the $OUTDIR/ostree_repo is corrupt or missing '$e'"
+			fi
+		done
 	fi
 	# Copy IMAGE_BOOT_FILES
 	set -f
