@@ -115,14 +115,16 @@ do_cp_and_sig() {
 sign_grub() {
 	OLDPATH="$PATH"
 	PATH=$RECIPE_SYSROOT_NATIVE/usr/bin:$RECIPE_SYSROOT_NATIVE/bin:$PATH
-	rm -rf grub-key; mkdir grub-key ; chmod 700 grub-key
-	echo allow-loopback-pinentry > grub-key/gpg-agent.conf
-	gpg --batch  --passphrase "$BOOT_GPG_PASSPHRASE" --pinentry-mode loopback --homedir grub-key --import "$BOOT_KEYS_DIR/BOOT-GPG-PRIVKEY-$BOOT_GPG_NAME" || fatal "Error importing signing key"
+	GRUB_KEY=`mktemp -d`
+	chmod 700 $GRUB_KEY
+	echo allow-loopback-pinentry > $GRUB_KEY/gpg-agent.conf
+	gpg --batch  --passphrase "$BOOT_GPG_PASSPHRASE" --pinentry-mode loopback --homedir $GRUB_KEY --import "$BOOT_KEYS_DIR/BOOT-GPG-PRIVKEY-$BOOT_GPG_NAME" || fatal "Error importing signing key"
 	for e in `ls $OUTDIR/EFI/BOOT/grub.cfg`; do
 		echo Signing: $e
 		rm -f $e.sig
-		echo "$BOOT_GPG_PASSPHRASE" | gpg --pinentry-mode loopback --homedir grub-key -u "$BOOT_GPG_NAME" --batch --detach-sign --passphrase-fd 0 $e || fatal "Error signing $e"
+		echo "$BOOT_GPG_PASSPHRASE" | gpg --pinentry-mode loopback --homedir $GRUB_KEY -u "$BOOT_GPG_NAME" --batch --detach-sign --passphrase-fd 0 $e || fatal "Error signing $e"
 	done
+	rm -rf $GRUB_KEY
 	PATH="$OLDPATH"
 }
 
@@ -445,7 +447,11 @@ eval `grep ^IMAGE_BASENAME $ENVFILE`
 eval `grep ^BOOT_ $ENVFILE`
 eval `grep ^OSTREE_ $ENVFILE | perl -p -e '($a,$b) = split(/=/,$_,2); $a =~ s/-/_/g; $_ = "$a=$b"'`
 
-grub=$(ls $DEPLOY_DIR_IMAGE/grub*.efi 2> /dev/null)
+grub=$(ls $DEPLOY_DIR_IMAGE/grubx64.efi 2> /dev/null)
+if [ "$grub" = "" ] ; then
+	# Fall back to looking optional non-signed binary
+	grub=$(ls $DEPLOY_DIR_IMAGE/grub-efi-grubx64.efi 2> /dev/null)
+fi
 
 if [ "$INST_URL" != "" ] ; then
 	OSTREE_REMOTE_URL="$INST_URL"
