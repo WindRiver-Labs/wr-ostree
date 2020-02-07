@@ -92,7 +92,10 @@ modify_boot_scr() {
 		perl -p -i -e "s#instdev=.*?([ \"])#instdev=$INST_DEV\$1#" $OUTDIR/boot.scr.raw
 	fi
 	OLDPATH="$PATH"
+	FOUND_ARGS=`cat $OUTDIR/boot.scr.raw | grep ^setenv\ instdef | sed -e 's/^setenv instdef "//;s/"$//'`
 	PATH=$RECIPE_SYSROOT_NATIVE/usr/bin:$RECIPE_SYSROOT_NATIVE/bin:$PATH
+	echo "Using branch: $INST_BRANCH"
+	echo "Using bootargs: $FOUND_ARGS $EXTRA_INST_ARGS"
 	which mkimage > /dev/null
 	if [ $? != 0 ] ; then
 		fatal "ERROR: Could not locate mkimage utility"
