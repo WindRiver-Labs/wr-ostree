@@ -455,6 +455,9 @@ if [ -z "$INST_BRANCH" ] ; then
 fi
 
 [ $DO_BUILD_BOOTFS = 1 ] && build_bootfs
+if [ ! -e $OUTDIR ] ; then
+	fatal "ERROR: The build directory '$OUTDIR' does not exist"
+fi
 [ $MODIFY_BOOT_SCR = 1 ] && modify_boot_scr
 
 if [ $SKIP_WIC = 1 ] ; then
