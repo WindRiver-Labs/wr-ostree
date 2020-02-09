@@ -231,6 +231,9 @@ do_compile() {
 	bootscr_env_import
     fi
 
+    build_date=`date -u +%s`
+    sed -i -e  "s/instdate=BUILD_DATE/instdate=@$build_date/" ${WORKDIR}/uEnv.txt
+
     mkimage -A arm -T script -O linux -d ${WORKDIR}/uEnv.txt ${WORKDIR}/boot.scr
 }
 
