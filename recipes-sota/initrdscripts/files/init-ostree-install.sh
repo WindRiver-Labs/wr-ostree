@@ -60,7 +60,7 @@ OPTIONAL:
  instfmt=1			- Set to 0 to skip partition formatting
  instpt=1			- Set to 0 to skip disk partitioning
  instgpg=0			- Turn off OSTree GnuPG signing checks
- instdate=YYYYMMDDhhmm		- Argument to date -s to force set time
+ instdate=datespec	        - Argument to "date -u -s" like @1577836800
  dhcpargs=DHCP_ARGS		- Arguments to pass to udhcpc
  ecurl=URL_TO_SCRIPT		- Download+execute script before disk prep
  ecurlarg=ARGS_TO_ECURL_SCRIPT	- Arguments to pass to ecurl script
@@ -452,7 +452,12 @@ if [ "$INSTURL" = "" ] ; then
 fi
 
 if [ "$INSTDATE" != "" ] ; then
-	date -s $INSTDATE
+	if [ "$INSTDATE" = "BUILD_DATE" ] ; then
+		echo "WARNING date falling back to 1/1/2020"
+		date -u -s @1577836800
+	else
+		date -u -s $INSTDATE
+	fi
 fi
 
 # Customize here for network
