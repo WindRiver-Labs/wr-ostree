@@ -452,6 +452,10 @@ eval `grep ^OSTREE_ $ENVFILE | perl -p -e '($a,$b) = split(/=/,$_,2); $a =~ s/-/
 
 grub=$(ls $DEPLOY_DIR_IMAGE/grubx64.efi 2> /dev/null)
 if [ "$grub" = "" ] ; then
+	# Look for bootx variant
+	grub=$(ls $DEPLOY_DIR_IMAGE/grub-efi-bootx64.efi 2> /dev/null)
+fi
+if [ "$grub" = "" ] ; then
 	# Fall back to looking optional non-signed binary
 	grub=$(ls $DEPLOY_DIR_IMAGE/grub-efi-grubx64.efi 2> /dev/null)
 fi
