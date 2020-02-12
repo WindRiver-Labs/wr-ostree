@@ -203,7 +203,7 @@ fi
 if test \${skip_script_wd} != yes; then setenv wdttimeout 120000; fi
 setenv loadkernel ext4load mmc \${mmcdev}:\${mmcpart} \${loadaddr} \${ostver}/vmlinuz
 setenv loadramdisk ext4load mmc \${mmcdev}:\${mmcpart} \${initrd_addr} \${ostver}/initramfs
-setenv bootargs \${fdtargs} \${bootpart} ostree=/ostree/\${ostver} \${rootpart} console=\${console},\${baudrate} \${smp} flux=fluxdata\${labelpre}
+setenv bootargs "\${fdtargs} \${bootpart} ostree=/ostree/\${ostver} \${rootpart} console=\${console},\${baudrate} \${smp} flux=fluxdata\${labelpre}"
 if test ! -n \${use_fdtdtb} || test \${use_fdtdtb} -lt 1; then
  setenv loaddtb ext4load mmc \${mmcdev}:\${mmcpart} \${fdt_addr} \${ostver}/\${fdt_file};run loaddtb
 fi
