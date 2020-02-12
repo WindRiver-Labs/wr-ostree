@@ -217,26 +217,55 @@ try_to_mount_rootfs() {
 	mount -o $mount_flags "${OSTREE_ROOT_DEVICE}" "${ROOT_MOUNT}" 2>/dev/null && return 0
 }
 
+# For slow disks we must wait for the labels to become ready
+chkcmd="blkid |grep -q $OSTREE_BOOT_DEVICE"
+if [ "${OSTREE_BOOT_DEVICE}" != "${OSTREE_BOOT_DEVICE#LABEL=}" ] ; then
+	chkcmd="blkid --label ${OSTREE_BOOT_DEVICE#LABEL=}"
+fi
+timeout=$(($MAX_TIMEOUT_FOR_WAITING_LOWSPEED_DEVICE * 10))
+do_echo=1
+while [ 1 ] ; do
+	$chkcmd && break
+	[ $do_echo = 1 ] && echo "Waiting to find boot partition..." && do_echo=0
+	sleep 0.1
+	timeout=$(($timeout - 1))
+	if [ $timeout = 0 ] ; then
+		fatal "Failed to find boot partition"
+	fi
+done
+
 expand_fluxdata
 
 [ -x /init.luks-ostree ] && {
 	/init.luks-ostree $OSTREE_LABEL_ROOT $OSTREE_LABEL_FLUXDATA && echo "LUKS init done." || fatal "Couldn't init LUKS."
 }
 
-echo "Waiting for root device to be ready..."
+timeout=$(($MAX_TIMEOUT_FOR_WAITING_LOWSPEED_DEVICE * 10))
+do_echo=1
 while [ 1 ] ; do
 	try_to_mount_rootfs && break
+	[ $do_echo = 1 ] && echo "Waiting for root device to be ready..." && do_echo=0
 	sleep 0.1
+	timeout=$(($timeout - 1))
+	if [ $timeout = 0 ] ; then
+		fatal "Failed to mount root device"
+	fi
 done
 
 if [ ! -d "${ROOT_MOUNT}/boot" ] ; then
 	mkdir -p ${ROOT_MOUNT}/boot
 fi
 
-echo "Waiting for boot device to be ready..."
+timeout=$(($MAX_TIMEOUT_FOR_WAITING_LOWSPEED_DEVICE * 10))
+do_echo=1
 while [ 1 ] ; do
 	mount "${OSTREE_BOOT_DEVICE}" "${ROOT_MOUNT}/boot" && break
+	[ $do_echo = 1 ] && echo "Waiting for boot device to be ready..." && do_echo=0
 	sleep 0.1
+	timeout=$(($timeout - 1))
+	if [ $timeout = 0 ] ; then
+		fatal "Failed to mount boot device"
+	fi
 done
 
 OSTREE_DEPLOY=`ostree-prepare-root ${ROOT_MOUNT} | awk -F ':' '{print $2}'`
@@ -283,8 +312,7 @@ if [ ${skip} -lt 2 ] ; then
 
 	if [ -z "${ostree_ref}" ]; then
 		echo "No ostree ref found"
-		#fatal
-		exec sh
+		fatal
 	fi
 
 	log_info "Checking ostree ${ostree_ref} contents... with ${OSTREE_DEPLOY}"
