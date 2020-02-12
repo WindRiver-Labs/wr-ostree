@@ -462,7 +462,12 @@ fi
 
 # Customize here for network
 if [ "$IP" != "" ] ; then
-	for e in `echo "$IP"|awk -F: '{print $8" "$9}'`; do
+	if [ "$IP" = "dhcp" ] ; then
+		dns=$(dmesg |grep nameserver.= |sed 's/nameserver.=//g; s/,//g')
+	else
+		dns=$(echo "$IP"|awk -F: '{print $8" "$9}')
+	fi
+	for e in $dns; do
 		echo nameserver $e >> /etc/resolv.conf
 	done
 fi
