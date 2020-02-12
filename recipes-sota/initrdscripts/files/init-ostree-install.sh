@@ -649,7 +649,6 @@ fi
 
 mount "${OSTREE_BOOT_DEVICE}" "${PHYS_SYSROOT}/boot"  || fatal "Error mouting ${OSTREE_BOOT_DEVICE}"
 
-set -x
 mkdir /instboot
 blkid --label instboot
 if [ $? = 0 ] ; then
