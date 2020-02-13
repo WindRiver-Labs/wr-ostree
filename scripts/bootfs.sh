@@ -304,13 +304,14 @@ write_wic() {
 	cmd="wic create -e ustart -v . -m -s ustart.wks -o out-tmp"
 	$cmd 2>&1 > /dev/null | tee out-tmp/log 2>&1
 	if [ ${PIPESTATUS[0]} != 0 ] ; then
-		grep -q "is larger" out-tmp/log
+		grep -E -q -e "(is larger|Disk full|No space left)" out-tmp/log
 		if [ $? = 0 ] ; then
+			echo "================================================"
 			echo "Error with partition size too small"
 			echo "   To use automatic partition size cacluation please run bootfs.sh with:"
                         echo "       -s 0"
 			echo "   Or use a number in MB that is large enough to hold all the data"
-			exit 1
+			fatal
 		else
 			fatal "Error running: $cmd"
 		fi
