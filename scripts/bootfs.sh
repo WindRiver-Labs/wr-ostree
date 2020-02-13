@@ -325,7 +325,7 @@ write_wic() {
 	echo "======================== SUCCESS ==============================="
 	echo "==== Write image to device with one of the command(s) below ===="
 	echo "================================================================"
-	if ! which ls > /dev/null ; then
+	if ! which bmaptool > /dev/null ; then
 		echo "### NOTE: bmaptool is not in your path, so you should run:"
 		echo "  bitbake bmap-tools-native"
 		echo "  bitbake build-sysroots"
