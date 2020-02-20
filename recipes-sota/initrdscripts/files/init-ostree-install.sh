@@ -187,9 +187,9 @@ read_args() {
 		optarg=`expr "x$arg" : 'x[^=]*=\(.*\)'`
 		case $arg in
 			bl=*)
-				if [ "$BL" = ""  ] ; then BL=$optarg; fi ;;
+				BL=$optarg ;;
 			instnet=*)
-				if [ "$INSTNET" = ""  ] ; then INSTNET=$optarg; fi ;;
+				INSTNET=$optarg ;;
 			instsh=*)
 				if [ "$INSTSH" = "" ] ; then
 					INSTSH=$optarg
@@ -201,43 +201,43 @@ read_args() {
 			ip=*)
 				IP=$optarg ;;
 			instl=*)
-				if [ "$INSTL" = "" ] ; then INSTL=$optarg; fi ;;
+				INSTL=$optarg ;;
 			instdev=*)
-				if [ "$INSTDEV" = "" ] ; then INSTDEV=$optarg; fi ;;
+				INSTDEV=$optarg ;;
 			instab=*)
-				if [ "$INSTAB" = "" ] ; then INSTAB=$optarg; fi ;;
+				INSTAB=$optarg ;;
 			instpost=*)
 				if [ "$INSTPOST" = "" ] ; then INSTPOST=$optarg; fi ;;
 			instname=*)
-				if [ "$INSTNAME" = "" ] ; then INSTNAME=$optarg; fi ;;
+				INSTNAME=$optarg ;;
 			instsf=*)
-				if [ "$INSTSF" = "" ] ; then INSTSF=$optarg; fi ;;
+				INSTSF=$optarg ;;
 			instbr=*)
-				if [ "$INSTBR" = "" ] ; then INSTBR=$optarg; fi ;;
+				INSTBR=$optarg ;;
 			instsbd=*)
-				if [ "$INSTSBD" = "" ] ; then INSTSBD=$optarg; fi ;;
+				INSTSBD=$optarg ;;
 			instpt=*)
-				if [ "$INSTPT" = "" ] ; then INSTPT=$optarg; fi ;;
+				INSTPT=$optarg ;;
 			instfmt=*)
-				if [ "$INSTFMT" = "" ] ; then INSTFMT=$optarg; fi ;;
+				INSTFMT=$optarg ;;
 			insturl=*)
-				if [ "$INSTURL" = "" ] ; then INSTURL=$optarg; fi ;;
+				INSTURL=$optarg ;;
 			instgpg=*)
-				if [ "$INSTGPG" = "" ] ; then INSTGPG=$optarg; fi ;;
+				INSTGPG=$optarg ;;
 			instdate=*)
-				if [ "$INSTDATE" = "" ] ; then INSTDATE=$optarg; fi ;;
+				INSTDATE=$optarg ;;
 			instflux=*)
-				if [ "$INSTFLUX" = "" ] ; then INSTFLUX=$optarg; fi ;;
+				INSTFLUX=$optarg ;;
 			dhcpargs=*)
-				if [ "$DHCPARGS" = "" ] ; then DHCPARGS=$optarg; fi ;;
+				DHCPARGS=$optarg ;;
 			ecurl=*)
 				if [ "$ECURL" = "" ] ; then ECURL=$optarg; fi ;;
 			ecurlarg=*)
-				if [ "$ECURLARG" = "" ] ; then ECURLARG=$optarg; fi ;;
+				ECURLARG=$optarg ;;
 			lcurl=*)
 				if [ "$LCURL" = "" ] ; then LCURL=$optarg; fi ;;
 			lcurlarg=*)
-				if [ "$LCURLARG" = "" ] ; then LCURLARG=$optarg; fi ;;
+				LCURLARG=$optarg ;;
 			LUKS=*)
 				LUKS=$optarg ;;
 			BLM=*)

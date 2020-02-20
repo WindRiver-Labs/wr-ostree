@@ -146,7 +146,7 @@ create_grub_cfg() {
 	if [ "$INST_URL" != "" ] ; then
 		iurl="$INST_URL"
 	fi
-	bootargs="console=ttyS0,115200 rdinit=/install $EXTRA_INST_ARGS instdev=$idev instname=wrlinux instbr=$INST_BRANCH insturl=$iurl instab=$OSTREE_USE_AB instsf=1"
+	bootargs="console=ttyS0,115200 rdinit=/install instdev=$idev instname=wrlinux instbr=$INST_BRANCH insturl=$iurl instab=$OSTREE_USE_AB instsf=1 $EXTRA_INST_ARGS"
 	if [ "$OSTREE_FLUX_PART" = "luksfluxdata" -a "$EXTRA_INST_ARGS" = "${EXTRA_INST_ARGS/LUKS/}" ] ; then
 		bootargs="$bootargs LUKS=1"
 	fi
