@@ -527,7 +527,13 @@ if [ "$INSTPT" != "0" ] ; then
 	fi
 fi
 
-blockdev --rereadpt ${dev}
+cnt=50
+while [ $cnt ] ; do
+	blockdev --rereadpt ${dev} 2> /dev/null > /dev/null && break
+	sleep 0.1
+	cnt=$(($cnt - 1))
+done
+sync
 
 # Customize here for disk formatting
 
