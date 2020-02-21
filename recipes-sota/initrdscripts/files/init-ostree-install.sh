@@ -354,66 +354,48 @@ ufdisk_partition() {
 	fi
 	if [ $INSTSF = 1 ] ; then
 		pts=`mktemp`
-		fdisk -l -o device,start,end ${dev} |grep ^${fs_dev}1 > $pts || fatal "fdisk probe failed"
-		read tmp fat_start fat_end < $pts
-		fdisk -l -o device ${dev} |grep ^${fs_dev} > $pts
-	else
-		sgdisk -Z ${dev}
-	fi
-	(
-	if [ $INSTSF = 1 ] ; then
+		fdisk -l -o device ${dev} |grep ^${fs_dev} > $pts || fatal "fdisk probe failed"
 		# Start by deleting all the other partitions
 		fpt=$(cat $pts |sed -e "s#${fs_dev}##" | head -n 1)
 		for p in `cat $pts |sed -e "s#${fs_dev}##" |sort -rn`; do
-			if [ $p -gt $fpt ]; then
-				printf "d\n$p\n"
-			else
-				printf "d\n"
+			if [ $p != 1 ] ; then
+				sfdisk --no-reread --no-tell-kernel -w never --delete ${dev} $p
 			fi
 		done
-		printf "n\np\n1\n\n${fat_end}\n"
 	else
+		sgdisk -Z ${dev} > /dev/null 2> /dev/null
+		echo 'label: mbr' | sfdisk --no-reread --no-tell-kernel -W never -w never ${dev}
 		# Partition for storage of u-boot variables and backup kernel
-		printf "n\np\n1\n\n+${FSZ}M\n"
+		echo "${BLM},${FSZ}M,0xc" | sfdisk --no-reread --no-tell-kernel -W never -w never ${dev}
+		sfdisk --no-reread --no-tell-kernel -W never -w never -A ${dev} 1
 	fi
-	# Create extend partition
-	printf "n\ne\n2\n\n\n"
+	# Create extended partition for remainder of disk
+	echo "$(sfdisk -F ${dev} |tail -1 |awk '{print $1}'), +,0x5" | sfdisk --no-reread --no-tell-kernel -a -W never -w never ${dev}
 	if [ "${INSTFLUX}" = 1 ] ; then
 		# Create Boot and Root A partition
-		printf "n\nl\n\n+${BSZ}M\n"
-		printf "n\nl\n\n+${RSZ}M\n"
+		echo "$(sfdisk -F ${dev} |tail -1 |awk '{print $1}'),${BSZ}M" | sfdisk --no-reread --no-tell-kernel -a -W never -w never ${dev}
+		echo "$(sfdisk -F ${dev} |tail -1 |awk '{print $1}'),${RSZ}M" | sfdisk --no-reread --no-tell-kernel -a -W never -w never ${dev}
 		if [ "$INSTAB" = "1" ] ; then
 			# Create Boot and Root B partition
-			printf "n\nl\n\n+${BSZ}M\n"
-			printf "n\nl\n\n+${RSZ}M\n"
+			echo "$(sfdisk -F ${dev} |tail -1 |awk '{print $1}'),${BSZ}M" | sfdisk --no-reread --no-tell-kernel -a -W never -w never ${dev}
+			echo "$(sfdisk -F ${dev} |tail -1 |awk '{print $1}'),${RSZ}M" | sfdisk --no-reread --no-tell-kernel -a -W never -w never ${dev}
 		fi
 		# flux data partition
-		printf "n\nl\n\n\n"
+		echo "$(sfdisk -F ${dev} |tail -1 |awk '{print $1}'), +" | sfdisk --no-reread --no-tell-kernel -a -W never -w never ${dev}
 	else
 		if [ "$INSTAB" = "1" ] ; then
 			# Create Boot and Root A partition
-			printf "n\nl\n\n+${BSZ}M\n"
-			printf "n\nl\n\n+${RSZ}M\n"
+			echo "$(sfdisk -F ${dev} |tail -1 |awk '{print $1}'),${BSZ}M" | sfdisk --no-reread --no-tell-kernel -a -W never -w never ${dev}
+			echo "$(sfdisk -F ${dev} |tail -1 |awk '{print $1}'),${RSZ}M" | sfdisk --no-reread --no-tell-kernel -a -W never -w never ${dev}
 			# Create Boot and Root b partition
-			printf "n\nl\n\n+${BSZ}M\n"
-			printf "n\nl\n\n+${RSZ}M\n"
+			echo "$(sfdisk -F ${dev} |tail -1 |awk '{print $1}'),${BSZ}M" | sfdisk --no-reread --no-tell-kernel -a -W never -w never ${dev}
+			echo "$(sfdisk -F ${dev} |tail -1 |awk '{print $1}'),${RSZ}M" | sfdisk --no-reread --no-tell-kernel -a -W never -w never ${dev}
 		else
 			# Create Boot and Root A partition for whole disk
-			printf "n\nl\n\n+${BSZ}M\n"
-			printf "n\nl\n\n\n"
+			echo "$(sfdisk -F ${dev} |tail -1 |awk '{print $1}'),${BSZ}M" | sfdisk --no-reread --no-tell-kernel -a -W never -w never ${dev}
+			echo "$(sfdisk -F ${dev} |tail -1 |awk '{print $1}'), +" | sfdisk --no-reread --no-tell-kernel -a -W never -w never ${dev}
 		fi
 	fi
-	if [ $INSTSF = 1 ] ; then
-		# Restore partition 1
-		printf "d\n1\nn\np\n1\n${fat_start}\n${fat_end}\nt\n1\nc\n"
-	else
-		# Fix partition 1 to adjust for boot loader
-		printf "d\n1\nn\np\n1\n${BLM}\n\nt\n1\nc\n"
-	fi
-	printf "p\n"
-	printf "w\n"
-	) | fdisk -W never -t dos ${dev}
-	sync
 }
 
 ##################
@@ -604,14 +586,12 @@ elif [ "$INSTFMT" != 0 ] ; then
 		mkfs.vfat -n boot ${fs_dev}1
 	fi
 	FLUXPART=9
+	mkfs.ext4 -F -L otaboot ${fs_dev}5
+	mkfs.ext4 -F -L otaroot ${fs_dev}6
 	if [ "$INSTAB" = "1" ] ; then
-		mkfs.ext4 -F -L otaboot ${fs_dev}5
-		mkfs.ext4 -F -L otaroot ${fs_dev}6
 		mkfs.ext4 -F -L otaboot_b ${fs_dev}7
 		mkfs.ext4 -F -L otaroot_b ${fs_dev}8
 	else
-		mkfs.ext4 -F -L otaboot ${fs_dev}5
-		mkfs.ext4 -F -L otaroot ${fs_dev}6
 		FLUXPART=7
 	fi
 	if [ "${INSTFLUX}" = 1 ] ; then
