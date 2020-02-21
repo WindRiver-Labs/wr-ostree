@@ -94,7 +94,8 @@ modify_boot_scr() {
 	OLDPATH="$PATH"
 	FOUND_ARGS=`cat $OUTDIR/boot.scr.raw | grep ^setenv\ instdef | sed -e 's/^setenv instdef "//;s/"$//'`
 	PATH=$RECIPE_SYSROOT_NATIVE/usr/bin:$RECIPE_SYSROOT_NATIVE/bin:$PATH
-	echo "Using branch: $INST_BRANCH"
+	echo "Using \$BRANCH = $INST_BRANCH"
+	echo "Using \$URL = $iurl"
 	echo "Using bootargs: $FOUND_ARGS $EXTRA_INST_ARGS"
 	which mkimage > /dev/null
 	if [ $? != 0 ] ; then
