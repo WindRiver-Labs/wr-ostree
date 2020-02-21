@@ -687,8 +687,11 @@ lpull=""
 if [ "$INSTL" != "" ] ; then
 	if [ -e /instboot${INSTL#/sysroot/boot/efi} ] ; then
 		lpull="--url file:///instboot${INSTL#/sysroot/boot/efi}"
-	else
+	elif [ -e $INSTL ] ; then
 		lpull="--url file://$INSTL"
+	else
+		echo "WARNING WARNING - Local install missing, falling back to network"
+		lpull=""
 	fi
 fi
 
