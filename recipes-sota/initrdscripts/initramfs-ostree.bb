@@ -8,10 +8,6 @@ SRC_URI = "file://init-ostree.sh \
 
 PR = "r9"
 
-OSTREE_FDISK_BLM ??= ""
-OSTREE_FDISK_FSZ ??= ""
-OSTREE_FDISK_BSZ ??= ""
-OSTREE_FDISK_RSZ ??= ""
 OSTREE_ALLOW_RM_VAR ??= ""
 
 RDEPENDS_${PN} = "util-linux-sfdisk gptfdisk e2fsprogs-mke2fs"
@@ -34,6 +30,10 @@ do_install() {
 		sed -i -e 's/^RSZ=.*/RSZ=${OSTREE_FDISK_RSZ}/' ${D}/install
 	fi
         install -m 0755 ${WORKDIR}/init-ostree.sh ${D}/init
+	if [ "${OSTREE_FDISK_VSZ}" != "" ] ; then
+		sed -i -e 's/^VSZ=.*/VSZ=${OSTREE_FDISK_VSZ}/' ${D}/install
+		sed -i -e 's/^VSZ=.*/VSZ=${OSTREE_FDISK_VSZ}/' ${D}/init
+	fi
 	if [ "${OSTREE_ALLOW_RM_VAR}" != "" ] ; then
 		sed -i -e 's/^ALLOW_RM_VAR=.*/ALLOW_RM_VAR=${OSTREE_ALLOW_RM_VAR}/' ${D}/init
 	fi

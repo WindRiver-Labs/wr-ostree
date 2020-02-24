@@ -45,7 +45,8 @@ OPTIONAL:
  LUKS=0				- Do not create encrypted volumes
  LUKS=1				- Encrypt var volume (requires TPM)
  LUKS=2				- Encrypt var and and root volumes (requires TPM)
- instflux=0			- Do not create/use the fluxdata partition
+ instflux=0			- Do not create/use the fluxdata partition for /var
+	  VSZ will be used for the size of the / partition if instab=0
  instl=DIR			- Local override ostree repo to install from
  instsh=1			- Start a debug shell
  instsh=2			- Use verbose logging
@@ -69,9 +70,10 @@ OPTIONAL:
  Disk sizing
  BLM=#				- Blocks of boot magic area to skip
 				  ARM BSPs with SD cards usually need this
- FSZ=#				- fdisk MB size of fat partition
- BSZ=#				- fdisk MB size of boot partition
- RSZ=#				- fdisk MB size of root partition
+ FSZ=#				- MB size of fat partition
+ BSZ=#				- MB size of boot partition
+ RSZ=#				- MB size of root partition
+ VSZ=#				- MB size of var partition (0 for auto expand)
 
 EOF
 }
@@ -144,10 +146,13 @@ fatal() {
 }
 
 # Global Variable setup
+# default values must match wr-ostree.inc
 BLM=2506
 FSZ=32
 BSZ=200
 RSZ=1400
+VSZ=0
+# end values from wr-ostree.inc
 LUKS=0
 _UDEV_DAEMON=`udev_daemon`
 INSTDATE=${INSTDATE=""}
@@ -248,6 +253,8 @@ read_args() {
 				BSZ=$optarg ;;
 			RSZ=*)
 				RSZ=$optarg ;;
+			VSZ=*)
+				VSZ=$optarg ;;
 		esac
 	done
 	# defaults if not set
@@ -285,11 +292,20 @@ shell_start() {
 	fi
 }
 
+grub_pt_update() {
+	first=$(($end+1))
+	p=$((p+1))
+	if [ $first -gt $last ] ; then
+		fatal "ERROR: Disk is not big enough for requested layout"
+	fi
+}
+
 grub_partition() {
 	local a
 	local p
 	local first
 	local last
+	local end
 	lsz=`lsblk -n ${dev} -o LOG-SEC -d`
 	lsz=${lsz// /}
 	# EFI Partition
@@ -314,34 +330,40 @@ grub_partition() {
 	fi
 	last=$(sgdisk -E ${dev} 2>/dev/null |grep -v Creating)
 	p=2
-	# Boot Partition(s)
+	# Boot Partition A
 	end=$(($first+($BSZ*1024*1024/$lsz)-1))
 	a="$a -n $p:$first:$end -c $p:otaboot"
-	first=$(($end+1))
-	p=$((p+1))
+	grub_pt_update
+	# Root Partition A
+	if [ "$INSTAB" = 0 -a "${INSTFLUX}" = 0 ] ; then
+		if [ "$VSZ" = 0 ] ; then
+			end=$last
+		else
+			end=$(($first+($VSZ*1024*1024/$lsz)-1))
+		fi
+		a="$a -n $p:$first:$end -c $p:otaroot"
+	else
+		end=$(($first+($RSZ*1024*1024/$lsz)-1))
+		a="$a -n $p:$first:$end -c $p:otaroot"
+		grub_pt_update
+	fi
 	if [ "$INSTAB" = 1 ] ; then
+		# Boot Partition B
 		end=$(($first+($BSZ*1024*1024/$lsz)-1))
 		a="$a -n $p:$first:$end -c $p:otaboot_b"
-		first=$(($end+1))
-		p=$((p+1))
-	fi
-	# Root Partition(s)
-	end=$(($first+($RSZ*1024*1024/$lsz)-1))
-	a="$a -n $p:$first:$end -c $p:otaroot"
-	first=$(($end+1))
-	p=$((p+1))
-	if [ "$INSTAB" = 1 ] ; then
+		grub_pt_update
+		# Root Partition B
 		end=$(($first+($RSZ*1024*1024/$lsz)-1))
 		a="$a -n $p:$first:$end -c $p:otaroot_b"
-		first=$(($end+1))
-		p=$((p+1))
-	fi
-	if [ $first -gt $last ] ; then
-		fatal "ERROR: Disk is not big enough for requested layout"
+		grub_pt_update
 	fi
 	# Flux Partition
 	if [ "${INSTFLUX}" = 1 ] ; then
-		end=$last
+		if [ "$VSZ" = 0 ] ; then
+			end=$last
+		else
+			end=$(($first+($VSZ*1024*1024/$lsz)-1))
+		fi
 		a="$a -n $p:$first:$end -c $p:fluxdata"
 	fi
 	sgdisk $a -p ${dev}
@@ -381,13 +403,17 @@ ufdisk_partition() {
 			echo "$(sfdisk -F ${dev} |tail -1 |awk '{print $1}'),${RSZ}M" | sfdisk --no-reread --no-tell-kernel -a -W never -w never ${dev}
 		fi
 		# flux data partition
-		echo "$(sfdisk -F ${dev} |tail -1 |awk '{print $1}'), +" | sfdisk --no-reread --no-tell-kernel -a -W never -w never ${dev}
+		if [ "$VSZ" = 0 ] ; then
+			echo "$(sfdisk -F ${dev} |tail -1 |awk '{print $1}'), +" | sfdisk --no-reread --no-tell-kernel -a -W never -w never ${dev}
+		else
+			echo "$(sfdisk -F ${dev} |tail -1 |awk '{print $1}'),${VSZ}M" | sfdisk --no-reread --no-tell-kernel -a -W never -w never ${dev}
+		fi
 	else
 		if [ "$INSTAB" = "1" ] ; then
 			# Create Boot and Root A partition
 			echo "$(sfdisk -F ${dev} |tail -1 |awk '{print $1}'),${BSZ}M" | sfdisk --no-reread --no-tell-kernel -a -W never -w never ${dev}
 			echo "$(sfdisk -F ${dev} |tail -1 |awk '{print $1}'),${RSZ}M" | sfdisk --no-reread --no-tell-kernel -a -W never -w never ${dev}
-			# Create Boot and Root b partition
+			# Create Boot and Root B partition
 			echo "$(sfdisk -F ${dev} |tail -1 |awk '{print $1}'),${BSZ}M" | sfdisk --no-reread --no-tell-kernel -a -W never -w never ${dev}
 			echo "$(sfdisk -F ${dev} |tail -1 |awk '{print $1}'),${RSZ}M" | sfdisk --no-reread --no-tell-kernel -a -W never -w never ${dev}
 		else
@@ -550,29 +576,24 @@ if [ "$BL" = "grub" -a "$INSTFMT" != "0" ] ; then
 	fi
 	mkfs.ext4 -F -L otaboot ${fs_dev}2
 	dashe="-e"
+	if [ $LUKS -gt 1 ] ; then
+		echo Y | luks-setup.sh -f $dashe -d ${fs_dev}3 -n luksotaroot || \
+			fatal "Cannot create LUKS volume luksotaroot"
+		dashe=""
+		mkfs.ext4 -F -L otaroot /dev/mapper/luksotaroot
+	else
+		mkfs.ext4 -F -L otaroot ${fs_dev}3
+	fi
 	if [ "$INSTAB" = "1" ] ; then
-		mkfs.ext4 -F -L otaboot_b ${fs_dev}3
+		mkfs.ext4 -F -L otaboot_b ${fs_dev}4
 		if [ $LUKS -gt 1 ] ; then
-			echo Y | luks-setup.sh -f $dashe -d ${fs_dev}4 -n luksotaroot || \
-				fatal "Cannot create LUKS volume luksotaroot"
-			dashe=""
 			echo Y | luks-setup.sh -f -d ${fs_dev}5 -n luksotaroot_b || \
 				fatal "Cannot create LUKS volume luksotaroot_b"
-			mkfs.ext4 -F -L otaroot /dev/mapper/luksotaroot
 			mkfs.ext4 -F -L otaroot_b /dev/mapper/luksotaroot_b
 		else
-			mkfs.ext4 -F -L otaroot ${fs_dev}4
 			mkfs.ext4 -F -L otaroot_b ${fs_dev}5
 		fi
 	else
-		if [ $LUKS -gt 1 ] ; then
-			echo Y | luks-setup.sh -f $dashe -d ${fs_dev}3 -n luksotaroot || \
-				fatal "Cannot create LUKS volume luksotaroot"
-			dashe=""
-			mkfs.ext4 -F -L otaroot /dev/mapper/luksotaroot
-		else
-			mkfs.ext4 -F -L otaroot ${fs_dev}3
-		fi
 		FLUXPART=4
 	fi
 	if [ "${INSTFLUX}" = 1 ] ; then

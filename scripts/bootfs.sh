@@ -23,6 +23,7 @@ COMPRESS="${COMPRESS=1}"
 DO_BUILD_BOOTFS=1
 MODIFY_BOOT_SCR=1
 EXTRA_INST_ARGS=""
+INST_FLUX=1
 INST_URL=""
 INST_BRANCH=""
 INST_DEV=""
@@ -96,7 +97,8 @@ modify_boot_scr() {
 	PATH=$RECIPE_SYSROOT_NATIVE/usr/bin:$RECIPE_SYSROOT_NATIVE/bin:$PATH
 	echo "Using \$BRANCH = $INST_BRANCH"
 	echo "Using \$URL = $iurl"
-	echo "Using bootargs: $FOUND_ARGS $EXTRA_INST_ARGS"
+	bootargs="$FOUND_ARGS $EXTRA_INST_ARGS"
+	echo "Using bootargs: $bootargs"
 	which mkimage > /dev/null
 	if [ $? != 0 ] ; then
 		fatal "ERROR: Could not locate mkimage utility"
@@ -344,6 +346,90 @@ write_wic() {
 	fi
 }
 
+print_part_layout() {
+	if [ "$grubcfg" != "" ] ; then
+		pt1="mount: /boot/efi"
+	fi
+	useab=$OSTREE_USE_AB
+	useflux=1
+	FSZ=${OSTREE_FDISK_FSZ}
+	BSZ=${OSTREE_FDISK_BSZ}
+	RSZ=${OSTREE_FDISK_RSZ}
+	VSZ=${OSTREE_FDISK_VSZ}
+	for e in $bootargs; do
+		[ "$e" != "${e#instab=}" ] && useab=${e#instab=}
+		[ "$e" != "${e#FSZ=}" ] && FSZ=${e#FSZ=}
+		[ "$e" != "${e#BSZ=}" ] && BSZ=${e#BSZ=}
+		[ "$e" != "${e#RSZ=}" ] && RSZ=${e#RSZ=}
+		[ "$e" != "${e#VSZ=}" ] && VSZ=${e#VSZ=}
+		[ "$e" != "${e#instflux=}" ] && useflux=${e#instflux=}
+		if [ "$e" != "${e#instsf=}" ] ; then
+			if [ "$e" = "instsf=1" ] ; then
+				if [ $PARTSIZE = 0 ] ; then
+					FSZ=$(du -sm bootfs |awk '{print $1}')
+					FSZ=$(($FSZ + $FSZ/10*3))
+				else
+					FSZ=$PARTSIZE
+				fi
+			fi
+		fi
+	done
+	if [ "$FSZ" != "${OSTREE_FDISK_FSZ}" ] ; then
+		echo "NOTE: OSTREE_FDISK_FSZ($OSTREE_FDISK_FSZ) != FSZ($FSZ)"
+		echo "      Please consider changing OSTREE_FDISK_FSZ in local.conf and rebuilding"
+	fi
+	if [ "$BSZ" != "${OSTREE_FDISK_BSZ}" ] ; then
+		echo "NOTE: OSTREE_FDISK_BSZ($OSTREE_FDISK_BSZ) != BSZ($BSZ)"
+		echo "      Please consider changing OSTREE_FDISK_BSZ in local.conf and rebuilding"
+	fi
+	if [ "$RSZ" != "${OSTREE_FDISK_RSZ}" ] ; then
+		echo "NOTE: OSTREE_FDISK_RSZ($OSTREE_FDISK_RSZ) != RSZ($RSZ)"
+		echo "      Please consider changing OSTREE_FDISK_RSZ in local.conf and rebuilding"
+	fi
+	if [ "$VSZ" != "${OSTREE_FDISK_VSZ}" ] ; then
+		echo "NOTE: OSTREE_FDISK_VSZ($OSTREE_FDISK_VSZ) != VSZ($VSZ)"
+		echo "      Please consider changing OSTREE_FDISK_VSZ in local.conf and rebuilding"
+	fi
+	sz=$(($FSZ + $OSTREE_FDISK_BSZ))
+	echo -e "============= Installed Disk Layout ============="
+	echo -e "Partition 1: fat32 size: ${FSZ}MB\t$pt1"
+	pt=2
+	echo -e "Partition $pt: ext4  size: ${BSZ}MB\tmount: /boot (A partition)"
+	if [ $useflux = 0 -a $useab = 0 ] ; then
+		if [ $VSZ = 0 ] ; then
+			prsz="FILL"
+		else
+			prsz="${VSZ}MB"
+			sz=$(($sz+${VSZ}))
+		fi
+		pt=$(($pt+1))
+	else
+		pt=$(($pt+1))
+		sz=$(($sz+${RSZ}))
+		prsz="${RSZ}MB"
+	fi
+	echo -e "Partition $pt: ext4  size: ${prsz}\tmount: / (A partition)"
+	if [ $useab = 1 ] ; then
+		pt=$(($pt+1))
+		sz=$(($sz+${BSZ}))
+		echo -e "Partition $pt: ext4  size: ${BSZ}MB\tmount: /boot (B partition)"
+		pt=$(($pt+1))
+		sz=$(($sz+${RSZ}))
+		echo -e "Partition $pt: ext4  size: ${RSZ}MB\tmount: / (B partition)"
+	fi
+	if [ $useflux = 1 ] ; then
+		pt=$(($pt+1))
+		if [ $VSZ = 0 ] ; then
+			echo -e "Partition $pt: ext4  size: FILL\tmount: /var"
+		else
+			echo -e "Partition $pt: ext4  size: ${RSZ}MB\tmount: /var"
+			sz=$(($sz+${VSZ}))
+		fi
+	fi
+	echo -e "Total allocation excluding auto fill: ${sz}MB"
+	echo -e "================================================="
+}
+
 while getopts "a:Bb:d:e:hLl:Nns:u:w" opt; do
 	case ${opt} in
 		a)
@@ -488,6 +574,8 @@ if [ ! -e $OUTDIR ] ; then
 	fatal "ERROR: The build directory '$OUTDIR' does not exist"
 fi
 [ $MODIFY_BOOT_SCR = 1 ] && modify_boot_scr
+
+print_part_layout
 
 if [ $SKIP_WIC = 1 ] ; then
 	echo "bootfs.sh completed succesfully."

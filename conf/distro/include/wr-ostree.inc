@@ -134,15 +134,17 @@ OSTREE_WKS_FILE ??= "${OSTREE_ARCH_WKS}${OSTREE_AB_WKS}.wks.in"
 # Below are additional variables that can be set in local.conf which are the
 # defaults for the network installer
 
-# Boot Loader Magic block offset (where the first partition should start)
-# NOTE: This is value is numeric in MB only e.g. OSTREE_FDISK_FSZ = "64"
-# OSTREE_FDISK_BLM ??= ""
+# Boot Loader Magic block offset (where the first partition should start in sectors)
+# NOTE: The FSZ, BSZ and RSZ are numeric in MB only e.g. OSTREE_FDISK_FSZ = "64"
+OSTREE_FDISK_BLM ??= "2506"
 # Size of the Fat / EFI partition
-# OSTREE_FDISK_FSZ ??= ""
+OSTREE_FDISK_FSZ ??= "32"
 # Size of the Boot partition
-# OSTREE_FDISK_BSZ ??= ""
+OSTREE_FDISK_BSZ ??= "200"
 # Size of the Root partition
-# OSTREE_FDISK_RSZ ??= ""
+OSTREE_FDISK_RSZ ??= "1400"
+# Size of the /var partition 0 for fill disk
+OSTREE_FDISK_VSZ ??= "0"
 
 # Allow the var directory to be erased via the initramfs boot, when
 # using "ostree_upgrade.sh -e".  The default is 1, but for very secure
