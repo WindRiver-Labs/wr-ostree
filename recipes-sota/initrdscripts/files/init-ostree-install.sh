@@ -119,6 +119,11 @@ early_setup() {
 	if [ -x /sbin/mdadm ]; then
 		/sbin/mdadm -v --assemble --scan --auto=md
 	fi
+
+	if [ -e "/sys/fs/selinux" ];then
+		do_mount_fs selinuxfs /sys/fs/selinux
+		echo 1 > /sys/fs/selinux/disable
+	fi
 }
 
 udev_daemon() {
