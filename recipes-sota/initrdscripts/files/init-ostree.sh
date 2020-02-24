@@ -32,6 +32,7 @@ ROOT_DELAY="0"
 OSTREE_SYSROOT=""
 OSTREE_BOOT_DEVICE="LABEL=otaboot"
 OSTREE_LABEL_FLUXDATA="fluxdata"
+VSZ=0
 SKIP_BOOT_DIFF=""
 ALLOW_RM_VAR=1
 # The timeout (tenth of a second) for rootfs on low speed device
@@ -240,10 +241,10 @@ while [ 1 ] ; do
 	fi
 done
 
-expand_fluxdata
+[ VSZ = 0 ] && expand_fluxdata
 
 [ -x /init.luks-ostree ] && {
-	/init.luks-ostree $OSTREE_LABEL_ROOT $OSTREE_LABEL_FLUXDATA && echo "LUKS init done." || fatal "Couldn't init LUKS."
+	/init.luks-ostree $OSTREE_LABEL_ROOT $OSTREE_LABEL_FLUXDATA || fatal "Couldn't init LUKS."
 }
 
 timeout=$(($MAX_TIMEOUT_FOR_WAITING_LOWSPEED_DEVICE * 10))
@@ -283,7 +284,12 @@ fi
 
 sed "/LABEL=otaboot[\t ]*\/boot[\t ]/s/LABEL=otaboot/${OSTREE_BOOT_DEVICE}/g" -i ${ROOT_MOUNT}/etc/fstab
 sed "/LABEL=otaboot_b[\t ]*\/boot[\t ]/s/LABEL=otaboot_b/${OSTREE_BOOT_DEVICE}/g" -i ${ROOT_MOUNT}/etc/fstab
-sed "/LABEL=fluxdata[\t ]*\/var[\t ]/s/LABEL=fluxdata/LABEL=${OSTREE_LABEL_FLUXDATA}/g" -i ${ROOT_MOUNT}/etc/fstab
+noflux=`ostree config --repo=/sysroot/ostree/repo get upgrade.noflux 2> /dev/null`
+if [ "$noflux" = 1 ] ; then
+    sed "s/^LABEL=fluxdata.*//" -i ${ROOT_MOUNT}/etc/fstab
+else
+    sed "/LABEL=fluxdata[\t ]*\/var[\t ]/s/LABEL=fluxdata/LABEL=${OSTREE_LABEL_FLUXDATA}/g" -i ${ROOT_MOUNT}/etc/fstab
+fi
 
 # If we pass args to bash, it will assume they are text files
 # to source and run.

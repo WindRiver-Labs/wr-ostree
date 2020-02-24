@@ -58,6 +58,7 @@ TMP_MNT_FLUXDATA="$TMP_MNT/${FLUXDATA_LABEL}"
 # The prefix label for LUSK
 LUKS_PREFIX_LABEL="luks"
 
+LUKS_MAPPED=0
 ROOT_IS_LUKS=0
 BACKUP_ROOT_IS_LUKS=0
 FLUXDATA_IS_LUKS=0
@@ -481,6 +482,7 @@ luks_map_all () {
     luks_rawdevs="$(blkid -s TYPE | grep crypto_LUKS | awk -F: '{ print $1 }')"
 
     for luks_rawdev in ${luks_rawdevs}; do
+	LUKS_MAPPED=1
 	ls /dev/mapper/* |grep -q /dev/mapper/${LUKS_PREFIX_LABEL}_${luks_rawdev##*/} || {
 	    _luks_map ${luks_rawdev}
 	    [ $? -eq 0 ] || return 1
@@ -539,27 +541,25 @@ detect_tpm_chip
 
 if [ $? -eq 0 ]; then
     luks_detect
-    echo "Start creating luks partition..."
     [ -z "${LUKS_LABEL_TO_BE_CREATED}" ] || luks_create
 
-    luks_map_all && {
-	print_verbose "LUKS mapping done"
+    luks_map_all
+    if [ "$LUKS_MAPPED" = 1 ] ; then
 	umount_dir ${TMP_MNT_ROOT}
 	umount_dir ${TMP_MNT_FLUXDATA}
 	sync && rm -rf $TMP_MNT
 	if [ "$NO_PCR_EXTEND" != "1" ] ; then
-		tpm2_pcrlist -T device | grep -q ^sha512
-		if [ $? = 0 ] ; then
-			tpm2_pcrextend -T device 7:sha512=abc00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000abc
-		else
-			tpm2_pcrextend -T device 7:sha256=abc0000000000000000000000000000000000000000000000000000000000abc
-		fi
+	    tpm2_pcrlist -T device | grep -q ^sha512
+	    if [ $? = 0 ] ; then
+		tpm2_pcrextend -T device 7:sha512=abc00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000abc
+	    else
+		tpm2_pcrextend -T device 7:sha256=abc0000000000000000000000000000000000000000000000000000000000abc
+	    fi
 	fi
 	exit 0
-    }
+    fi
 fi
 
-echo "No tpm 2.0 found or not working, restoring partition label..."
 umount_dir ${TMP_MNT_ROOT}
 umount_dir ${TMP_MNT_FLUXDATA}
 rm -rf $TMP_MNT
