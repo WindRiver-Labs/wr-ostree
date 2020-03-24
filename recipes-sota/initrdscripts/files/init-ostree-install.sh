@@ -804,9 +804,11 @@ else
 	mount -o $mount_flags LABEL=fluxdata /var1
 fi
 if [ -d ${PHYS_SYSROOT}/boot/0/ostree/var ] ; then
-	cp -a ${PHYS_SYSROOT}/boot/0/ostree/var/* /var1/ 2> /dev/null
+	tar -C ${PHYS_SYSROOT}/boot/0/ostree/var/ --xattrs --xattrs-include='*' -cf - . | \
+	tar --xattrs --xattrs-include='*' -xf - -C /var1 2> /dev/null
 elif [ -d ${PHYS_SYSROOT}/ostree/1/var ] ; then
-	cp -a ${PHYS_SYSROOT}/ostree/1/var/* /var1/ 2> /dev/null
+	tar -C ${PHYS_SYSROOT}/ostree/1/var/ --xattrs --xattrs-include='*' -cf - . | \
+	tar --xattrs --xattrs-include='*' -xf - -C /var1 2> /dev/null
 fi
 umount /var1
 

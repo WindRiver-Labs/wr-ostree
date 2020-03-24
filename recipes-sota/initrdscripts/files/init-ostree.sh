@@ -182,6 +182,11 @@ rm_var_check() {
 	[ -z $fluxdata_label ] && return 0
 	datapart=$(blkid -s LABEL | grep "LABEL=\"$fluxdata_label\"" |head -n 1| awk -F: '{print $1}')
 	if [ -n $datapart ] ; then
+		if [ -e "/sys/fs/selinux" ];then
+			do_mount_fs selinuxfs /sys/fs/selinux
+			echo 1 > /sys/fs/selinux/disable
+		fi
+
 		if [ "$e" = "ERASE" ] ; then
 			echo "Erasing /var..."
 			mount -o rw,noatime,iversion $datapart /var
@@ -190,7 +195,8 @@ rm_var_check() {
 				return
 			fi
 			(shopt -s dotglob ; rm -rf /var/*)
-			cp -a /sysroot/var/* /var
+			tar -C /sysroot/var/ --xattrs --xattrs-include='*' -cf - . | \
+			tar --xattrs --xattrs-include='*' -xf - -C /var
 			umount /var
 		elif [ "$e" = "FORMAT" ] ; then
 			t=`lsblk -o FSTYPE -n $datapart`
@@ -204,9 +210,12 @@ rm_var_check() {
 				echo "Error could not mount"
 				return
 			fi
-			cp -a /sysroot/var/* /var
+			tar -C /sysroot/var/ --xattrs --xattrs-include='*' -cf - . | \
+			tar --xattrs --xattrs-include='*' -xf - -C /var
 			umount /var
 		fi
+		sync
+		reboot -f
 	fi
 }
 
