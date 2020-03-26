@@ -327,12 +327,14 @@ fi
 
 rm_var_check
 
+# stop udev daemon
 udevadm control -e
 
-cd $ROOT_MOUNT
-for x in dev proc sys; do
-	log_info "Moving /$x to new rootfs"
-	mount --move "/$x" "$x"
+# move virtual filesystems to new root (not automatically done by
+# busybox's switch_root)
+for vfs in dev proc sys run; do
+    log_info "Moving /$vfs to new rootfs"
+    mount --move /${vfs} ${ROOT_MOUNT}/${vfs}
 done
 
 # !!! The Big Fat Warnings !!!
