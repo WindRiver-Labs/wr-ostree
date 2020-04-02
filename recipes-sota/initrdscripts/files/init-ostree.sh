@@ -189,9 +189,11 @@ rm_var_check() {
 	[ -z $fluxdata_label ] && return 0
 	datapart=$(blkid -s LABEL | grep "LABEL=\"$fluxdata_label\"" |head -n 1| awk -F: '{print $1}')
 	if [ -n $datapart ] ; then
+		reboot_flag=0
 		if [ -e "/sys/fs/selinux" ];then
 			do_mount_fs selinuxfs /sys/fs/selinux
 			echo 1 > /sys/fs/selinux/disable
+			reboot_flag=1
 		fi
 
 		if [ "$e" = "ERASE" ] ; then
@@ -221,8 +223,10 @@ rm_var_check() {
 			tar --xattrs --xattrs-include='*' -xf - -C /var
 			umount /var
 		fi
-		sync
-		reboot -f
+		if [ $reboot_flag = 1 ];then
+			sync
+			reboot -f
+		fi
 	fi
 }
 
