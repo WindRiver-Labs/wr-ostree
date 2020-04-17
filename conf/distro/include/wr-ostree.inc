@@ -37,6 +37,8 @@ OSTREE_ARCH_WKS_x86 ??= "ostree-grub"
 OSTREE_ARCH_WKS_x86-64 ??= "ostree-grub"
 
 OSTREE_ARCH_WKS_arm ??= "ostree-uboot-sd"
+OSTREE_ARCH_WKS_armv7 ??= "ostree-uboot-sd"
+OSTREE_ARCH_WKS_armv7ve ??= "ostree-uboot-sd"
 OSTREE_ARCH_WKS_aarch64 ??= "ostree-uboot-sd"
 
 OSTREE_AB_WKS ??= "${@oe.utils.conditional('OSTREE_USE_AB', '1', '-ab', '-noab', d)}"
@@ -111,6 +113,8 @@ OSTREE_FLUX_PART ??= "${@bb.utils.contains('DISTRO_FEATURES', 'luks', 'luksfluxd
 OSTREE_BOOTLOADER_x86 ??= 'grub'
 OSTREE_BOOTLOADER_x86-64 ??= 'grub'
 OSTREE_BOOTLOADER_arm ??= 'u-boot'
+OSTREE_BOOTLOADER_armv7 ??= 'u-boot'
+OSTREE_BOOTLOADER_armv7ve ??= 'u-boot'
 OSTREE_BOOTLOADER_aarch64 ??= 'u-boot'
 
 # Define any special partitions required where loaders, firmware etc
@@ -160,6 +164,8 @@ OSTREE_FDISK_VSZ ??= "0"
 # to be controlled via ostree (less secure)
 #    OSTREE_BOOTSCR ??= "env_import"
 
+# Allow a BSP to specify extra cmds in the boot.scr if needed
+OSTREE_BOOTSCR_PRECMD ??= ""
 
 # Grub settings for ostree
 OSTREE_GRUB_USER ??= "root"

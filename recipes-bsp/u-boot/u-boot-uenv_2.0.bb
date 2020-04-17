@@ -93,6 +93,7 @@ bootscr_fs_links() {
 	NETINST_ARGS="${OSTREE_NETINST_ARGS}"
 
 	cat <<EOF > ${WORKDIR}/uEnv.txt
+${OSTREE_BOOTSCR_PRECMD}
 setenv machine_name ${MACHINE}
 test -n \${fdtcontroladdr} && setenv fdt_addr \${fdtcontroladdr}
 setenv bretry 32
@@ -152,7 +153,7 @@ setenv instdef "$NETINST_ARGS"
 if test -n \${ninstargs}; then
  setenv netinst "\${ninstargs}"
 else
- setenv netinst "\${netinstpre}fatload mmc \${mmcdev}:1 \${loadaddr} Image;fatload mmc \${mmcdev}:1 \${initrd_addr} initramfs; setenv bootargs \\"\${fdtargs} \${instdef} \${exinargs}\\";${OSTREE_UBOOT_CMD} \${loadaddr} \${initrd_addr} \${fdt_addr}"
+ setenv netinst "\${netinstpre}fatload mmc \${mmcdev}:1 \${loadaddr} ${OSTREE_KERNEL};fatload mmc \${mmcdev}:1 \${initrd_addr} initramfs; setenv bootargs \\"\${fdtargs} \${instdef} \${exinargs}\\";${OSTREE_UBOOT_CMD} \${loadaddr} \${initrd_addr} \${fdt_addr}"
 fi
 setenv autoinst echo "!!!Autostarting ERASE and INSTALL, you have 5 seconds to reset the board!!!"\;sleep 5\;run netinst
 if test "\${no_autonetinst}" != 1 && test -n \${URL} ; then
