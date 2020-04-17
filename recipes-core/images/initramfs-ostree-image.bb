@@ -34,6 +34,7 @@ PACKAGE_INSTALL = "ostree \
   e2fsprogs-resize2fs \
   e2fsprogs-e2fsck \
   pv \
+  mttyexec \
   gzip \
   findutils \
   tar \

@@ -112,6 +112,8 @@ early_setup() {
 	read_args
 	do_mount_fs sysfs /sys
 	mount -t devtmpfs none /dev
+	mkdir -p /dev/pts
+	mount -t devpts /dev/pts
 	do_mount_fs tmpfs /tmp
 	do_mount_fs tmpfs /run
 
@@ -183,6 +185,7 @@ ECURL=${ECURL=""}
 ECURLARG=${ECURLARG=""}
 LCURL=${LCURL=""}
 LCURLARG=${LCURLARG=""}
+CONSOLES=""
 IP=""
 MAX_TIMEOUT_FOR_WAITING_LOWSPEED_DEVICE=60
 OSTREE_KERNEL_ARGS=${OSTREE_KERNEL_ARGS=%OSTREE_KERNEL_ARGS%}
@@ -196,6 +199,9 @@ read_args() {
 	for arg in $CMDLINE; do
 		optarg=`expr "x$arg" : 'x[^=]*=\(.*\)'`
 		case $arg in
+			console=*)
+				CONSOLES="$CONSOLES ${optarg%,*}"
+				;;
 			bl=*)
 				BL=$optarg ;;
 			instnet=*)
@@ -281,7 +287,6 @@ shell_start() {
 			console=*)
 				c=${e%,*}
 				c=${c#console=*}
-				break
 				;;
 		esac
 	done
@@ -289,11 +294,16 @@ shell_start() {
 	if [ "$c" = "" ] ; then
 		c=tty0
 	fi
+	args=""
+	tty > /dev/null
+	if [ $? != 0 ] ; then
+		args="</dev/$c >/dev/$c 2>&1"
+	fi
 	if [ "$1" = "exec" ] ; then
-		exec setsid sh -c "exec /bin/bash </dev/$c >/dev/$c 2>&1"
+		echo "function lreboot { echo b > /proc/sysrq-trigger; while [ 1 ] ; do sleep 60; done };trap lreboot EXIT" > /debugrc
+		exec setsid sh -c "exec /bin/bash --rcfile /debugrc $args"
 	else
-		echo "trap lreboot EXIT; function lreboot { echo b > /proc/sysrq-trigger; while [ 1 ] ; do sleep 60; done }" > /debugrc
-		setsid sh -c "exec /bin/bash --rcfile /debugrc </dev/$c >/dev/$c 2>&1"
+		setsid sh -c "exec /bin/bash $args"
 	fi
 }
 
@@ -436,7 +446,19 @@ if [ "$1" = "-h" -o "$1" = "-?" ] ; then
 	exit 0
 fi
 
-early_setup
+if [ "$RE_EXEC" != "1" ] ; then
+	early_setup
+	if [ -e /bin/mttyexec -a "$CONSOLES" != "" ] ; then
+		export RE_EXEC=1
+		cmd="/bin/mttyexec -s"
+		for e in $CONSOLES; do
+			cmd="$cmd -d /dev/$e"
+		done
+		exec $cmd $0 $@
+	fi
+else
+	read_args
+fi
 
 [ -z "$CONSOLE" ] && CONSOLE="/dev/console"
 [ -z "$INIT" ] && INIT="/sbin/init"
