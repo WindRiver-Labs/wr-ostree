@@ -81,9 +81,9 @@ run loadramdisk
 run loaddtb
 run loadkernel
 if test \${bdef} = 31 && test "\${ex}" != "_b"; then
-setenv bootargs \${bootargs2} \${bootpart} \${rootpart} console=\${console},\${baudrate} \${smp} flux=fluxdata\${labelpre}
+setenv bootargs \${bootargs2} \${bootpart} \${rootpart} ${OSTREE_CONSOLE} \${smp} flux=fluxdata\${labelpre}
 else
-setenv bootargs \${bootargs} \${bootpart} \${rootpart} console=\${console},\${baudrate} \${smp} flux=fluxdata\${labelpre}
+setenv bootargs \${bootargs} \${bootpart} \${rootpart} ${OSTREE_CONSOLE} \${smp} flux=fluxdata\${labelpre}
 fi
 ${OSTREE_UBOOT_CMD} \${loadaddr} \${initrd_addr} \${fdt_addr}
 EOF
@@ -204,7 +204,7 @@ fi
 if test \${skip_script_wd} != yes; then setenv wdttimeout 120000; fi
 setenv loadkernel ext4load mmc \${mmcdev}:\${mmcpart} \${loadaddr} \${ostver}/vmlinuz
 setenv loadramdisk ext4load mmc \${mmcdev}:\${mmcpart} \${initrd_addr} \${ostver}/initramfs
-setenv bootargs "\${fdtargs} \${bootpart} ostree=/ostree/\${ostver} \${rootpart} console=\${console},\${baudrate} \${smp} flux=fluxdata\${labelpre}"
+setenv bootargs "\${fdtargs} \${bootpart} ostree=/ostree/\${ostver} \${rootpart} ${OSTREE_CONSOLE} \${smp} flux=fluxdata\${labelpre}"
 if test ! -n \${use_fdtdtb} || test \${use_fdtdtb} -lt 1; then
  setenv loaddtb ext4load mmc \${mmcdev}:\${mmcpart} \${fdt_addr} \${ostver}/\${fdt_file};run loaddtb
 fi

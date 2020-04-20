@@ -124,6 +124,26 @@ OSTREE_SD_UBOOT_WIC2 ??= ""
 OSTREE_SD_UBOOT_WIC3 ??= ""
 OSTREE_SD_UBOOT_WIC4 ??= ""
 
+# The OSTREE_CONSOLE variable will control what kernel command line
+# parameters are passed for the console these should be formatted for
+# the boot loader specific to the BSP and the OSTREE_CONSOLE_AUX
+# should end with a SPACE
+OSTREE_CONSOLE_PRI ??= "console=tty1"
+OSTREE_CONSOLE_PRI_arm ??= "console=\${console},\${baudrate}"
+OSTREE_CONSOLE_PRI_armv7 ??= "console=\${console},\${baudrate}"
+OSTREE_CONSOLE_PRI_armv7ve ??= "console=\${console},\${baudrate}"
+OSTREE_CONSOLE_PRI_aarch64 ??= "console=\${console},\${baudrate}"
+
+OSTREE_CONSOLE_AUX ??= "console=ttyS0,115200 "
+OSTREE_CONSOLE_AUX_x86 ??= "console=ttyS0,115200 "
+OSTREE_CONSOLE_AUX_x86-64 ??= "console=ttyS0,115200 "
+OSTREE_CONSOLE_AUX_arm ??= "console=tty0 "
+OSTREE_CONSOLE_AUX_armv7 ??= "console=tty0 "
+OSTREE_CONSOLE_AUX_armv7ve ??= "console=tty0 "
+OSTREE_CONSOLE_AUX_aarch64 ??= "console=tty0 "
+
+OSTREE_CONSOLE ??= "${OSTREE_CONSOLE_AUX}${OSTREE_CONSOLE_PRI}"
+
 # This is set to the name of the loader to include into a disk image
 # Not all BSPs will need this, so it can be unset by the BSP
 OSTREE_SD_BOOT_ALIGN ??= "4"
