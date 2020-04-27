@@ -180,6 +180,11 @@ create_tarball_and_ostreecommit() {
 				--timestamp=${_timestamp} \
 				--subject="Commit-id: ${_image_basename}-${MACHINE}-${DATETIME}"
 		fi
+		gpgconf=$(dirname $gpg_bin)/gpgconf
+		if [ ! -f $gpgconf ] ; then
+			bb.fatal "ERROR Could not find $gpgconf"
+		fi
+		GNUPGHOME="$gpg_path" flock ${OSTREE_REPO}.lock $gpgconf --kill gpg-agent
         fi
 }
 
