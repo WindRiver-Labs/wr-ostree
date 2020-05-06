@@ -302,6 +302,11 @@ ostree_upgrade() {
 
 update_env() {
 	if [ $USE_GRUB = 1 ] ; then
+		# The ostree binary is playing with mount point.
+		# Remount it to Read-Write for boot.env generation
+		# This is a cleanup against the ostree deploy
+		mount -o remount,rw $UPGRADE_ESP_DEV $UPGRADE_ESP_DIR
+
 		$GRUB_EDITENV_BIN $UPGRADE_ROOTFS_DIR/$GRUB_ENV_FILE set \
 			rollback_part=$ROLLBACK_VAL $BOOTMODE_VAR=$BOOTMODE_VAL \
 			default=0 boot_tried_count=0
