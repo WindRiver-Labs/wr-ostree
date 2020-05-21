@@ -62,7 +62,10 @@ OPTIONAL:
  instpt=1			- Set to 0 to skip disk partitioning
  instgpg=0			- Turn off OSTree GnuPG signing checks
  instdate=datespec	        - Argument to "date -u -s" like @1577836800
- dhcpargs=DHCP_ARGS		- Arguments to pass to udhcpc
+ dhcpargs=DHCP_ARGS		- Args to "udhcpc -i" or "dhclient" like wlan0
+ wifi=ssid=YOUR_SSID;psk=your_key - Setup via wpa_cli for authentication
+ wifi=ssid=YOUR_SSID;psk=ask    - Ask for password at run time
+ wifi=scan                      - Dynamically Construct wifi wpa_supplicant
  ecurl=URL_TO_SCRIPT		- Download+execute script before disk prep
  ecurlarg=ARGS_TO_ECURL_SCRIPT	- Arguments to pass to ecurl script
  lcurl=URL_TO_SCRIPT		- Download+execute script after install
@@ -90,11 +93,203 @@ lreboot() {
 	done
 }
 
+ask() {
+	local 'char' 'charcount' 'prompt' 'reply'
+	prompt="$1"
+	charcount='0'
+	reply=''
+	while IFS='' read -n '1' -p "${prompt}" -r -s 'char'; do
+            case "${char}" in
+		# Handles NULL
+		( $'\000' )
+		break
+		;;
+		# Handle Control-U
+		($'\025' )
+		    prompt=''
+		    while [ $charcount -gt 0 ] ; do
+			prompt=$prompt$'\b \b'
+			(( charcount-- ))
+		    done
+		    charcount=0
+		    reply=''
+		    ;;
+		# Handles BACKSPACE and DELETE
+		( $'\010' | $'\177' )
+		if (( charcount > 0 )); then
+		    prompt=$'\b \b'
+		    reply="${reply%?}"
+		    (( charcount-- ))
+		else
+		    prompt=''
+		fi
+		;;
+		( * )
+		prompt='*'
+		reply+="${char}"
+		(( charcount++ ))
+		;;
+            esac
+	done
+	printf "\n"
+	askpw="$reply"
+}
+
+ask_psk() {
+	local netnum=$2
+	local var=$3
+	while [ 1 ] ; do
+		ask "$1"
+		if [ "$askpw" != "" ] ; then
+			val="$askpw"
+			wpa_cli set_network $netnum $var \"$val\"|grep -q ^OK
+			if [ $? == 0 ] ; then
+				break
+			else
+				echo "Invalid characters or length of password"
+			fi
+		fi
+	done
+}
+
+wifi_scan() {
+	local i before after
+	while [ 1 ] ; do
+		bss=()
+		freq=()
+		sigl=()
+		flags=()
+		ssid=()
+		wpa_cli scan > /dev/null
+		sleep 2
+		while IFS="" read -r inp; do
+			[ "$inp" != "${inp#Selected}" ] && continue
+			[ "$inp" != "${inp#bssid}" ] && continue
+			before=${inp%%$'\t'*}
+			after=${inp#*$'\t'}
+			bss+=("$before")
+			before=${after%%$'\t'*}
+			after=${after#*$'\t'}
+			freq+=("$before")
+			before=${after%%$'\t'*}
+			after=${after#*$'\t'}
+			sigl+=("$before")
+			before=${after%%$'\t'*}
+			after=${after#*$'\t'}
+			flags+=("${before//\[ESS\]/}")
+			ssid+=("$after")
+		done <<< $(wpa_cli scan_results)
+		echo "SSID/BSSID/Frequency/Signal Level/Flags/"
+		for i in ${!bss[@]}; do
+			[ "${ssid[$i]}" = "" ] && continue
+			echo "$i - ${ssid[$i]}/${bss[$i]}/${freq[$i]}/${sigl[$i]}/${flags[$i]}"
+		done
+		echo "R - Rescan"
+		echo "B - Reboot"
+		while [ 1 ] ; do
+			IFS='' read -p "Selection: " -r reply
+			[ "$reply" = "r" ] && reply=R
+			[ "$reply" = "R" ] && break;
+			[ "$reply" = "B" ] && echo b > /proc/sysrq-trigger;
+			[ "$reply" -ge 0 -a "$reply" -lt ${#bss[@]} ] && break
+		done
+		[ $reply != "R" ] && break
+	done
+	# Setup WiFi Parameters
+	SSID="${ssid[$reply]}"
+	FWIFI="${flags[$reply]}"
+}
+
+do_wifi() {
+	retry=0
+	while [ $retry -lt 100 ] ; do
+		ifconfig ${DHCPARGS% *} > /dev/null 2>&1 && break
+		retry=$(($retry+1))
+		sleep 0.1
+	done
+	if [ $retry -ge 100 ] ;then
+		fatal "Error could not find interface ${DHCPARGS% *}"
+	fi
+	wpa_supplicant -i ${DHCPARGS} -c /etc/wpa_supplicant.conf -B
+	if [ "${WIFI}" != "" ] ; then
+		while [ 1 ] ; do
+			wpa_cli remove_network 0 > /dev/null
+			netnum=`wpa_cli add_network |tail -1`
+			# Assume psk= is last in case there is a ; in the psk
+			WIFI_S=""
+			if [ "$WIFI" = "scan" ] ; then
+				wifi_scan
+				wpa_cli set_network $netnum ssid "\"$SSID\"" > /dev/null
+				if [ "$FWIFI" != "${FWIFI/EAP/}" ] ; then
+					IFS='' read -p "EAP User ID: " -r reply
+					wpa_cli set_network $netnum key_mgmt WPA-EAP > /dev/null
+					wpa_cli set_network $netnum identity "\"$reply\"" > /dev/null
+					ask_psk "EAP Password: " $netnum password
+				else
+					ask_psk "WiFi Password: " $netnum psk > /dev/null
+				fi
+			else
+				psk=${WIFI##*;psk=}
+				WIFI_S="${WIFI%;psk=*}"
+				WIFI_S="${WIFI_S//;/ }"
+				if [ "$psk" != "" ] ; then
+					WIFI_S="$WIFI_S psk=$psk"
+				fi
+			fi
+			for k in $WIFI_S; do
+				var=${k%%=*}
+				val=${k#*=}
+				if [ "$var" = "psk" -a "$val" = "ask" ] ; then
+					ask_psk "WiFi Password: " $netnum psk
+				fi
+				# Try with quotes first
+				wpa_cli set_network $netnum $var \"$val\"|grep -q ^OK
+				if [ $? != 0 ] ; then
+					wpa_cli set_network $netnum $var $val|grep -q ^OK || \
+						echo "Error: with wpa_cli set_network $netnum $var $val"
+				fi
+			done
+			wpa_cli enable_network $netnum
+			# Allow up to 20 seconds for network to come ready
+			retry=0
+			timeout=$((4*20))
+			while [ $retry -lt $timeout ] ; do
+				state=`wpa_cli status |grep wpa_state=`
+				if [ "$state" != "${state/COMPLETED/}" ] ; then
+					break
+				fi
+				sleep .250
+				retry=$(($retry+1))
+			done
+			if [ "$state" != "${state/COMPLETED/}" -o "$state" != "${state/CONNECTED/}" ] ; then
+				echo "WiFi Acitvated"
+				break
+			fi
+			if [ "$psk" = "ask" -o "WIFI" = "scan" ] ; then
+				echo "Error: Failed to connect to WiFi"
+				wpa_cli disable_network $netnum > /dev/null
+				wpa_cli flush $netnum > /dev/null
+				continue
+			fi
+			fatal "Error: Failed to establish WiFi link."
+		done
+	fi
+}
+
 do_dhcp() {
+	if [ -f /sbin/wpa_supplicant -a "${DHCPARGS}" != "${DHCPARGS#w}" ] ; then
+		# Activate wifi
+		do_wifi
+	fi
 	if [ -f /sbin/udhcpc ] ; then
-		/sbin/udhcpc ${DCHPARGS}
+		# Assume first arg is ethernet inteface
+		if [ "${DHCPARGS}" != "" ] ; then
+			/sbin/udhcpc -i ${DHCPARGS}
+		else
+			/sbin/udhcpc
+		fi
 	else
-		dhclient ${DCHPARGS}
+		dhclient ${DHCPARGS}
 	fi
 }
 
@@ -181,6 +376,7 @@ INSTGPG=${INSTGPG=""}
 INSTSF=${INSTSF=""}
 INSTFLUX=${INSTFLUX=""}
 DHCPARGS=${DHCPARGS=""}
+WIFI=${WIFI=""}
 ECURL=${ECURL=""}
 ECURLARG=${ECURLARG=""}
 LCURL=${LCURL=""}
@@ -246,6 +442,8 @@ read_args() {
 				INSTFLUX=$optarg ;;
 			dhcpargs=*)
 				DHCPARGS=$optarg ;;
+			wifi=*)
+				WIFI=$optarg ;;
 			ecurl=*)
 				if [ "$ECURL" = "" ] ; then ECURL=$optarg; fi ;;
 			ecurlarg=*)
