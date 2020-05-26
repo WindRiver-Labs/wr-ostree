@@ -254,7 +254,7 @@ while [ 1 ] ; do
 	fi
 done
 
-[ VSZ = 0 ] && expand_fluxdata
+[ $VSZ = 0 ] && expand_fluxdata
 
 [ -x /init.luks-ostree ] && {
 	/init.luks-ostree $OSTREE_LABEL_ROOT $OSTREE_LABEL_FLUXDATA || fatal "Couldn't init LUKS."
