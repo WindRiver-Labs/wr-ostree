@@ -63,6 +63,7 @@ OPTIONAL:
  instgpg=0			- Turn off OSTree GnuPG signing checks
  instdate=datespec	        - Argument to "date -u -s" like @1577836800
  dhcpargs=DHCP_ARGS		- Args to "udhcpc -i" or "dhclient" like wlan0
+				  ask = Ask which interface to use
  wifi=ssid=YOUR_SSID;psk=your_key - Setup via wpa_cli for authentication
  wifi=ssid=YOUR_SSID;psk=ask    - Ask for password at run time
  wifi=scan                      - Dynamically Construct wifi wpa_supplicant
@@ -277,6 +278,31 @@ do_wifi() {
 }
 
 do_dhcp() {
+	if [ "$dhcp_done" = 1 ] ; then
+		return
+	fi
+	# If no network needed do not conifgure it
+	if [ "${ECURL}" = "" -o "${ECURL}" = "none" ] && [ "${LCURL}" = "" -o "${LCURL}" = "none" ] && [ "$INSTL" != "" ] ; then
+		return
+	fi
+	if [ "${DHCPARGS}" = "ask" ] ; then
+		while [ 1 ] ; do
+			echo "Select an interface to use"
+			iface=()
+			while IFS="" read -r inp; do
+				iface+=($inp)
+			done <<< $(ls /sys/class/net |grep -v ^lo\$ |grep -v ^sit0)
+			for i in ${!iface[@]}; do
+				echo "$i - ${iface[$i]}"
+			done
+			echo "B - Reboot"
+			IFS='' read -p "Selection: " -r reply
+			[ "$reply" = "B" ] && echo b > /proc/sysrq-trigger;
+			[[ "$reply" =~ ^[0-9]+$ ]] && [ "$reply" -ge 0 -a "$reply" -lt ${#iface[@]} ] && break
+		done
+		DHCPARGS="${iface[$reply]}"
+	fi
+	dhcp_done=1
 	if [ -f /sbin/wpa_supplicant -a "${DHCPARGS}" != "${DHCPARGS#w}" ] ; then
 		# Activate wifi
 		do_wifi
@@ -924,6 +950,8 @@ if [ "$INSTL" != "" ] ; then
 	else
 		echo "WARNING WARNING - Local install missing, falling back to network"
 		lpull=""
+		INSTL=""
+		do_dhcp
 	fi
 fi
 
