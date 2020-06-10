@@ -24,6 +24,7 @@ import shutil
 import glob
 import time
 import hashlib
+import yaml
 
 from create_full_image.utils import set_logger
 from create_full_image.utils import run_cmd
@@ -103,20 +104,24 @@ class CreateFullImage(object):
 
         self.today = get_today()
 
+        data = dict()
         if self.args.input:
             logger.info("Input YAML File: %s" % self.args.input)
-            self.machine = ""
-            self.image_name = ""
-            self.packages = []
-            self.pkg_feeds = []
-            self.image_features = []
+            if not os.path.exists(self.args.input):
+                logger.error("Input yaml file '%s' does not exist" % self.args.input)
+                sys.exit(1)
+
+            with open(self.args.input) as f:
+                data = yaml.load(f, Loader=yaml.FullLoader)
+                logger.debug("Yaml File Contentt: %s" % data)
         else:
             logger.info("No Input YAML File, use default setting:")
-            self.machine = DEFAULT_MACHINE
-            self.image_name = DEFAULT_IMAGE
-            self.packages = DEFAULT_PACKAGES
-            self.pkg_feeds = DEFAULT_PACKAGE_FEED
-            self.image_features = DEFAULT_IMAGE_FEATURES
+
+        self.image_name = data['name'] if 'name' in data else DEFAULT_MACHINE
+        self.machine = data['machine'] if 'machine' in data else DEFAULT_MACHINE
+        self.packages = data['packages'] if 'packages' in data else DEFAULT_PACKAGES
+        self.pkg_feeds = data['package_feeds'] if 'package_feeds' in data else DEFAULT_PACKAGE_FEED
+        self.image_features = data['features'] if 'features' in data else DEFAULT_IMAGE_FEATURES
 
         self.outdir = self.args.outdir
         self.workdir = self.outdir + "/workdir/" + self.machine

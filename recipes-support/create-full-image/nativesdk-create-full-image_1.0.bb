@@ -14,6 +14,7 @@ RDEPENDS_${PN} = "nativesdk-dnf \
                   nativesdk-gnupg \
                   nativesdk-gnupg-gpg \
                   nativesdk-ostree \
+                  nativesdk-python3-pyyaml \
 "
 
 SRC_URI = "\
