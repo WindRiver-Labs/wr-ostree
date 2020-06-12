@@ -15,14 +15,24 @@ RDEPENDS_${PN} = "nativesdk-dnf \
                   nativesdk-gnupg-gpg \
                   nativesdk-ostree \
                   nativesdk-python3-pyyaml \
+                  nativesdk-shadow \
+"
+
+# Required by do_rootfs's intercept_scripts in sdk
+RDEPENDS_${PN} += "nativesdk-gdk-pixbuf \
+                   nativesdk-kmod \
 "
 
 SRC_URI = "\
            file://COPYING \
            file://create_full_image.sh \
            file://_create_full_image_h.sh \
+           file://depmodwrapper \
+           file://add_path.sh \
            file://create_full_image/__init__.py \
            file://create_full_image/utils.py \
+           file://create_full_image/package_manager.py \
+           file://create_full_image/data/pre_rootfs/create_merged_usr_symlinks.sh \
            file://METADATA.in \
            file://README.md \
            file://setup.py \
@@ -57,7 +67,14 @@ do_compile_append() {
 }
 
 do_install_append() {
-	install -d ${D}${bindir}
+	install -d ${D}${bindir}/crossscripts
 	install -m 0755 ${S}/create_full_image.sh ${D}${bindir}/
 	install -m 0755 ${S}/_create_full_image_h.sh ${D}${bindir}/
+	install -m 0755 ${WORKDIR}/depmodwrapper ${D}${bindir}/crossscripts
+	install -d ${D}${datadir}/create_full_image/
+	cp -rf ${WORKDIR}/create_full_image/data ${D}${datadir}/create_full_image/
+	mkdir -p ${D}${SDKPATHNATIVE}/environment-setup.d
+	install -m 0755 ${WORKDIR}/add_path.sh ${D}${SDKPATHNATIVE}/environment-setup.d
 }
+
+FILES_${PN} = "${SDKPATHNATIVE}"
