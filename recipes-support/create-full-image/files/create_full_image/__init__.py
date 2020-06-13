@@ -120,7 +120,7 @@ class CreateFullImage(object):
         else:
             logger.info("No Input YAML File, use default setting:")
 
-        self.image_name = data['name'] if 'name' in data else DEFAULT_MACHINE
+        self.image_name = data['name'] if 'name' in data else DEFAULT_IMAGE
         self.machine = data['machine'] if 'machine' in data else DEFAULT_MACHINE
         self.packages = data['packages'] if 'packages' in data else DEFAULT_PACKAGES[self.machine]
         self.pkg_feeds = data['package_feeds'] if 'package_feeds' in data else DEFAULT_PACKAGE_FEED
@@ -132,8 +132,16 @@ class CreateFullImage(object):
         if self.args.machine:
             self.machine = self.args.machine
 
+        if self.machine != DEFAULT_MACHINE:
+            logger.error("MACHINE %s is invalid, SDK is working for %s only" % (self.machine, DEFAULT_MACHINE))
+            sys.exit(1)
+
         if self.args.url:
             self.pkg_feeds = self.args.url
+
+        if not self.pkg_feeds:
+            logger.error("The package feeds does not exist, please set it")
+            sys.exit(1)
 
         if self.args.pkg:
             self.packages.extend(self.args.pkg)

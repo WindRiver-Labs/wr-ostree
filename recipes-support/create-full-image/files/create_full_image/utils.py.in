@@ -63,13 +63,11 @@ def run_cmd(cmd, logger):
 def get_today():
     return time.strftime("%Y%m%d%H%M%S")
 
-DEFAULT_MACHINE = "bcm-2xxx-rpi4"
+DEFAULT_MACHINE = "@MACHINE@"
 
 DEFAULT_IMAGE = "wrlinux-image-small"
 
-DEFAULT_PACKAGE_FEED = [
-    "http://128.224.153.74/bcm-2xxx-rpi4/rpm/",
-]
+DEFAULT_PACKAGE_FEED = "@DEFAULT_PACKAGE_FEED@".split()
 
 DEFAULT_IMAGE_FEATURES = []
 
