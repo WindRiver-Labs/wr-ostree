@@ -78,8 +78,8 @@ FEED_ARCHS_DICT = {
     'bcm-2xxx-rpi4': "all any noarch armv5hf_vfp armv5thf_vfp armv5ehf_vfp armv5tehf_vfp armv6hf_vfp armv6thf_vfp armv7ahf_vfp armv7at2hf_vfp armv7ahf_neon armv7at2hf_neon bcm_2xxx_rpi4 aarch64 armv8a armv8a_crc armv8a_crypto armv8a_crc_crypto cortexa72",
 }
 
-# default rootfs: small
-DEFAULT_PACKAGES = '''
+# default rootfs: wrlinux-image-small
+DEFAULT_PACKAGES_bcm_2xxx_rpi4 = '''
     packagegroup-core-boot
     kernel-modules
     u-boot-uenv
@@ -96,6 +96,25 @@ DEFAULT_PACKAGES = '''
     ostree-upgrade-mgr
     os-release
 '''.split()
+
+# default rootfs: wrlinux-image-small
+DEFAULT_PACKAGES_intel_x86_64 = '''
+    packagegroup-core-boot
+    kernel-modules
+    iucode-tool intel-microcode
+    rtl8723bs-bt
+    i2c-tools
+    lmsensors
+    grub-efi
+    packagegroup-busybox-replacement
+    ostree ostree-upgrade-mgr
+    os-release
+'''.split()
+
+DEFAULT_PACKAGES = {
+    'intel-x86-64': DEFAULT_PACKAGES_intel_x86_64,
+    'bcm-2xxx-rpi4': DEFAULT_PACKAGES_bcm_2xxx_rpi4,
+}
 
 OSTREE_INITRD_PACKAGES = '''
     ostree ostree-switchroot
