@@ -7,6 +7,8 @@ import glob
 import stat
 import shutil
 import re
+import yaml
+from collections import OrderedDict
 
 def set_logger(logger):
     logger.setLevel(logging.DEBUG)
@@ -62,6 +64,16 @@ def run_cmd(cmd, logger):
 
 def get_today():
     return time.strftime("%Y%m%d%H%M%S")
+
+def ordered_dump(data, stream=None, Dumper=yaml.Dumper, **kwds):
+    class OrderedDumper(Dumper):
+        pass
+    def _dict_representer(dumper, data):
+        return dumper.represent_mapping(
+            yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG,
+            data.items())
+    OrderedDumper.add_representer(OrderedDict, _dict_representer)
+    return yaml.dump(data, stream, OrderedDumper, **kwds)
 
 DEFAULT_MACHINE = "@MACHINE@"
 

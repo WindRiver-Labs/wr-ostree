@@ -25,6 +25,7 @@ import glob
 import time
 import hashlib
 import yaml
+from collections import OrderedDict
 
 from create_full_image.utils import set_logger
 from create_full_image.utils import run_cmd
@@ -35,7 +36,6 @@ from create_full_image.utils import DEFAULT_MACHINE
 from create_full_image.utils import DEFAULT_IMAGE
 from create_full_image.utils import DEFAULT_IMAGE_FEATURES
 from create_full_image.package_manager import DnfRpm
-from create_full_image.utils import  mkdirhier
 import create_full_image.utils as utils
 
 logger = logging.getLogger('cbas')
@@ -129,6 +129,11 @@ class CreateFullImage(object):
         self.outdir = self.args.outdir
         self.workdir = self.outdir + "/workdir/" + self.machine
 
+        self.deploydir = os.path.join(self.outdir, "deploy")
+        self.output_yaml = os.path.join(self.deploydir, "%s-%s.yaml" % (self.image_name, self.machine))
+        utils.mkdirhier(self.deploydir)
+        self.packages_yaml = os.path.join(self.workdir, "packages.yaml")
+
         if self.args.machine:
             self.machine = self.args.machine
 
@@ -178,6 +183,8 @@ class CreateFullImage(object):
 
         self._post_rootfs()
 
+        self.save_output_yaml()
+
     def _pre_rootfs(self):
         os.environ['IMAGE_ROOTFS'] = self.pm.target_rootfs
         os.environ['libexecdir'] = '/usr/libexec'
@@ -218,6 +225,28 @@ class CreateFullImage(object):
                 if output: logger.debug(output.decode("utf-8"))
             except subprocess.CalledProcessError as e:
                 logger.debug("Exit code %d. Output:\n%s" % (e.returncode, e.output.decode("utf-8")))
+
+    def image_list_installed_packages(self):
+        data = OrderedDict()
+        for k, v in self.pm.list_installed().items():
+            data[k] = v
+        return data
+
+    def save_output_yaml(self):
+        installed_dict = self.image_list_installed_packages()
+        with open(self.packages_yaml, "w") as f:
+            utils.ordered_dump(installed_dict, f, Dumper=yaml.SafeDumper)
+            logger.debug("Save Installed Packages Yaml FIle to : %s" % (self.packages_yaml))
+
+        data = OrderedDict()
+        data['name'] = self.image_name
+        data['machine'] = self.machine
+        data['features'] = self.image_features
+        data['package_feeds'] = self.pkg_feeds
+        data['packages'] = list(installed_dict.keys())
+        with open(self.output_yaml, "w") as f:
+            utils.ordered_dump(data, f, Dumper=yaml.SafeDumper)
+            logger.debug("Save Yaml FIle to : %s" % (self.output_yaml))
 
 
 def main():
