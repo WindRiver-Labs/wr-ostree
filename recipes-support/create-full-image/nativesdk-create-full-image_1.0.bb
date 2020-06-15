@@ -32,6 +32,7 @@ SRC_URI = "\
            file://create_full_image/__init__.py \
            file://create_full_image/utils.py.in \
            file://create_full_image/package_manager.py \
+           file://create_full_image/rootfs.py \
            file://create_full_image/data/pre_rootfs/create_merged_usr_symlinks.sh \
            file://METADATA.in \
            file://README.md \
