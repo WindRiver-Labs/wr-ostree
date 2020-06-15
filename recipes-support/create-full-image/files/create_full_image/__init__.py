@@ -33,6 +33,10 @@ from create_full_image.utils import DEFAULT_MACHINE
 from create_full_image.utils import DEFAULT_IMAGE
 from create_full_image.utils import DEFAULT_IMAGE_FEATURES
 from create_full_image.rootfs import Rootfs
+from create_full_image.container import CreateContainer
+from create_full_image.image import CreateWicImage
+from create_full_image.image import CreateOstreeRepo
+
 import create_full_image.utils as utils
 
 logger = logging.getLogger('cbas')
@@ -134,6 +138,8 @@ class CreateFullImage(object):
         self.output_yaml = os.path.join(self.deploydir, "%s-%s.yaml" % (self.image_name, self.machine))
         utils.mkdirhier(self.deploydir)
 
+        self.target_rootfs = None
+
         if self.args.machine:
             self.machine = self.args.machine
 
@@ -186,6 +192,8 @@ class CreateFullImage(object):
 
         self._save_output_yaml(installed_dict)
 
+        self.target_rootfs = rootfs.target_rootfs
+
     def _save_output_yaml(self, installed_dict):
         data = OrderedDict()
         data['name'] = self.image_name
@@ -197,11 +205,54 @@ class CreateFullImage(object):
             utils.ordered_dump(data, f, Dumper=yaml.SafeDumper)
             logger.debug("Save Yaml FIle to : %s" % (self.output_yaml))
 
+    def do_image_wic(self):
+        workdir = os.path.join(self.workdir, self.image_name)
+        image_wic = CreateWicImage(
+                        workdir,
+                        self.machine,
+                        self.target_rootfs,
+                        self.deploydir,
+                        logger)
+        image_wic.create()
+
+    def do_image_container(self):
+        workdir = os.path.join(self.workdir, self.image_name)
+        container = CreateContainer(
+                        workdir,
+                        self.machine,
+                        self.target_rootfs,
+                        self.deploydir,
+                        logger)
+        container.create()
+
+    def do_ostree_repo(self):
+        workdir = os.path.join(self.workdir, self.image_name)
+        ostree_repo = CreateOstreeRepo(
+                        workdir,
+                        self.machine,
+                        self.target_rootfs,
+                        self.deploydir,
+                        logger)
+        ostree_repo.create()
 
 def main():
     utils.fake_root(logger)
     create = CreateFullImage()
     create.do_rootfs()
+    if create.target_rootfs is None:
+        logger.error("Create Target Rootfs Failed")
+        sys.exit(1)
+    else:
+        logger.info("Create Target Rootfs: %s" % create.target_rootfs)
+
+    if "wic" in create.image_type:
+        create.do_image_wic()
+
+    if "ostree-repo" in create.image_type:
+        create.do_ostree_repo()
+
+    if "container" in create.image_type:
+        create.do_image_container()
 
 if __name__ == "__main__":
     main()

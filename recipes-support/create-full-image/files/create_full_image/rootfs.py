@@ -89,3 +89,7 @@ class Rootfs(object):
             self.logger.debug("Save Installed Packages Yaml FIle to : %s" % (self.packages_yaml))
 
         return data
+
+    @property
+    def target_rootfs(self):
+        return self.pm.target_rootfs
