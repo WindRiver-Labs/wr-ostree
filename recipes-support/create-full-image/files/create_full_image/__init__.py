@@ -74,6 +74,10 @@ class CreateFullImage(object):
             default=os.getcwd(),
             help='Specify output dir, default is current working directory',
             action='store')
+        parser.add_argument('-w', '--workdir',
+            default=os.getcwd(),
+            help='Specify work dir, default is current working directory',
+            action='store')
         parser.add_argument('-t', '--type',
             choices=supported_types,
             help='Specify image type, default is all',
@@ -124,12 +128,11 @@ class CreateFullImage(object):
         self.image_features = data['features'] if 'features' in data else DEFAULT_IMAGE_FEATURES
 
         self.outdir = self.args.outdir
-        self.workdir = self.outdir + "/workdir/" + self.machine
+        self.workdir = os.path.join(self.args.workdir, "workdir")
 
         self.deploydir = os.path.join(self.outdir, "deploy")
         self.output_yaml = os.path.join(self.deploydir, "%s-%s.yaml" % (self.image_name, self.machine))
         utils.mkdirhier(self.deploydir)
-        self.packages_yaml = os.path.join(self.workdir, "packages.yaml")
 
         if self.args.machine:
             self.machine = self.args.machine
@@ -168,7 +171,9 @@ class CreateFullImage(object):
         self.data_dir = os.path.join(self.native_sysroot, "usr/share/create_full_image/data")
 
     def do_rootfs(self):
-        rootfs = Rootfs(self.workdir,
+        workdir = os.path.join(self.workdir, self.image_name)
+
+        rootfs = Rootfs(workdir,
                         self.data_dir,
                         self.machine,
                         self.pkg_feeds,
@@ -178,13 +183,10 @@ class CreateFullImage(object):
         rootfs.create()
 
         installed_dict = rootfs.image_list_installed_packages()
+
         self._save_output_yaml(installed_dict)
 
     def _save_output_yaml(self, installed_dict):
-        with open(self.packages_yaml, "w") as f:
-            utils.ordered_dump(installed_dict, f, Dumper=yaml.SafeDumper)
-            logger.debug("Save Installed Packages Yaml FIle to : %s" % (self.packages_yaml))
-
         data = OrderedDict()
         data['name'] = self.image_name
         data['machine'] = self.machine

@@ -1,9 +1,11 @@
 import os
 import os.path
 import subprocess
+import yaml
 from collections import OrderedDict
 
 from create_full_image.package_manager import DnfRpm
+import create_full_image.utils as utils
 
 class Rootfs(object):
     def __init__(self,
@@ -20,6 +22,8 @@ class Rootfs(object):
         self.pkg_feeds = pkg_feeds
         self.packages = packages
         self.logger = logger
+
+        self.packages_yaml = os.path.join(self.workdir, "packages.yaml")
 
         self.pm = DnfRpm(self.workdir, self.machine, logger)
         self.pm.create_configs()
@@ -79,4 +83,9 @@ class Rootfs(object):
         data = OrderedDict()
         for k, v in self.pm.list_installed().items():
             data[k] = v
+
+        with open(self.packages_yaml, "w") as f:
+            utils.ordered_dump(data, f, Dumper=yaml.SafeDumper)
+            self.logger.debug("Save Installed Packages Yaml FIle to : %s" % (self.packages_yaml))
+
         return data
