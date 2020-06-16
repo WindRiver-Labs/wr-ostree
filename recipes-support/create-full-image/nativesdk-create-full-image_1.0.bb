@@ -17,6 +17,8 @@ RDEPENDS_${PN} = "nativesdk-dnf \
                   nativesdk-python3-pyyaml \
                   nativesdk-shadow \
                   nativesdk-coreutils \
+                  nativesdk-bsdcpio \
+                  nativesdk-gzip \
 "
 
 # Required by do_rootfs's intercept_scripts in sdk

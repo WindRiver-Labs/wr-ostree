@@ -32,10 +32,12 @@ from create_full_image.utils import DEFAULT_PACKAGES
 from create_full_image.utils import DEFAULT_MACHINE
 from create_full_image.utils import DEFAULT_IMAGE
 from create_full_image.utils import DEFAULT_IMAGE_FEATURES
+from create_full_image.utils import OSTREE_INITRD_PACKAGES
 from create_full_image.rootfs import Rootfs
 from create_full_image.container import CreateContainer
 from create_full_image.image import CreateWicImage
 from create_full_image.image import CreateOstreeRepo
+from create_full_image.image import CreateInitramfs
 
 import create_full_image.utils as utils
 
@@ -140,6 +142,8 @@ class CreateFullImage(object):
 
         self.target_rootfs = None
 
+        self.ostree_initramfs_name = "initramfs-ostree-image"
+
         if self.args.machine:
             self.machine = self.args.machine
 
@@ -194,6 +198,30 @@ class CreateFullImage(object):
 
         self.target_rootfs = rootfs.target_rootfs
 
+    def do_ostree_initramfs(self):
+        workdir = os.path.join(self.workdir, self.ostree_initramfs_name)
+
+        rootfs = Rootfs(workdir,
+                        self.data_dir,
+                        self.machine,
+                        self.pkg_feeds,
+                        OSTREE_INITRD_PACKAGES,
+                        logger)
+
+        rootfs.create()
+
+        rootfs.image_list_installed_packages()
+
+        initrd = CreateInitramfs(
+                        self.ostree_initramfs_name,
+                        workdir,
+                        self.machine,
+                        rootfs.target_rootfs,
+                        self.deploydir,
+                        logger)
+        initrd.create()
+
+
     def _save_output_yaml(self, installed_dict):
         data = OrderedDict()
         data['name'] = self.image_name
@@ -208,6 +236,7 @@ class CreateFullImage(object):
     def do_image_wic(self):
         workdir = os.path.join(self.workdir, self.image_name)
         image_wic = CreateWicImage(
+                        self.image_name,
                         workdir,
                         self.machine,
                         self.target_rootfs,
@@ -228,6 +257,7 @@ class CreateFullImage(object):
     def do_ostree_repo(self):
         workdir = os.path.join(self.workdir, self.image_name)
         ostree_repo = CreateOstreeRepo(
+                        self.image_name,
                         workdir,
                         self.machine,
                         self.target_rootfs,
@@ -244,6 +274,8 @@ def main():
         sys.exit(1)
     else:
         logger.info("Create Target Rootfs: %s" % create.target_rootfs)
+
+    create.do_ostree_initramfs()
 
     if "wic" in create.image_type:
         create.do_image_wic()
