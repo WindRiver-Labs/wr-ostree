@@ -115,13 +115,13 @@ rwmount() {
 #arg2 BOOT label
 #arg3 ESP device
 prepare_mount() {
-	UPGRADE_ROOTFS_DIR=$(mktemp -d /tmp/rootfs.XXXXX)
+	UPGRADE_ROOTFS_DIR=$(mktemp -d /tmp/rootfs.XXXXXX)
 	CLEANUP_DIRS="$UPGRADE_ROOTFS_DIR $CLEANUP_DIRS"
 	UPGRADE_BOOT_DIR="$UPGRADE_ROOTFS_DIR/boot"
 	UPGRADE_ESP_DIR="$UPGRADE_BOOT_DIR/efi"
 
 	# Detect correct disk labels from the running disk
-	sysrootdev=$(cat /proc/mounts |grep \ /sysroot\  |awk '{print $1}'|head -1)
+	sysrootdev=$(cat /proc/mounts |grep \ /sysroot\  |awk '{print $1}'| sed '1q')
 	[ "$sysrootdev" = "" ] && fatal "Could not find mounted /sysroot"
 
 	RAWDEV=$(lsblk -npo pkname $sysrootdev)
@@ -256,7 +256,7 @@ ostree_upgrade() {
 	os=`ostree config --repo=$UPGRADE_ROOTFS_DIR/ostree/repo get upgrade.os 2> /dev/null`
 
 	if [ "${os}" = "" ] ; then
-	    os=`ls /ostree/deploy |head -1`
+	    os=`ls /ostree/deploy | sed '1q'`
 	fi
 
 	if [ "${os}" = "" ] ; then
@@ -312,7 +312,7 @@ update_env() {
 			default=0 boot_tried_count=0
 	else
 		# Assume this is a u-boot volume to update
-		tmpdir=$(mktemp -d /tmp/boot.XXXXX)
+		tmpdir=$(mktemp -d /tmp/boot.XXXXXX)
 		CLEANUP_DIRS="$tmpdir $CLEANUP_DIRS"
 		dev=$(lsblk -rpno label,kname $RAWDEV|grep ^boot\ |awk '{print $2}')
 		[ "$dev" = "" ] && fatal "Error finding LABEL=boot"
