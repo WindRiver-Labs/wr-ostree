@@ -31,7 +31,7 @@ DEPENDS_remove_class-native = "systemd-native"
 
 RDEPENDS_${PN}_append_class-target = " ostree-switchroot"
 
-RDEPENDS_${PN} = "gnupg util-linux-libuuid util-linux-libblkid util-linux-libmount libcap xz bash openssl"
+RDEPENDS_${PN} = "gnupg util-linux-libuuid util-linux-libblkid util-linux-libmount libcap xz bash openssl findutils"
 
 RDEPENDS_${PN}_remove_class-native = "python-native"
 
