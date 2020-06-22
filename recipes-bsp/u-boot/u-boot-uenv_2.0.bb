@@ -103,7 +103,11 @@ setenv A 5
 setenv B 7
 setenv ex _b
 setenv filesize 99
-fatsize mmc \${mmcdev}:1 no_ab
+if test ! -n \${devtype}; then
+ setenv devtype mmc
+ setenv devnum 0
+fi
+fatsize \${devtype} \${devnum}:1 no_ab
 if test \${filesize} = 1;then setenv ex;setenv B \$A;fi
 setenv mmcpart \$A
 setenv rootpart ostree_root=LABEL=otaroot\${labelpre}
@@ -112,7 +116,7 @@ setenv mmcpart_r \$B
 setenv rootpart_r ostree_root=LABEL=otaroot\${ex}\${labelpre}
 setenv bootpart_r ostree_boot=LABEL=otaboot\${ex}\${labelpre}
 setenv bpart A
-if fatload mmc \${mmcdev}:1 \${loadaddr} boot_ab_flag;then setexpr.l bpartv *\${loadaddr} \& 0xffffffff; if test \${bpartv} = 42333231;then setenv bpart B;fi;fi
+if fatload \${devtype} \${devnum}:1 \${loadaddr} boot_ab_flag;then setexpr.l bpartv *\${loadaddr} \& 0xffffffff; if test \${bpartv} = 42333231;then setenv bpart B;fi;fi
 setenv obpart \${bpart}
 setexpr loadaddr1 \${loadaddr} + 1
 setexpr loadaddr2 \${loadaddr} + 2
@@ -122,12 +126,12 @@ mw.l \${bct_addr} 52573030
 setenv cntv 30
 setenv bdef 30
 setenv switchab if test \\\${bpart} = B\\;then setenv bpart A\\;else setenv bpart B\\;fi
-if fatload mmc \${mmcdev}:1 \${loadaddr} boot_cnt;then setexpr.w cntv0 *\${loadaddr2};if test \${cntv0} = 5257;then setexpr.b cntv *\${loadaddr};setexpr.b bdef *\${loadaddr1};fi;fi
+if fatload \${devtype} \${devnum}:1 \${loadaddr} boot_cnt;then setexpr.w cntv0 *\${loadaddr2};if test \${cntv0} = 5257;then setexpr.b cntv *\${loadaddr};setexpr.b bdef *\${loadaddr1};fi;fi
 if test \${bdef} = 31;then run switchab;fi
 if test \${cntv} -gt \${bretry};then run switchab;setenv cntv 30;if test \${bdef} = 31; then setenv bdef 30;else setenv bdef 31;fi;else setexpr.b cntv \${cntv} + 1;fi
 mw.b \${bct_addr} \${cntv}
 mw.b \${bct_addr1} \${bdef}
-fatwrite mmc \${mmcdev}:1 \${bct_addr} boot_cnt 4
+fatwrite \${devtype} \${devnum}:1 \${bct_addr} boot_cnt 4
 if test -n \${oURL}; then
  setenv URL "\${oURL}"
 else
@@ -146,23 +150,23 @@ if test -n \${use_fdtdtb} || test \${use_fdtdtb} -ge 1; then
   fdt get value fdtargs /chosen bootargs
  fi
 else
- setenv netinstpre "fatload mmc \${mmcdev}:1 \${fdt_addr} \${fdt_file};"
+ setenv netinstpre "fatload \${devtype} \${devnum}:1 \${fdt_addr} \${fdt_file};"
 fi
 setenv exinargs
 setenv instdef "$NETINST_ARGS"
 if test -n \${ninstargs}; then
  setenv netinst "\${ninstargs}"
 else
- setenv netinst "\${netinstpre}fatload mmc \${mmcdev}:1 \${loadaddr} ${OSTREE_KERNEL};fatload mmc \${mmcdev}:1 \${initrd_addr} initramfs; setenv bootargs \\"\${fdtargs} \${instdef} \${exinargs}\\";${OSTREE_UBOOT_CMD} \${loadaddr} \${initrd_addr} \${fdt_addr}"
+ setenv netinst "\${netinstpre}fatload \${devtype} \${devnum}:1 \${loadaddr} ${OSTREE_KERNEL};fatload \${devtype} \${devnum}:1 \${initrd_addr} initramfs; setenv bootargs \\"\${fdtargs} \${instdef} \${exinargs}\\";${OSTREE_UBOOT_CMD} \${loadaddr} \${initrd_addr} \${fdt_addr}"
 fi
 setenv autoinst echo "!!!Autostarting ERASE and INSTALL, you have 5 seconds to reset the board!!!"\;sleep 5\;run netinst
 if test "\${no_autonetinst}" != 1 && test -n \${URL} ; then
  if test "\${ex}" != "_b"; then
-  if test ! -e mmc \${mmcdev}:\$mmcpart 1/vmlinuz && test ! -e mmc \${mmcdev}:\$mmcpart 2/vmlinuz; then
+  if test ! -e \${devtype} \${devnum}:\$mmcpart 1/vmlinuz && test ! -e \${devtype} \${devnum}:\$mmcpart 2/vmlinuz; then
     run autoinst
   fi
  else
-  if test ! -e mmc \${mmcdev}:\$mmcpart 1/vmlinuz && test ! -e mmc \${mmcdev}:\$mmcpart_r 1/vmlinuz; then
+  if test ! -e \${devtype} \${devnum}:\$mmcpart 1/vmlinuz && test ! -e \${devtype} \${devnum}:\$mmcpart_r 1/vmlinuz; then
     run autoinst
   fi
  fi
@@ -202,11 +206,11 @@ else
 setenv ostver 1
 fi
 if test \${skip_script_wd} != yes; then setenv wdttimeout 120000; fi
-setenv loadkernel ext4load mmc \${mmcdev}:\${mmcpart} \${loadaddr} \${ostver}/vmlinuz
-setenv loadramdisk ext4load mmc \${mmcdev}:\${mmcpart} \${initrd_addr} \${ostver}/initramfs
+setenv loadkernel ext4load \${devtype} \${devnum}:\${mmcpart} \${loadaddr} \${ostver}/vmlinuz
+setenv loadramdisk ext4load \${devtype} \${devnum}:\${mmcpart} \${initrd_addr} \${ostver}/initramfs
 setenv bootargs "\${fdtargs} \${bootpart} ostree=/ostree/\${ostver} \${rootpart} ${OSTREE_CONSOLE} \${smp} flux=fluxdata\${labelpre}"
 if test ! -n \${use_fdtdtb} || test \${use_fdtdtb} -lt 1; then
- setenv loaddtb ext4load mmc \${mmcdev}:\${mmcpart} \${fdt_addr} \${ostver}/\${fdt_file};run loaddtb
+ setenv loaddtb ext4load \${devtype} \${devnum}:\${mmcpart} \${fdt_addr} \${ostver}/\${fdt_file};run loaddtb
 fi
 run loadramdisk
 run loadkernel
