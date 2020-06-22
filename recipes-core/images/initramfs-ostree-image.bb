@@ -32,6 +32,7 @@ PACKAGE_INSTALL = "ostree \
   rng-tools \
   e2fsprogs-tune2fs \
   e2fsprogs-resize2fs \
+  e2fsprogs-e2fsck \
   pv \
   gzip \
   findutils \
