@@ -75,7 +75,12 @@ PACKAGE_INSTALL_append = " \
 	${@bb.utils.contains('DISTRO_FEATURES', 'luks', 'packagegroup-luks-initramfs', '', d)} \
 	${@bb.utils.contains('DISTRO_FEATURES', 'ima', 'packagegroup-ima-initramfs', '', d)} \
 "
-ROOTFS_POSTPROCESS_COMMAND += "ostree_check_rpm_public_key;add_gpg_key;"
+ROOTFS_POSTPROCESS_COMMAND += "ostree_check_rpm_public_key;add_gpg_key;remove_boot_dir;"
+
+remove_boot_dir() {
+	# Remove any image files in the /boot directory
+	rm -rf ${IMAGE_ROOTFS}/boot
+}
 
 add_gpg_key() {
 	gpg_path="${GPG_PATH}"
