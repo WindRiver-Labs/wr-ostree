@@ -31,7 +31,7 @@ do_install_append_class-target() {
     sed -i "s#%OSTREE_GRUB_USER%#${OSTREE_GRUB_USER}#g" "${D}${EFI_BOOT_PATH}/grub.cfg"
     sed -i "s#%OSTREE_GRUB_PW%#$(cat ${WORKDIR}/pw)#g" "${D}${EFI_BOOT_PATH}/grub.cfg"
     if [ "${@bb.utils.contains('DISTRO_FEATURES', 'efi-secure-boot', '1', '0', d)}" = "0" ]; then
-        sed -i '#^get_efivar#,#^fi#d' "${D}${EFI_BOOT_PATH}/grub.cfg"
+        sed -i '/^get_efivar/,/^fi/d' "${D}${EFI_BOOT_PATH}/grub.cfg"
     fi
 }
 

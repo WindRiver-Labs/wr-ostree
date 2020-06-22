@@ -189,6 +189,11 @@ menuentry "OSTree Install $idev" --unrestricted {
     initrd \${prefix}/initrd
 }
 EOF
+
+	echo "$DISTRO_FEATURES" | grep -q efi-secure-boot
+	if [ $? -ne 0 ]; then
+		sed -i '/^  get_efivar/,/^  fi/d' $OUTDIR/EFI/BOOT/grub.cfg
+	fi
 }
 
 build_efi_area() {
@@ -537,6 +542,7 @@ eval `grep ^DEPLOY_DIR_IMAGE $ENVFILE`
 eval `grep ^IMAGE_BASENAME $ENVFILE`
 eval `grep ^BOOT_ $ENVFILE`
 eval `grep ^OSTREE_ $ENVFILE | perl -p -e '($a,$b) = split(/=/,$_,2); $a =~ s/-/_/g; $_ = "$a=$b"'`
+eval `grep ^DISTRO_FEATURES $ENVFILE`
 
 grub=$(ls $DEPLOY_DIR_IMAGE/grubx64.efi 2> /dev/null)
 if [ "$grub" = "" ] ; then
