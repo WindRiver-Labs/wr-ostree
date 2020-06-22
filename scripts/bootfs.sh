@@ -83,7 +83,7 @@ modify_boot_scr() {
 	fi
 
 	perl -p -i -e "s#^( *setenv BRANCH) .*#\$1 $INST_BRANCH# if (\$_ !~ /oBRANCH/) " $OUTDIR/boot.scr.raw
-	perl -p -i -e "s#^( *setenv exinargs).*#\$1 $EXTRA_INST_ARGS#" $OUTDIR/boot.scr.raw
+	perl -p -i -e "s#^( *setenv exinargs).*#\$1 \\\"$EXTRA_INST_ARGS\\\"#" $OUTDIR/boot.scr.raw
 	iurl="$OSTREE_REMOTE_URL"
 	if [ "$INST_URL" != "" ] ; then
 		iurl="$INST_URL"
