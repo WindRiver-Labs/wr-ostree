@@ -461,7 +461,7 @@ IMAGE_CMD_ostree () {
 
 	# Cleanup and remove trap handler
 	rm -rf ${OSTREE_REPO}.temp.$$
-	trap EXIT
+	trap - EXIT
 
 	flock ${OSTREE_REPO}.lock ostree summary -u --repo=${OSTREE_REPO}
 	repo_apache_config
