@@ -17,7 +17,7 @@ RDEPENDS_${PN} = "nativesdk-dnf \
                   nativesdk-python3-pyyaml \
                   nativesdk-shadow \
                   nativesdk-coreutils \
-                  nativesdk-bsdcpio \
+                  nativesdk-cpio \
                   nativesdk-gzip \
 "
 
