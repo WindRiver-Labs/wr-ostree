@@ -21,6 +21,7 @@ Details of the failure are in %s.""" %(pkgs, log_path))
 class DnfRpm:
     def __init__(self,
                  workdir = os.path.join(os.getcwd(),"workdir"),
+                 target_rootfs = os.path.join(os.getcwd(), "workdir/rootfs"),
                  machine = 'intel-x86-64',
                  logger = None):
 
@@ -32,7 +33,8 @@ class DnfRpm:
         self.logger = logger
 
         self.workdir = workdir
-        self.target_rootfs = os.path.join(workdir, "rootfs")
+        self.target_rootfs = target_rootfs
+        
         self.temp_dir = os.path.join(workdir, "temp")
         utils.mkdirhier(self.target_rootfs)
         utils.mkdirhier(self.temp_dir)

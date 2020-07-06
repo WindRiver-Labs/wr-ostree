@@ -14,7 +14,8 @@ class Rootfs(object):
                  machine,
                  pkg_feeds,
                  packages,
-                 logger):
+                 logger,
+                 target_rootfs=None):
 
         self.workdir = workdir
         self.data_dir = data_dir
@@ -22,10 +23,13 @@ class Rootfs(object):
         self.pkg_feeds = pkg_feeds
         self.packages = packages
         self.logger = logger
-
+        if target_rootfs:
+            self.target_rootfs = target_rootfs
+        else:
+            self.target_rootfs = os.path.join(self.workdir, "rootfs")
         self.packages_yaml = os.path.join(self.workdir, "packages.yaml")
 
-        self.pm = DnfRpm(self.workdir, self.machine, logger)
+        self.pm = DnfRpm(self.workdir, self.target_rootfs, self.machine, logger)
         self.pm.create_configs()
 
     def _pre_rootfs(self):
@@ -89,7 +93,3 @@ class Rootfs(object):
             self.logger.debug("Save Installed Packages Yaml FIle to : %s" % (self.packages_yaml))
 
         return data
-
-    @property
-    def target_rootfs(self):
-        return self.pm.target_rootfs
