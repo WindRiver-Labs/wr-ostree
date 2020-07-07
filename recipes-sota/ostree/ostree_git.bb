@@ -43,6 +43,7 @@ RDEPENDS_${PN}_append_class-nativesdk = " util-linux "
 EXTRA_OECONF = "--with-libarchive --disable-gtk-doc --disable-gtk-doc-html --disable-gtk-doc-pdf --disable-man --with-smack --with-builtin-grub2-mkconfig  \
  --libdir=${libdir} "
 EXTRA_OECONF_append_class-native = " --enable-wrpseudo-compat"
+EXTRA_OECONF_append_class-nativesdk = " --disable-otmpfile"
 
 # Path to ${prefix}/lib/ostree/ostree-grub-generator is hardcoded on the
 #  do_configure stage so we do depend on it
