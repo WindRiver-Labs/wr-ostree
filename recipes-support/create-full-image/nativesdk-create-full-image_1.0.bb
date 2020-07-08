@@ -19,6 +19,7 @@ RDEPENDS_${PN} = "nativesdk-dnf \
                   nativesdk-coreutils \
                   nativesdk-cpio \
                   nativesdk-gzip \
+                  nativesdk-u-boot-mkimage \
 "
 
 # Required by do_rootfs's intercept_scripts in sdk
