@@ -105,6 +105,8 @@ DEFAULT_PACKAGES_bcm_2xxx_rpi4 = '''
     ostree
     ostree-upgrade-mgr
     os-release
+    bcm2835-bootfiles
+    boot-config
 '''.split()
 
 # default rootfs: wrlinux-image-small
