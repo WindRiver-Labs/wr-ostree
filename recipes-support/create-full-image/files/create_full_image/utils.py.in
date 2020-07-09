@@ -1,4 +1,5 @@
 import logging
+import sys
 import os
 import errno
 import time
@@ -52,7 +53,10 @@ def set_logger(logger):
     # create console handler and set level to debug
     ch = logging.StreamHandler()
     ch.setLevel(logging.DEBUG)
-    #ch.setFormatter(ColorFormatter())
+    if sys.stdout.isatty():
+        ch.setFormatter(ColorFormatter())
+    else:
+        ch.setFormatter(ColorFormatter(use_color=False))
     logger.addHandler(ch)
 
 def run_cmd(cmd, logger, shell=False, print_output=True):
