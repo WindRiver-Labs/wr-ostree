@@ -56,7 +56,28 @@ class CreateInitramfs(Image):
     def create(self):
         self.logger.info("Create Initramfs")
         self._create_cpio_gz()
+        if self.machine == "bcm-2xxx-rpi4":
+            self._create_uboot()
         self._create_symlinks()
+
+    def _create_uboot(self):
+        try:
+            cmd = "cd %s && mkimage -A arm64 -O linux -T ramdisk -C none -n %s -d %s.rootfs.cpio.gz %s.rootfs.cpio.gz.u-boot" % \
+                 (self.deploydir, self.image_fullname, self.image_fullname, self.image_fullname)
+            self.logger.debug("> Executing: %s" % cmd)
+            output = subprocess.check_output(cmd, stderr=subprocess.STDOUT, shell=True)
+            if output: self.logger.debug(output.decode("utf-8"))
+        except subprocess.CalledProcessError as e:
+            self.logger.debug("Exit code %d. Output:\n%s" % (e.returncode, e.output.decode("utf-8")))
+
+        try:
+            cmd = "rm %s/%s.rootfs.cpio.gz" % (self.deploydir, self.image_fullname)
+            self.logger.debug("> Executing: %s" % cmd)
+            output = subprocess.check_output(cmd, stderr=subprocess.STDOUT, shell=True)
+            if output: self.logger.debug(output.decode("utf-8"))
+        except subprocess.CalledProcessError as e:
+            self.logger.debug("Exit code %d. Output:\n%s" % (e.returncode, e.output.decode("utf-8")))
+
 
     def _create_cpio_gz(self):
 
@@ -82,6 +103,9 @@ class CreateInitramfs(Image):
     def _create_symlinks(self):
         dst = os.path.join(self.deploydir, self.image_linkname + ".cpio.gz")
         src = os.path.join(self.deploydir, self.image_fullname + ".rootfs.cpio.gz")
+        if self.machine == "bcm-2xxx-rpi4":
+            dst = dst + ".u-boot"
+            src = src + ".u-boot"
 
         if os.path.exists(src):
             self.logger.info("Creating symlink: %s -> %s" % (dst, src))
