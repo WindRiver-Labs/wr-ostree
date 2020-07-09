@@ -61,44 +61,21 @@ class CreateInitramfs(Image):
         self._create_symlinks()
 
     def _create_uboot(self):
-        try:
-            cmd = "cd %s && mkimage -A arm64 -O linux -T ramdisk -C none -n %s -d %s.rootfs.cpio.gz %s.rootfs.cpio.gz.u-boot" % \
-                 (self.deploydir, self.image_fullname, self.image_fullname, self.image_fullname)
-            self.logger.debug("> Executing: %s" % cmd)
-            output = subprocess.check_output(cmd, stderr=subprocess.STDOUT, shell=True)
-            if output: self.logger.debug(output.decode("utf-8"))
-        except subprocess.CalledProcessError as e:
-            self.logger.debug("Exit code %d. Output:\n%s" % (e.returncode, e.output.decode("utf-8")))
+        cmd = "cd %s && mkimage -A arm64 -O linux -T ramdisk -C none -n %s -d %s.rootfs.cpio.gz %s.rootfs.cpio.gz.u-boot" % \
+             (self.deploydir, self.image_fullname, self.image_fullname, self.image_fullname)
+        utils.run_cmd_oneshot(cmd, self.logger)
 
-        try:
-            cmd = "rm %s/%s.rootfs.cpio.gz" % (self.deploydir, self.image_fullname)
-            self.logger.debug("> Executing: %s" % cmd)
-            output = subprocess.check_output(cmd, stderr=subprocess.STDOUT, shell=True)
-            if output: self.logger.debug(output.decode("utf-8"))
-        except subprocess.CalledProcessError as e:
-            self.logger.debug("Exit code %d. Output:\n%s" % (e.returncode, e.output.decode("utf-8")))
-
+        cmd = "rm %s/%s.rootfs.cpio.gz" % (self.deploydir, self.image_fullname)
+        utils.run_cmd_oneshot(cmd, self.logger)
 
     def _create_cpio_gz(self):
+        cmd = "cd %s && find . | sort | cpio --reproducible -o -H newc > %s/%s.rootfs.cpio" % \
+             (self.target_rootfs, self.deploydir, self.image_fullname)
+        utils.run_cmd_oneshot(cmd, self.logger)
 
-        try:
-            cmd = "cd %s && find . | sort | cpio --reproducible -o -H newc > %s/%s.rootfs.cpio" % \
-                 (self.target_rootfs, self.deploydir, self.image_fullname)
-            self.logger.debug("> Executing: %s" % cmd)
-            output = subprocess.check_output(cmd, stderr=subprocess.STDOUT, shell=True)
-            if output: self.logger.debug(output.decode("utf-8"))
-        except subprocess.CalledProcessError as e:
-            self.logger.debug("Exit code %d. Output:\n%s" % (e.returncode, e.output.decode("utf-8")))
-
-
-        try:
-            cmd = "cd %s && gzip -f -9 -n -c --rsyncable %s.rootfs.cpio > %s.rootfs.cpio.gz && rm %s.rootfs.cpio" % \
-                (self.deploydir, self.image_fullname, self.image_fullname, self.image_fullname)
-            self.logger.debug("> Executing: %s" % cmd)
-            output = subprocess.check_output(cmd, stderr=subprocess.STDOUT, shell=True)
-            if output: self.logger.debug(output.decode("utf-8"))
-        except subprocess.CalledProcessError as e:
-            self.logger.debug("Exit code %d. Output:\n%s" % (e.returncode, e.output.decode("utf-8")))
+        cmd = "cd %s && gzip -f -9 -n -c --rsyncable %s.rootfs.cpio > %s.rootfs.cpio.gz && rm %s.rootfs.cpio" % \
+            (self.deploydir, self.image_fullname, self.image_fullname, self.image_fullname)
+        utils.run_cmd_oneshot(cmd, self.logger)
 
     def _create_symlinks(self):
         dst = os.path.join(self.deploydir, self.image_linkname + ".cpio.gz")

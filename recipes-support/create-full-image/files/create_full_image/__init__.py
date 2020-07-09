@@ -25,7 +25,6 @@ import yaml
 from collections import OrderedDict
 
 from create_full_image.utils import set_logger
-from create_full_image.utils import run_cmd
 from create_full_image.utils import get_today
 from create_full_image.utils import DEFAULT_PACKAGE_FEED
 from create_full_image.utils import DEFAULT_PACKAGES

@@ -55,12 +55,34 @@ def set_logger(logger):
     #ch.setFormatter(ColorFormatter())
     logger.addHandler(ch)
 
-def run_cmd(cmd, logger):
+def run_cmd(cmd, logger, shell=False, print_output=True):
     logger.debug('Running %s' % cmd)
-    output = subprocess.check_output(cmd, shell=True)
-    output = output.decode('utf-8')
-    logger.debug('output: %s' % output)
-    return output
+    outputs = ""
+    process = subprocess.Popen(cmd,
+                               stdout=subprocess.PIPE,
+                               stderr=subprocess.STDOUT,
+                               shell=shell,
+                               universal_newlines=True)
+    while True:
+        output = process.stdout.readline()
+        if output:
+            if print_output:
+                logger.debug(output.rstrip("\n"))
+            outputs += output
+        if process.poll() is not None:
+            break
+
+    rc = process.poll()
+    logger.debug("rc %d" % rc)
+    return rc, outputs
+
+def run_cmd_oneshot(cmd, logger, shell=True, print_output=False):
+    res, output = run_cmd(cmd, logger, shell, print_output)
+    if res:
+        logger.error("Executing %s failed\nExit code %d. Output:\n%s"
+                           % (cmd, res, output))
+        raise Exception("Executing %s failed\nExit code %d. Output:\n%s"
+                           % (cmd, res, output))
 
 def get_today():
     return time.strftime("%Y%m%d%H%M%S")

@@ -49,12 +49,12 @@ class Rootfs(object):
                 continue
 
             self.logger.debug("> Executing %s preprocess rootfs..." % script)
-
-            try:
-                output = subprocess.check_output(script_full, stderr=subprocess.STDOUT)
-                if output: self.logger.debug(output.decode("utf-8"))
-            except subprocess.CalledProcessError as e:
-                self.logger.debug("Exit code %d. Output:\n%s" % (e.returncode, e.output.decode("utf-8")))
+            res, output = utils.run_cmd(script_full, self.logger)
+            if res:
+                self.logger.error("Executing %s preprocess rootfs failed\nExit code %d. Output:\n%s"
+                                   % (script, res, output))
+                raise Exception("Executing %s postprocess rootfs failed\nExit code %d. Output:\n%s"
+                                   % (script, res, output))
 
     def _post_rootfs(self):
         post_rootfs_dir = os.path.join(self.data_dir, 'post_rootfs')
@@ -67,11 +67,12 @@ class Rootfs(object):
                 continue
 
             self.logger.debug("> Executing %s postprocess rootfs..." % script)
-            try:
-                output = subprocess.check_output(script_full, stderr=subprocess.STDOUT)
-                if output: self.logger.debug(output.decode("utf-8"))
-            except subprocess.CalledProcessError as e:
-                self.logger.debug("Exit code %d. Output:\n%s" % (e.returncode, e.output.decode("utf-8")))
+            res, output = utils.run_cmd(script_full, self.logger)
+            if res:
+                self.logger.error("Executing %s postprocess rootfs failed\nExit code %d. Output:\n%s"
+                                   % (script, res, output))
+                raise Exception("Executing %s postprocess rootfs failed\nExit code %d. Output:\n%s"
+                                   % (script, res, output))
 
     def create(self):
         self._pre_rootfs()

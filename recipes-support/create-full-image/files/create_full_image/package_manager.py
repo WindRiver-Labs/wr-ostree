@@ -8,7 +8,6 @@ import hashlib
 import re
 
 from create_full_image.utils import set_logger
-from create_full_image.utils import run_cmd
 from create_full_image.utils import FEED_ARCHS_DICT
 import create_full_image.utils as utils
 
@@ -138,7 +137,6 @@ class DnfRpm:
     def _invoke_dnf(self, dnf_args, fatal = True, print_output = True ):
         os.environ['RPM_ETCCONFIGDIR'] = self.target_rootfs
         dnf_cmd = shutil.which("dnf", path=os.getenv('PATH'))
-        self.logger.info("dnf_cmd %s" % dnf_cmd)
         standard_dnf_args = ["-v", "--rpmverbosity=info", "-y",
                              "-c", os.path.join(self.target_rootfs, "etc/dnf/dnf.conf"),
                              "--setopt=reposdir=%s" %(os.path.join(self.target_rootfs, "etc/yum.repos.d")),
@@ -149,19 +147,20 @@ class DnfRpm:
             standard_dnf_args.append("--repofrompath=oe-repo,%s" % (self.rpm_repo_dir))
         cmd = [dnf_cmd] + standard_dnf_args + dnf_args
         self.logger.info('Running %s' % ' '.join(cmd))
-        try:
-            output = subprocess.check_output(cmd,stderr=subprocess.STDOUT).decode("utf-8")
-            if print_output:
-                self.logger.debug(output)
-            return output
-        except subprocess.CalledProcessError as e:
+
+        res, output = utils.run_cmd(cmd, self.logger, print_output=print_output)
+        if res:
             if print_output:
                 (self.logger.info, self.logger.error)[fatal]("Could not invoke dnf. Command "
-                     "'%s' returned %d:\n%s" % (' '.join(cmd), e.returncode, e.output.decode("utf-8")))
+                     "'%s' returned %d:\n%s" % (' '.join(cmd), res, output))
             else:
                 (self.logger.info, self.logger.error)[fatal]("Could not invoke dnf. Command "
-                     "'%s' returned %d:" % (' '.join(cmd), e.returncode))
-            return e.output.decode("utf-8")
+                     "'%s' returned %d:" % (' '.join(cmd), res))
+
+            raise Exception("Could not invoke dnf. Command "
+                     "'%s' returned %d:\n%s" % (' '.join(cmd), res, output))
+
+        return output
 
     def install(self, pkgs, attempt_only = False):
         self.logger.debug("dnf install: %s, attemplt %s" % (pkgs, attempt_only))
@@ -201,14 +200,14 @@ class DnfRpm:
         else:
             cmd = shutil.which("rpm", path=os.getenv('PATH'))
             args = ["-e", "-v", "--nodeps", "--root=%s" %self.target_rootfs]
-
-            try:
-                self.logger.info("Running %s" % ' '.join([cmd] + args + pkgs))
-                output = subprocess.check_output([cmd] + args + pkgs, stderr=subprocess.STDOUT).decode("utf-8")
-                self.logger.debug(output)
-            except subprocess.CalledProcessError as e:
+            self.logger.info("Running %s" % ' '.join([cmd] + args + pkgs))
+            res, output = utils.run_cmd([cmd] + args + pkgs, self.logger)
+            if res:
                 self.logger.error("Could not invoke rpm. Command "
-                     "'%s' returned %d:\n%s" % (' '.join([cmd] + args + pkgs), e.returncode, e.output.decode("utf-8")))
+                     "'%s' returned %d:\n%s" % (' '.join([cmd] + args + pkgs), res, output))
+                raise Exception("Could not invoke rpm. Command "
+                     "'%s' returned %d:\n%s" % (' '.join([cmd] + args + pkgs), res, output))
+
 
     def upgrade(self):
         self._prepare_pkg_transaction()
@@ -264,11 +263,12 @@ class DnfRpm:
         self.logger.debug("Saving postinstall script of %s" % (pkg))
         cmd = shutil.which("rpm", path=os.getenv('PATH'))
         args = ["-q", "--root=%s" % self.target_rootfs, "--queryformat", "%{postin}", pkg]
-        try:
-            output = subprocess.check_output([cmd] + args,stderr=subprocess.STDOUT).decode("utf-8")
-        except subprocess.CalledProcessError as e:
+        res, output = utils.run_cmd([cmd] + args, self.logger)
+        if res:
             self.logger.error("Could not invoke rpm. Command "
-                     "'%s' returned %d:\n%s" % (' '.join([cmd] + args), e.returncode, e.output.decode("utf-8")))
+                     "'%s' returned %d:\n%s" % (' '.join([cmd] + args), res, output))
+            raise Exception("Could not invoke rpm. Command "
+                     "'%s' returned %d:\n%s" % (' '.join([cmd] + args), res, output))
 
         # may need to prepend #!/bin/sh to output
 
@@ -324,18 +324,15 @@ class DnfRpm:
                 continue
 
             self.logger.debug("> Executing %s intercept ..." % script)
-
-            try:
-                output = subprocess.check_output(script_full, stderr=subprocess.STDOUT)
-                if output: self.logger.debug(output.decode("utf-8"))
-            except subprocess.CalledProcessError as e:
-                self.logger.debug("Exit code %d. Output:\n%s" % (e.returncode, e.output.decode("utf-8")))
-                if "qemuwrapper: qemu usermode is not supported" in e.output.decode("utf-8"):
+            res, output = utils.run_cmd(script_full, self.logger)
+            if res:
+                if "qemuwrapper: qemu usermode is not supported" in output:
                     self.logger.debug("The postinstall intercept hook '%s' could not be executed due to missing qemu usermode support, details in %s/%s"
                             % (script, self.temp_dir, "log.do_rootfs"))
                     self._postpone_to_first_boot(script_full)
                 else:
                     self.logger.error("The postinstall intercept hook '%s' failed, details in %s/%s" % (script, self.temp_dir, "log.do_rootfs"))
+                    raise Exception("The postinstall intercept hook '%s' failed, details in %s/%s" % (script, self.temp_dir, "log.do_rootfs"))
 
 
 def test():
