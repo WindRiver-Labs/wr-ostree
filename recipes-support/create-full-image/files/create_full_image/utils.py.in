@@ -99,11 +99,13 @@ def ordered_dump(data, stream=None, Dumper=yaml.Dumper, **kwds):
 
 DEFAULT_MACHINE = "@MACHINE@"
 
-DEFAULT_IMAGE = "wrlinux-image-small"
-
 DEFAULT_PACKAGE_FEED = "@DEFAULT_PACKAGE_FEED@".split()
 
-DEFAULT_IMAGE_FEATURES = []
+DEFAULT_IMAGE = "wrlinux-image-small"
+
+DEFAULT_IMAGE_FEATURES = {
+    'pkg_globs': None
+}
 
 FEED_ARCHS_DICT = {
     'intel-x86-64': "all any noarch x86 i586 i686 core2_32 corei7_32 intel_x86_64 x86_64 core2_64 corei7_64",
@@ -333,3 +335,31 @@ def which_wild(pathname, path=None, mode=os.F_OK, *, reverse=False, candidates=F
                         files.append(found_path)
 
     return files
+
+def format_pkg_list(pkg_dict, ret_format=None):
+    output = []
+
+    if ret_format == "arch":
+        for pkg in sorted(pkg_dict):
+            output.append("%s %s" % (pkg, pkg_dict[pkg]["arch"]))
+    elif ret_format == "file":
+        for pkg in sorted(pkg_dict):
+            output.append("%s %s %s" % (pkg, pkg_dict[pkg]["filename"], pkg_dict[pkg]["arch"]))
+    elif ret_format == "ver":
+        for pkg in sorted(pkg_dict):
+            output.append("%s %s %s" % (pkg, pkg_dict[pkg]["arch"], pkg_dict[pkg]["ver"]))
+    elif ret_format == "deps":
+        for pkg in sorted(pkg_dict):
+            for dep in pkg_dict[pkg]["deps"]:
+                output.append("%s|%s" % (pkg, dep))
+    else:
+        for pkg in sorted(pkg_dict):
+            output.append(pkg)
+
+    output_str = '\n'.join(output)
+
+    if output_str:
+        # make sure last line is newline terminated
+        output_str += '\n'
+
+    return output_str

@@ -181,13 +181,15 @@ class CreateFullImage(object):
 
     def do_rootfs(self):
         workdir = os.path.join(self.workdir, self.image_name)
+        pkg_globs = self.image_features.get("pkg_globs", None)
 
         rootfs = Rootfs(workdir,
                         self.data_dir,
                         self.machine,
                         self.pkg_feeds,
                         self.packages,
-                        logger)
+                        logger,
+                        pkg_globs=pkg_globs)
 
         rootfs.create()
 

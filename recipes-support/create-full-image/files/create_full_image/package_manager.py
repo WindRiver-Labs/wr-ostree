@@ -6,6 +6,7 @@ import subprocess
 import collections
 import hashlib
 import re
+import tempfile
 
 from create_full_image.utils import set_logger
 from create_full_image.utils import FEED_ARCHS_DICT
@@ -46,6 +47,9 @@ class DnfRpm:
         self.package_exclude = []
         self.primary_arch = machine.replace('-', '_')
         self.machine = machine
+
+        self.pkgdatadir = os.path.join(os.environ['OECORE_NATIVE_SYSROOT'], "usr/share/pkgdata", machine)
+        self.oe_pkgdata_util = os.path.join(os.environ['OECORE_NATIVE_SYSROOT'], "usr/share/poky/scripts/oe-pkgdata-util")
 
         self._initialize_intercepts()
 
@@ -334,6 +338,46 @@ class DnfRpm:
                     self.logger.error("The postinstall intercept hook '%s' failed, details in %s/%s" % (script, self.temp_dir, "log.do_rootfs"))
                     raise Exception("The postinstall intercept hook '%s' failed, details in %s/%s" % (script, self.temp_dir, "log.do_rootfs"))
 
+    def install_complementary(self, globs=None):
+        """
+        Install complementary packages based upon the list of currently installed
+        packages e.g. *-src, *-dev, *-dbg, etc. This will only attempt to install
+        these packages, if they don't exist then no error will occur.
+        """
+        if globs is None:
+            return
+
+        # we need to write the list of installed packages to a file because the
+        # oe-pkgdata-util reads it from a file
+        with tempfile.NamedTemporaryFile(mode="w+", prefix="installed-pkgs") as installed_pkgs:
+            pkgs = self.list_installed()
+
+            provided_pkgs = set()
+            for pkg in pkgs.values():
+                provided_pkgs |= set(pkg.get('provs', []))
+
+            output = utils.format_pkg_list(pkgs, "arch")
+            installed_pkgs.write(output)
+            installed_pkgs.flush()
+
+            cmd = [self.oe_pkgdata_util,
+                   "-p", self.pkgdatadir, "glob", installed_pkgs.name,
+                   globs]
+            res, output = utils.run_cmd(cmd, self.logger)
+            if res:
+                self.logger.error("Could not compute complementary packages list. Command "
+                         "'%s' returned %d:\n%s" %
+                         (' '.join(cmd), res, output))
+                raise Exception("Could not invoke dnf. Command "
+                         "'%s' returned %d:\n%s" % (' '.join(cmd), res, output))
+
+            complementary_pkgs = set(output.split())
+            skip_pkgs = sorted(complementary_pkgs & provided_pkgs)
+            install_pkgs = sorted(complementary_pkgs - provided_pkgs)
+            self.logger.debug("Installing complementary packages ... %s (skipped already provided packages %s)" % (
+                ' '.join(install_pkgs),
+                ' '.join(skip_pkgs)))
+            self.install(install_pkgs, attempt_only=True)
 
 def test():
     from create_full_image.utils import DEFAULT_PACKAGE_FEED
@@ -347,14 +391,14 @@ def test():
     logger.setLevel(logging.DEBUG)
 
     fake_root(logger)
-    package = DEFAULT_PACKAGES
-    package = ['kernel-modules']
-    pm = DnfRpm(logger=logger)
+    package = DEFAULT_PACKAGES[DEFAULT_MACHINE]
+    pm = DnfRpm(logger=logger, machine=DEFAULT_MACHINE)
     pm.create_configs()
     pm.update()
     pm.insert_feeds_uris(DEFAULT_PACKAGE_FEED)
     pm.install(package)
-    pm.run_intercepts()
+    pm.install_complementary("*-src *-dev *-dbg")
+    #pm.run_intercepts()
     #pm.install([p + '-doc' for p in package], attempt_only = True)
     #pm.remove(['grub-efi'])
 

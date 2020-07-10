@@ -15,7 +15,8 @@ class Rootfs(object):
                  pkg_feeds,
                  packages,
                  logger,
-                 target_rootfs=None):
+                 target_rootfs=None,
+                 pkg_globs=None):
 
         self.workdir = workdir
         self.data_dir = data_dir
@@ -23,6 +24,7 @@ class Rootfs(object):
         self.pkg_feeds = pkg_feeds
         self.packages = packages
         self.logger = logger
+        self.pkg_globs = pkg_globs
         if target_rootfs:
             self.target_rootfs = target_rootfs
         else:
@@ -31,6 +33,8 @@ class Rootfs(object):
 
         self.pm = DnfRpm(self.workdir, self.target_rootfs, self.machine, logger)
         self.pm.create_configs()
+
+        self.installed_pkgs = OrderedDict()
 
     def _pre_rootfs(self):
         os.environ['IMAGE_ROOTFS'] = self.pm.target_rootfs
@@ -74,23 +78,28 @@ class Rootfs(object):
                 raise Exception("Executing %s postprocess rootfs failed\nExit code %d. Output:\n%s"
                                    % (script, res, output))
 
+    def _save_installed(self):
+        for k, v in self.pm.list_installed().items():
+            self.installed_pkgs[k] = v
+
+        with open(self.packages_yaml, "w") as f:
+            utils.ordered_dump(self.installed_pkgs, f, Dumper=yaml.SafeDumper)
+            self.logger.debug("Save Installed Packages Yaml FIle to : %s" % (self.packages_yaml))
+
     def create(self):
         self._pre_rootfs()
 
         self.pm.update()
         self.pm.insert_feeds_uris(self.pkg_feeds)
         self.pm.install(self.packages)
+
+        self._save_installed()
+
+        self.pm.install_complementary(self.pkg_globs)
+
         self.pm.run_intercepts()
 
         self._post_rootfs()
 
     def image_list_installed_packages(self):
-        data = OrderedDict()
-        for k, v in self.pm.list_installed().items():
-            data[k] = v
-
-        with open(self.packages_yaml, "w") as f:
-            utils.ordered_dump(data, f, Dumper=yaml.SafeDumper)
-            self.logger.debug("Save Installed Packages Yaml FIle to : %s" % (self.packages_yaml))
-
-        return data
+        return self.installed_pkgs
