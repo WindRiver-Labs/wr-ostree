@@ -367,3 +367,34 @@ def format_pkg_list(pkg_dict, ret_format=None):
         output_str += '\n'
 
     return output_str
+
+DEFAULT_GPG_DATA = {
+    'gpg_path':'/tmp/.cbas_gnupg',
+    'ostree': {
+         'gpgid': 'Wind-River-Linux-Sample',
+         'gpgkey': '$OECORE_NATIVE_SYSROOT/usr/share/create_full_image/rpm_keys/RPM-GPG-PRIVKEY-Wind-River-Linux-Sample',
+         'gpg_password': 'windriver'
+     }
+}
+
+def check_gpg_keys(gpg_data, logger):
+    gpg_path = os.path.expandvars(gpg_data['gpg_path'])
+    if not os.path.isdir(gpg_path):
+        run_cmd_oneshot("mkdir -m 0700 -p %s" % gpg_path, logger)
+
+    # The feature is supposed to be "ostree, rpm, boot, ima"
+    for feature in ['ostree']:
+        gpgkey = os.path.expandvars(gpg_data[feature]['gpgkey'])
+        gpgid = gpg_data[feature]['gpgid']
+        gpg_password = gpg_data[feature]['gpg_password']
+
+        cmd = "gpg --homedir {0} --list-keys {1}".format(gpg_path, gpgid)
+        res, output = run_cmd(cmd, logger, shell=True)
+        if not res:
+            continue
+
+        cmd = "gpg --batch --homedir {0} --passphrase {1} --import {2}".format(gpg_path, gpg_password, gpgkey)
+        res, output = run_cmd(cmd, logger, shell=True)
+        if res:
+            run_cmd_oneshot(cmd, logger)
+

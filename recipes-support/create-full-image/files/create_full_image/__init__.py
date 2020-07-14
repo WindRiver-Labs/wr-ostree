@@ -132,6 +132,8 @@ class CreateFullImage(object):
         self.pkg_feeds = data['package_feeds'] if 'package_feeds' in data else DEFAULT_PACKAGE_FEED
         self.image_features = data['features'] if 'features' in data else DEFAULT_IMAGE_FEATURES
 
+        self.data = data
+
         self.outdir = self.args.outdir
         self.workdir = os.path.join(self.args.workdir, "workdir")
 
@@ -179,6 +181,10 @@ class CreateFullImage(object):
         self.native_sysroot = os.environ['OECORE_NATIVE_SYSROOT']
         self.data_dir = os.path.join(self.native_sysroot, "usr/share/create_full_image/data")
 
+    def do_prepare(self):
+        gpg_data = self.data["gpg"] if "gpg" in self.data else utils.DEFAULT_GPG_DATA
+        utils.check_gpg_keys(gpg_data, logger)
+
     def do_rootfs(self):
         workdir = os.path.join(self.workdir, self.image_name)
         pkg_globs = self.image_features.get("pkg_globs", None)
@@ -224,7 +230,7 @@ class CreateFullImage(object):
 
 
     def _save_output_yaml(self, installed_dict):
-        data = OrderedDict()
+        data = self.data
         data['name'] = self.image_name
         data['machine'] = self.machine
         data['features'] = self.image_features
@@ -269,6 +275,7 @@ class CreateFullImage(object):
 def main():
     utils.fake_root(logger)
     create = CreateFullImage()
+    create.do_prepare()
     create.do_rootfs()
     if create.target_rootfs is None:
         logger.error("Create Target Rootfs Failed")
@@ -278,11 +285,11 @@ def main():
 
     create.do_ostree_initramfs()
 
-    if "wic" in create.image_type:
-        create.do_image_wic()
-
     if "ostree-repo" in create.image_type:
         create.do_ostree_repo()
+
+    if "wic" in create.image_type:
+        create.do_image_wic()
 
     if "container" in create.image_type:
         create.do_image_container()

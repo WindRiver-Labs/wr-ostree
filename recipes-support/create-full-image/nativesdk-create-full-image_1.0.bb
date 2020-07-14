@@ -121,6 +121,8 @@ do_install_append() {
 	cp -rf ${WORKDIR}/create_full_image/data ${D}${datadir}/create_full_image/
 	mkdir -p ${D}${SDKPATHNATIVE}/environment-setup.d
 	install -m 0755 ${WORKDIR}/add_path.sh ${D}${SDKPATHNATIVE}/environment-setup.d
+	install -d ${D}${datadir}/create_full_image/rpm_keys/
+	cp ${OSTREE_GPGDIR}/RPM-GPG-PRIVKEY-${OSTREE_GPGID} ${D}${datadir}/create_full_image/rpm_keys/
 }
 
 python __anonymous () {
