@@ -40,6 +40,7 @@ SRC_URI = "\
            file://create_full_image/image.py \
            file://create_full_image/container.py \
            file://create_full_image/data/pre_rootfs/create_merged_usr_symlinks.sh \
+           file://create_full_image/scripts/run.do_image_ostree \
            file://METADATA.in \
            file://README.md \
            file://setup.py \
@@ -119,6 +120,7 @@ do_install_append() {
 	install -m 0755 ${WORKDIR}/depmodwrapper ${D}${bindir}/crossscripts
 	install -d ${D}${datadir}/create_full_image/
 	cp -rf ${WORKDIR}/create_full_image/data ${D}${datadir}/create_full_image/
+	cp -rf ${WORKDIR}/create_full_image/scripts ${D}${datadir}/create_full_image/
 	mkdir -p ${D}${SDKPATHNATIVE}/environment-setup.d
 	install -m 0755 ${WORKDIR}/add_path.sh ${D}${SDKPATHNATIVE}/environment-setup.d
 	install -d ${D}${datadir}/create_full_image/rpm_keys/

@@ -182,7 +182,10 @@ class CreateFullImage(object):
         self.data_dir = os.path.join(self.native_sysroot, "usr/share/create_full_image/data")
 
     def do_prepare(self):
-        gpg_data = self.data["gpg"] if "gpg" in self.data else utils.DEFAULT_GPG_DATA
+        if "gpg" in self.data:
+            gpg_data = self.data["gpg"]
+        else:
+            gpg_data = self.data["gpg"] = utils.DEFAULT_GPG_DATA
         utils.check_gpg_keys(gpg_data, logger)
 
     def do_rootfs(self):
@@ -203,9 +206,32 @@ class CreateFullImage(object):
 
         self._save_output_yaml(installed_dict)
 
+        # Generate image manifest
+        manifest_name = "{0}/{1}-{2}.manifest".format(self.deploydir, self.image_name, self.machine)
+        with open(manifest_name, 'w+') as image_manifest:
+            image_manifest.write(utils.format_pkg_list(installed_dict, "ver"))
+
         self.target_rootfs = rootfs.target_rootfs
 
+        # Copy kernel image, boot files, device tree files to deploy dir
+        if self.machine == "intel-x86-64":
+            for files in ["boot/bzImage*", "boot/efi/EFI/BOOT/*"]:
+                cmd = "cp -rf {0}/{1} {2}".format(self.target_rootfs, files, self.deploydir)
+                utils.run_cmd_oneshot(cmd, logger)
+        else:
+            cmd = "cp -rf {0}/boot/* {1}".format(self.target_rootfs, self.deploydir)
+            utils.run_cmd_oneshot(cmd, logger)
+
     def do_ostree_initramfs(self):
+        # If the Initramfs exists, reuse it
+        image_name = "{0}-{1}.cpio.gz".format(self.ostree_initramfs_name, self.machine)
+        if self.machine == "bcm-2xxx-rpi4":
+            image_name += ".u-boot"
+        image_link = os.path.join(self.deploydir, image_name)
+        if os.path.islink(image_link) and os.path.exists(os.path.realpath(image_link)):
+            logger.info("Reuse existed Initramfs")
+            return
+
         workdir = os.path.join(self.workdir, self.ostree_initramfs_name)
 
         rootfs = Rootfs(workdir,
@@ -249,6 +275,7 @@ class CreateFullImage(object):
                         self.target_rootfs,
                         self.deploydir,
                         logger)
+
         image_wic.create()
 
     def do_image_container(self):
@@ -270,6 +297,12 @@ class CreateFullImage(object):
                         self.target_rootfs,
                         self.deploydir,
                         logger)
+
+        ostree_repo.set_gpg(
+                        self.data["gpg"]['ostree']['gpgid'],
+                        self.data["gpg"]['ostree']['gpg_password'],
+                        self.data["gpg"]['gpg_path'])
+
         ostree_repo.create()
 
 def main():

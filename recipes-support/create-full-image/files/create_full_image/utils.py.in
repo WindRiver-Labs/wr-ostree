@@ -59,14 +59,17 @@ def set_logger(logger):
         ch.setFormatter(ColorFormatter(use_color=False))
     logger.addHandler(ch)
 
-def run_cmd(cmd, logger, shell=False, print_output=True):
+def run_cmd(cmd, logger, shell=False, print_output=True, env=None):
     logger.debug('Running %s' % cmd)
+    if env is None:
+        env = os.environ
+
     outputs = ""
     process = subprocess.Popen(cmd,
                                stdout=subprocess.PIPE,
                                stderr=subprocess.STDOUT,
                                shell=shell,
-                               universal_newlines=True)
+                               universal_newlines=True, env=env)
     while True:
         output = process.stdout.readline()
         if output:
@@ -102,7 +105,7 @@ def ordered_dump(data, stream=None, Dumper=yaml.Dumper, **kwds):
     return yaml.dump(data, stream, OrderedDumper, **kwds)
 
 DEFAULT_MACHINE = "@MACHINE@"
-
+ 
 DEFAULT_PACKAGE_FEED = "@DEFAULT_PACKAGE_FEED@".split()
 
 DEFAULT_IMAGE = "wrlinux-image-small"

@@ -27,6 +27,15 @@ class Image(object, metaclass=ABCMeta):
 
         self.date = utils.get_today()
 
+        self.gpgid = ""
+        self.gpg_passphase = ""
+        self.gpgpath = ""
+
+    def set_gpg(self, gpgid="", gpg_passphase="", gpgpath=""):
+        self.gpgid = gpgid
+        self.gpg_passphase = gpg_passphase
+        self.gpgpath = gpgpath
+
     @abstractmethod
     def create(self):
         pass
@@ -101,7 +110,24 @@ class CreateWicImage(Image):
 class CreateOstreeRepo(Image):
     def create(self):
         self.logger.info("Create Ostree Repo")
+        ostreerepo_env = os.environ.copy()
+        ostreerepo_env['IMAGE_ROOTFS'] = self.target_rootfs
+        ostreerepo_env['DEPLOY_DIR_IMAGE'] = self.deploydir
+        ostreerepo_env['WORKDIR'] = self.workdir
+        ostreerepo_env['IMAGE_NAME'] = self.image_name
+        ostreerepo_env['MACHINE'] = self.machine
 
+        ostreerepo_env['OSTREE_GPGID'] = self.gpgid
+        ostreerepo_env['OSTREE_GPG_PASSPHRASE'] = self.gpg_passphase
+        ostreerepo_env['GPGPATH'] = self.gpgpath
+
+        cmd = os.path.expandvars("$OECORE_NATIVE_SYSROOT/usr/share/create_full_image/scripts/run.do_image_ostree")
+        res, output = utils.run_cmd(cmd, self.logger, env=ostreerepo_env)
+        if res:
+            self.logger.error("Executing %s failed\nExit code %d. Output:\n%s"
+                               % (cmd, res, output))
+            raise Exception("Executing %s failed\nExit code %d. Output:\n%s"
+                               % (cmd, res, output))
 
 def test():
     import logging
