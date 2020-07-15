@@ -250,12 +250,12 @@ class CreateFullImage(object):
         rootfs.image_list_installed_packages()
 
         initrd = CreateInitramfs(
-                        self.ostree_initramfs_name,
-                        workdir,
-                        self.machine,
-                        rootfs.target_rootfs,
-                        self.deploydir,
-                        logger)
+                        image_name = self.ostree_initramfs_name,
+                        workdir = workdir,
+                        machine = self.machine,
+                        target_rootfs = rootfs.target_rootfs,
+                        deploydir = self.deploydir,
+                        logger = logger)
         initrd.create()
 
 
@@ -273,12 +273,12 @@ class CreateFullImage(object):
     def do_image_wic(self):
         workdir = os.path.join(self.workdir, self.image_name)
         image_wic = CreateWicImage(
-                        self.image_name,
-                        workdir,
-                        self.machine,
-                        self.target_rootfs,
-                        self.deploydir,
-                        logger)
+                        image_name = self.image_name,
+                        workdir = workdir,
+                        machine = self.machine,
+                        target_rootfs = self.target_rootfs,
+                        deploydir = self.deploydir,
+                        logger = logger)
 
         image_wic.create()
 
@@ -295,31 +295,31 @@ class CreateFullImage(object):
     def do_ostree_repo(self):
         workdir = os.path.join(self.workdir, self.image_name)
         ostree_repo = CreateOstreeRepo(
-                        self.image_name,
-                        workdir,
-                        self.machine,
-                        self.target_rootfs,
-                        self.deploydir,
-                        logger)
-
-        ostree_repo.set_gpg(
-                        self.data["gpg"]['ostree']['gpgid'],
-                        self.data["gpg"]['ostree']['gpg_password'],
-                        self.data["gpg"]['gpg_path'])
+                        image_name = self.image_name,
+                        workdir = workdir,
+                        machine = self.machine,
+                        target_rootfs = self.target_rootfs,
+                        deploydir = self.deploydir,
+                        logger = logger,
+                        gpg_path = self.data['gpg']['gpg_path'],
+                        gpgid = self.data['gpg']['ostree']['gpgid'],
+                        gpg_password = self.data['gpg']['ostree']['gpg_password'])
 
         ostree_repo.create()
 
     def do_ostree_ota(self):
         workdir = os.path.join(self.workdir, self.image_name)
+        # ostree_use_ab, ostree_osname, ostree_skip_boot_diff
+        # ostree_remote_url, gpgid
+        extra_params = self.data["ostree"].copy()
+        extra_params.update({'gpgid': self.data["gpg"]['ostree']['gpgid']})
         ostree_ota = CreateOstreeOTA(
-                        self.image_name,
-                        workdir,
-                        self.machine,
-                        self.target_rootfs,
-                        self.deploydir,
-                        logger)
-
-        ostree_ota.set_gpg(gpgid=self.data["gpg"]['ostree']['gpgid'])
+                        image_name = self.image_name,
+                        workdir = workdir,
+                        machine = self.machine,
+                        deploydir = self.deploydir,
+                        logger = logger,
+                        **extra_params)
 
         ostree_ota.create()
 

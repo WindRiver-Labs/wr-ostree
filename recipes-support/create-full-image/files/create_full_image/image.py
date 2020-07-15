@@ -9,32 +9,28 @@ class Image(object, metaclass=ABCMeta):
     """
     This is an abstract class. Do not instantiate this directly.
     """
-    def __init__(self,
-                 image_name,
-                 workdir,
-                 machine,
-                 target_rootfs,
-                 deploydir,
-                 logger):
+    def __init__(self, **kwargs):
+        self.allowed_keys = {'image_name', 'workdir', 'machine', 'target_rootfs', 'deploydir', 'logger'}
+        self._set_allow_keys()
 
-        self.image_name = image_name
-        self.logger = logger
-        self.workdir = workdir
-        self.machine = machine
-        self.target_rootfs = target_rootfs
-        self.deploydir = deploydir
-        self.logger = logger
+        for k, v in kwargs.items():
+            if k not in self.allowed_keys:
+                raise Exception("Init parameters %s not defined, call _set_allow_keys to define" % k)
 
-        self.date = utils.get_today()
+        # Initial allowed keys
+        self.__dict__.update({k: "" for k in self.allowed_keys})
 
-        self.gpgid = ""
-        self.gpg_passphase = ""
-        self.gpgpath = ""
+        # Update keys from input
+        self.__dict__.update((k, v) for k, v in kwargs.items() if k in self.allowed_keys)
 
-    def set_gpg(self, gpgid="", gpg_passphase="", gpgpath=""):
-        self.gpgid = gpgid
-        self.gpg_passphase = gpg_passphase
-        self.gpgpath = gpgpath
+        # Add internal(not from input) keys
+        self._add_keys()
+
+    def _set_allow_keys(self):
+        pass
+
+    def _add_keys(self):
+        pass
 
     @abstractmethod
     def create(self):
@@ -42,25 +38,10 @@ class Image(object, metaclass=ABCMeta):
 
 
 class CreateInitramfs(Image):
-    def __init__(self,
-                 image_name,
-                 workdir,
-                 machine,
-                 target_rootfs,
-                 deploydir,
-                 logger):
-
-        super(CreateInitramfs, self).__init__(
-                 image_name,
-                 workdir,
-                 machine,
-                 target_rootfs,
-                 deploydir,
-                 logger)
-
+    def _add_keys(self):
+        self.date = utils.get_today()
         self.image_fullname = "%s-%s-%s" % (self.image_name, self.machine, self.date)
         self.image_linkname =  "%s-%s" % (self.image_name, self.machine)
-
 
     def create(self):
         self.logger.info("Create Initramfs")
@@ -108,6 +89,9 @@ class CreateWicImage(Image):
 
 
 class CreateOstreeRepo(Image):
+    def _set_allow_keys(self):
+        self.allowed_keys.update({"gpgid", "gpg_password", "gpg_path"})
+
     def create(self):
         self.logger.info("Create Ostree Repo")
         ostreerepo_env = os.environ.copy()
@@ -118,8 +102,8 @@ class CreateOstreeRepo(Image):
         ostreerepo_env['MACHINE'] = self.machine
 
         ostreerepo_env['OSTREE_GPGID'] = self.gpgid
-        ostreerepo_env['OSTREE_GPG_PASSPHRASE'] = self.gpg_passphase
-        ostreerepo_env['GPGPATH'] = self.gpgpath
+        ostreerepo_env['OSTREE_GPG_PASSPHRASE'] = self.gpg_password
+        ostreerepo_env['GPGPATH'] = self.gpg_path
 
         cmd = os.path.expandvars("$OECORE_NATIVE_SYSROOT/usr/share/create_full_image/scripts/run.do_image_ostree")
         res, output = utils.run_cmd(cmd, self.logger, env=ostreerepo_env)
@@ -131,34 +115,14 @@ class CreateOstreeRepo(Image):
 
 
 class CreateOstreeOTA(Image):
-    def __init__(self,
-                 image_name,
-                 workdir,
-                 machine,
-                 target_rootfs,
-                 deploydir,
-                 logger):
-
-        super(CreateOstreeOTA, self).__init__(
-                 image_name,
-                 workdir,
-                 machine,
-                 target_rootfs,
-                 deploydir,
-                 logger)
-
-        self.set_ostree()
-
-    def set_ostree(self,
-                   ostree_use_ab="1",
-                   ostree_osname="wrlinux",
-                   ostree_skip_boot_diff="2",
-                   ostree_remote_url=""):
-
-        self.ostree_use_ab = ostree_use_ab
-        self.ostree_osname = ostree_osname
-        self.ostree_skip_boot_diff = ostree_skip_boot_diff
-        self.ostree_remote_url = ostree_remote_url
+    def _set_allow_keys(self):
+        self.allowed_keys.remove('target_rootfs')
+        self.allowed_keys.update({'gpgid',
+                                  'ostree_use_ab',
+                                  'ostree_osname',
+                                  'ostree_skip_boot_diff',
+                                  'ostree_remote_url'
+                                 })
 
     def create(self):
         self.logger.info("Create Ostree OTA")
