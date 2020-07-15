@@ -105,7 +105,7 @@ def ordered_dump(data, stream=None, Dumper=yaml.Dumper, **kwds):
     return yaml.dump(data, stream, OrderedDumper, **kwds)
 
 DEFAULT_MACHINE = "@MACHINE@"
- 
+
 DEFAULT_PACKAGE_FEED = "@DEFAULT_PACKAGE_FEED@".split()
 
 DEFAULT_IMAGE = "wrlinux-image-small"
@@ -378,6 +378,13 @@ DEFAULT_GPG_DATA = {
          'gpgkey': '$OECORE_NATIVE_SYSROOT/usr/share/create_full_image/rpm_keys/RPM-GPG-PRIVKEY-Wind-River-Linux-Sample',
          'gpg_password': 'windriver'
      }
+}
+
+DEFAULT_OSTREE_DATA = {
+  'ostree_use_ab': '1',
+  'ostree_osname': 'wrlinux',
+  'ostree_skip_boot_diff': '2',
+  'ostree_remote_url': 'http://128.224.153.74/bcm-2xxx-rpi4/images/bcm-2xxx-rpi4/ostree_repo'
 }
 
 def check_gpg_keys(gpg_data, logger):

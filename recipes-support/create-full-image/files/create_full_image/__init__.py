@@ -37,6 +37,7 @@ from create_full_image.container import CreateContainer
 from create_full_image.image import CreateWicImage
 from create_full_image.image import CreateOstreeRepo
 from create_full_image.image import CreateInitramfs
+from create_full_image.image import CreateOstreeOTA
 
 import create_full_image.utils as utils
 
@@ -188,6 +189,9 @@ class CreateFullImage(object):
             gpg_data = self.data["gpg"] = utils.DEFAULT_GPG_DATA
         utils.check_gpg_keys(gpg_data, logger)
 
+        if "ostree" not in self.data:
+            self.data["ostree"] = utils.DEFAULT_OSTREE_DATA
+
     def do_rootfs(self):
         workdir = os.path.join(self.workdir, self.image_name)
         pkg_globs = self.image_features.get("pkg_globs", None)
@@ -305,6 +309,21 @@ class CreateFullImage(object):
 
         ostree_repo.create()
 
+    def do_ostree_ota(self):
+        workdir = os.path.join(self.workdir, self.image_name)
+        ostree_ota = CreateOstreeOTA(
+                        self.image_name,
+                        workdir,
+                        self.machine,
+                        self.target_rootfs,
+                        self.deploydir,
+                        logger)
+
+        ostree_ota.set_gpg(gpgid=self.data["gpg"]['ostree']['gpgid'])
+
+        ostree_ota.create()
+
+
 def main():
     utils.fake_root(logger)
     create = CreateFullImage()
@@ -318,10 +337,12 @@ def main():
 
     create.do_ostree_initramfs()
 
-    if "ostree-repo" in create.image_type:
+    # WIC image requires ostress repo
+    if any(img_type in create.image_type for img_type in ["ostree-repo", "wic"]):
         create.do_ostree_repo()
 
     if "wic" in create.image_type:
+        create.do_ostree_ota()
         create.do_image_wic()
 
     if "container" in create.image_type:

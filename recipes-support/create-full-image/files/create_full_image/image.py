@@ -129,6 +129,60 @@ class CreateOstreeRepo(Image):
             raise Exception("Executing %s failed\nExit code %d. Output:\n%s"
                                % (cmd, res, output))
 
+
+class CreateOstreeOTA(Image):
+    def __init__(self,
+                 image_name,
+                 workdir,
+                 machine,
+                 target_rootfs,
+                 deploydir,
+                 logger):
+
+        super(CreateOstreeOTA, self).__init__(
+                 image_name,
+                 workdir,
+                 machine,
+                 target_rootfs,
+                 deploydir,
+                 logger)
+
+        self.set_ostree()
+
+    def set_ostree(self,
+                   ostree_use_ab="1",
+                   ostree_osname="wrlinux",
+                   ostree_skip_boot_diff="2",
+                   ostree_remote_url=""):
+
+        self.ostree_use_ab = ostree_use_ab
+        self.ostree_osname = ostree_osname
+        self.ostree_skip_boot_diff = ostree_skip_boot_diff
+        self.ostree_remote_url = ostree_remote_url
+
+    def create(self):
+        self.logger.info("Create Ostree OTA")
+        ota_env = os.environ.copy()
+        ota_env['DEPLOY_DIR_IMAGE'] = self.deploydir
+        ota_env['WORKDIR'] = self.workdir
+        ota_env['IMAGE_NAME'] = self.image_name
+        ota_env['MACHINE'] = self.machine
+
+        ota_env['OSTREE_GPGID'] = self.gpgid
+        ota_env['OSTREE_USE_AB'] = self.ostree_use_ab
+        ota_env['OSTREE_OSNAME'] = self.ostree_osname
+        ota_env['OSTREE_SKIP_BOOT_DIFF'] = self.ostree_skip_boot_diff
+        ota_env['OSTREE_REMOTE_URL'] = self.ostree_remote_url
+
+        cmd = os.path.expandvars("$OECORE_NATIVE_SYSROOT/usr/share/create_full_image/scripts/run.do_image_otaimg")
+        res, output = utils.run_cmd(cmd, self.logger, env=ota_env)
+        if res:
+            self.logger.error("Executing %s failed\nExit code %d. Output:\n%s"
+                               % (cmd, res, output))
+            raise Exception("Executing %s failed\nExit code %d. Output:\n%s"
+                               % (cmd, res, output))
+
+
 def test():
     import logging
     from create_full_image.utils import  fake_root
