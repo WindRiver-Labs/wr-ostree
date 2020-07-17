@@ -34,7 +34,8 @@ SRC_URI = "\
            file://depmodwrapper \
            file://add_path.sh \
            file://create_full_image/__init__.py \
-           file://create_full_image/utils.py.in \
+           file://create_full_image/utils.py \
+           file://create_full_image/constant.py.in \
            file://create_full_image/package_manager.py \
            file://create_full_image/rootfs.py \
            file://create_full_image/image.py \
@@ -53,6 +54,7 @@ S = "${WORKDIR}/sources"
 inherit nativesdk setuptools3
 
 do_unpack_append() {
+    bb.build.exec_func('do_write_py_template', d)
     bb.build.exec_func('do_copy_src', d)
 }
 
@@ -96,16 +98,24 @@ do_copy_src() {
     install -d ${S}/create_full_image
     install -m 0644 ${WORKDIR}/create_full_image/*.py ${S}/create_full_image
 
-    sed -e "s/@MACHINE@/${MACHINE}/g" \
-        -e "s#@DEFAULT_PACKAGE_FEED@#${DEFAULT_PACKAGE_FEED}#g" \
-	    ${WORKDIR}/create_full_image/utils.py.in > ${S}/create_full_image/utils.py
-    chmod 0644 ${S}/create_full_image/utils.py
-
     install -m 0644 ${WORKDIR}/METADATA.in ${S}
     install -m 0644 ${WORKDIR}/README.md ${S}
     install -m 0644 ${WORKDIR}/setup.py ${S}
 }
 
+python do_write_py_template () {
+    # constant.py.in -> constant.py and expand variables
+    py_templates = [os.path.join(d.getVar("WORKDIR"),"create_full_image","constant.py.in")]
+    for py_t in py_templates:
+        body = "null"
+        with open(py_t, "r") as pytf:
+            body = pytf.read()
+            d.setVar("_PY_TEMPLATE", body)
+            body = d.getVar("_PY_TEMPLATE")
+        py = os.path.splitext(py_t)[0]
+        with open(py, "w") as pyf:
+            pyf.write(body)
+}
 
 do_compile_append() {
 	sed -i "/remote repo arg/a export RPM_SIGN_PACKAGES=\"${RPM_SIGN_PACKAGES}\"" ${S}/_create_full_image_h.sh

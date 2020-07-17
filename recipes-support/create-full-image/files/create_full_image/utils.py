@@ -104,75 +104,6 @@ def ordered_dump(data, stream=None, Dumper=yaml.Dumper, **kwds):
     OrderedDumper.add_representer(OrderedDict, _dict_representer)
     return yaml.dump(data, stream, OrderedDumper, **kwds)
 
-DEFAULT_MACHINE = "@MACHINE@"
-
-DEFAULT_PACKAGE_FEED = "@DEFAULT_PACKAGE_FEED@".split()
-
-DEFAULT_IMAGE = "wrlinux-image-small"
-
-DEFAULT_IMAGE_FEATURES = {
-    'pkg_globs': None
-}
-
-FEED_ARCHS_DICT = {
-    'intel-x86-64': "all any noarch x86 i586 i686 core2_32 corei7_32 intel_x86_64 x86_64 core2_64 corei7_64",
-    'bcm-2xxx-rpi4': "all any noarch armv5hf_vfp armv5thf_vfp armv5ehf_vfp armv5tehf_vfp armv6hf_vfp armv6thf_vfp armv7ahf_vfp armv7at2hf_vfp armv7ahf_neon armv7at2hf_neon bcm_2xxx_rpi4 aarch64 armv8a armv8a_crc armv8a_crypto armv8a_crc_crypto cortexa72",
-}
-
-# default rootfs: wrlinux-image-small
-DEFAULT_PACKAGES_bcm_2xxx_rpi4 = '''
-    packagegroup-core-boot
-    kernel-modules
-    u-boot-uenv
-    i2c-tools
-    alsa-utils
-    pm-utils
-    linux-firmware
-    boot-config
-    u-boot
-    kernel-devicetree
-    kernel-image-image
-    packagegroup-busybox-replacement
-    ostree
-    ostree-upgrade-mgr
-    os-release
-    bcm2835-bootfiles
-    boot-config
-'''.split()
-
-# default rootfs: wrlinux-image-small
-DEFAULT_PACKAGES_intel_x86_64 = '''
-    packagegroup-core-boot
-    kernel-modules
-    iucode-tool intel-microcode
-    rtl8723bs-bt
-    i2c-tools
-    lmsensors
-    grub-efi
-    packagegroup-busybox-replacement
-    ostree ostree-upgrade-mgr
-    os-release
-'''.split()
-
-DEFAULT_PACKAGES = {
-    'intel-x86-64': DEFAULT_PACKAGES_intel_x86_64,
-    'bcm-2xxx-rpi4': DEFAULT_PACKAGES_bcm_2xxx_rpi4,
-}
-
-OSTREE_INITRD_PACKAGES = '''
-    ostree ostree-switchroot
-    initramfs-ostree bash
-    kmod bzip2 gnupg kbd
-    util-linux util-linux-setsid
-    util-linux-mount util-linux-blkid
-    util-linux-lsblk util-linux-fdisk
-    util-linux-fsck util-linux-blockdev
-    dosfstools curl udev mdadm
-    base-passwd rng-tools e2fsprogs-tune2fs
-    e2fsprogs-resize2fs pv gzip findutils
-    tar grep sed gawk busybox busybox-udhcpc
-'''.split()
-
 def fake_root(logger, workdir = os.path.join(os.getcwd(),"workdir")):
     native_sysroot = os.environ['OECORE_NATIVE_SYSROOT']
     os.environ['PSEUDO_PREFIX'] = os.path.join(native_sysroot, 'usr')
@@ -366,30 +297,6 @@ def format_pkg_list(pkg_dict, ret_format=None):
         output_str += '\n'
 
     return output_str
-
-DEFAULT_GPG_DATA = {
-    'gpg_path':'/tmp/.cbas_gnupg',
-    'ostree': {
-         'gpgid': 'Wind-River-Linux-Sample',
-         'gpgkey': '$OECORE_NATIVE_SYSROOT/usr/share/create_full_image/rpm_keys/RPM-GPG-PRIVKEY-Wind-River-Linux-Sample',
-         'gpg_password': 'windriver'
-     }
-}
-
-DEFAULT_OSTREE_DATA = {
-  'ostree_use_ab': '1',
-  'ostree_osname': 'wrlinux',
-  'ostree_skip_boot_diff': '2',
-  'ostree_remote_url': 'http://128.224.153.74/bcm-2xxx-rpi4/images/bcm-2xxx-rpi4/ostree_repo'
-}
-
-DEFAULT_WIC_DATA = {
-  'OSTREE_WKS_BOOT_SIZE': '--size=300M --overhead-factor 1',
-  'OSTREE_WKS_EFI_SIZE': '--size=32M',
-  'OSTREE_WKS_ROOT_SIZE': '--size=2048M',
-  'OSTREE_WKS_FLUX_SIZE': '--size=256M',
-  'OSTREE_FLUX_PART': 'fluxdata'
-}
 
 def check_gpg_keys(gpg_data, logger):
     gpg_path = os.path.expandvars(gpg_data['gpg_path'])

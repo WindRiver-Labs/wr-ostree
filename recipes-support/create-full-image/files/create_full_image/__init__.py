@@ -26,12 +26,12 @@ from collections import OrderedDict
 
 from create_full_image.utils import set_logger
 from create_full_image.utils import get_today
-from create_full_image.utils import DEFAULT_PACKAGE_FEED
-from create_full_image.utils import DEFAULT_PACKAGES
-from create_full_image.utils import DEFAULT_MACHINE
-from create_full_image.utils import DEFAULT_IMAGE
-from create_full_image.utils import DEFAULT_IMAGE_FEATURES
-from create_full_image.utils import OSTREE_INITRD_PACKAGES
+from create_full_image.constant import DEFAULT_PACKAGE_FEED
+from create_full_image.constant import DEFAULT_PACKAGES
+from create_full_image.constant import DEFAULT_MACHINE
+from create_full_image.constant import DEFAULT_IMAGE
+from create_full_image.constant import DEFAULT_IMAGE_FEATURES
+from create_full_image.constant import OSTREE_INITRD_PACKAGES
 from create_full_image.rootfs import Rootfs
 from create_full_image.container import CreateContainer
 from create_full_image.image import CreateWicImage
@@ -186,14 +186,14 @@ class CreateFullImage(object):
         if "gpg" in self.data:
             gpg_data = self.data["gpg"]
         else:
-            gpg_data = self.data["gpg"] = utils.DEFAULT_GPG_DATA
+            gpg_data = self.data["gpg"] = constant.DEFAULT_GPG_DATA
         utils.check_gpg_keys(gpg_data, logger)
 
         if "ostree" not in self.data:
-            self.data["ostree"] = utils.DEFAULT_OSTREE_DATA
+            self.data["ostree"] = constant.DEFAULT_OSTREE_DATA
 
         if "wic" not in self.data:
-            self.data["wic"] = utils.DEFAULT_WIC_DATA
+            self.data["wic"] = constant.DEFAULT_WIC_DATA
 
     def do_rootfs(self):
         workdir = os.path.join(self.workdir, self.image_name)

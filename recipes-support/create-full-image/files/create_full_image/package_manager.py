@@ -9,7 +9,7 @@ import re
 import tempfile
 
 from create_full_image.utils import set_logger
-from create_full_image.utils import FEED_ARCHS_DICT
+from create_full_image.constant import FEED_ARCHS_DICT
 import create_full_image.utils as utils
 
 def failed_postinsts_abort(pkgs, log_path, logger):
