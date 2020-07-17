@@ -42,6 +42,7 @@ SRC_URI = "\
            file://create_full_image/data/pre_rootfs/create_merged_usr_symlinks.sh \
            file://create_full_image/scripts/run.do_image_ostree \
            file://create_full_image/scripts/run.do_image_otaimg \
+           file://create_full_image/scripts/run.do_image_wic \
            file://METADATA.in \
            file://README.md \
            file://setup.py \
@@ -126,6 +127,10 @@ do_install_append() {
 	install -m 0755 ${WORKDIR}/add_path.sh ${D}${SDKPATHNATIVE}/environment-setup.d
 	install -d ${D}${datadir}/create_full_image/rpm_keys/
 	cp ${OSTREE_GPGDIR}/RPM-GPG-PRIVKEY-${OSTREE_GPGID} ${D}${datadir}/create_full_image/rpm_keys/
+
+	install -d ${D}${datadir}/create_full_image/data/wic/
+	cp -f ${LAYER_PATH_ostree-layer}/wic/ostree-*.wks.in ${D}${datadir}/create_full_image/data/wic/
+
 }
 
 python __anonymous () {

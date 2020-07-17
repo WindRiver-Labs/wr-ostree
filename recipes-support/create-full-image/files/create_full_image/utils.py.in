@@ -186,12 +186,8 @@ def mkdirhier(directory):
     """Create a directory like 'mkdir -p', but does not complain if
     directory already exists like os.makedirs
     """
+    subprocess.check_call("mkdir -p %s" % directory, shell=True)
 
-    try:
-        os.makedirs(directory)
-    except OSError as e:
-        if e.errno != errno.EEXIST or not os.path.isdir(directory):
-            raise e
 
 def remove(path, recurse=False, ionice=False):
     """Equivalent to rm -f or rm -rf"""
@@ -387,6 +383,14 @@ DEFAULT_OSTREE_DATA = {
   'ostree_remote_url': 'http://128.224.153.74/bcm-2xxx-rpi4/images/bcm-2xxx-rpi4/ostree_repo'
 }
 
+DEFAULT_WIC_DATA = {
+  'OSTREE_WKS_BOOT_SIZE': '--size=300M --overhead-factor 1',
+  'OSTREE_WKS_EFI_SIZE': '--size=32M',
+  'OSTREE_WKS_ROOT_SIZE': '--size=2048M',
+  'OSTREE_WKS_FLUX_SIZE': '--size=256M',
+  'OSTREE_FLUX_PART': 'fluxdata'
+}
+
 def check_gpg_keys(gpg_data, logger):
     gpg_path = os.path.expandvars(gpg_data['gpg_path'])
     if not os.path.isdir(gpg_path):
@@ -408,3 +412,10 @@ def check_gpg_keys(gpg_data, logger):
         if res:
             run_cmd_oneshot(cmd, logger)
 
+def get_ostree_wks(ostree_use_ab="1", machine="intel-x86-64"):
+    ostree_ab_wks = "ab" if ostree_use_ab=="1" else "noab"
+    ostree_arch_wks = "ostree-grub" if machine=="intel-x86-64" else "ostree-uboot-sd"
+    wks_template = "{0}-{1}.wks.in".format(ostree_arch_wks, ostree_ab_wks)
+    wks_full_path = os.path.join(os.environ['OECORE_NATIVE_SYSROOT'], "usr/share/create_full_image/data/wic", wks_template)
+
+    return wks_full_path

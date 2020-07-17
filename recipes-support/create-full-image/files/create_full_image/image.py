@@ -84,8 +84,53 @@ class CreateInitramfs(Image):
 
 
 class CreateWicImage(Image):
+    def _set_allow_keys(self):
+        self.allowed_keys.update({"wks_file"})
+
+    def _add_keys(self):
+        self.wks_full_path = ""
+        self.wks_in_environ = os.environ.copy()
+
+    def set_wks_in_environ(self, **kwargs):
+        for k, v in kwargs.items():
+            self.wks_in_environ[k] = v
+
+    def _write_wks_template(self):
+        base, ext = os.path.splitext(self.wks_file)
+        if ext == '.in' and os.path.exists(self.wks_file):
+            env_back = os.environ.copy()
+            os.environ = self.wks_in_environ
+            wks_content = ""
+            with open(self.wks_file, "r") as f:
+                wks_content = f.read()
+                wks_content = os.path.expandvars(wks_content)
+                for e in ['OSTREE_WKS_ROOT_SIZE', 'OSTREE_WKS_FLUX_SIZE']:
+                    wks_content = wks_content.replace('@%s@'%e, os.environ[e])
+            self.wks_full_path = os.path.join(self.deploydir, os.path.basename(base))
+            open(self.wks_full_path, "w").write(wks_content)
+            os.environ = env_back
+        elif os.path.exists(self.wks_file):
+            self.wks_full_path = self.wks_file
+
     def create(self):
         self.logger.info("Create Wic Image")
+
+        self._write_wks_template()
+
+        wic_env = os.environ.copy()
+        wic_env['IMAGE_ROOTFS'] = self.target_rootfs
+        wic_env['DEPLOY_DIR_IMAGE'] = self.deploydir
+        wic_env['WORKDIR'] = self.workdir
+        wic_env['IMAGE_NAME'] = self.image_name
+        wic_env['MACHINE'] = self.machine
+        wic_env['WKS_FILE'] = self.wks_full_path
+        cmd = os.path.join(wic_env['OECORE_NATIVE_SYSROOT'], "usr/share/create_full_image/scripts/run.do_image_wic")
+        res, output = utils.run_cmd(cmd, self.logger, env=wic_env)
+        if res:
+            self.logger.error("Executing %s failed\nExit code %d. Output:\n%s"
+                               % (cmd, res, output))
+            raise Exception("Executing %s failed\nExit code %d. Output:\n%s"
+                               % (cmd, res, output))
 
 
 class CreateOstreeRepo(Image):

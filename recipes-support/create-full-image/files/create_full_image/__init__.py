@@ -192,6 +192,9 @@ class CreateFullImage(object):
         if "ostree" not in self.data:
             self.data["ostree"] = utils.DEFAULT_OSTREE_DATA
 
+        if "wic" not in self.data:
+            self.data["wic"] = utils.DEFAULT_WIC_DATA
+
     def do_rootfs(self):
         workdir = os.path.join(self.workdir, self.image_name)
         pkg_globs = self.image_features.get("pkg_globs", None)
@@ -272,13 +275,27 @@ class CreateFullImage(object):
 
     def do_image_wic(self):
         workdir = os.path.join(self.workdir, self.image_name)
+        ostree_use_ab = self.data["ostree"].get("ostree_use_ab", '1')
+        wks_file = utils.get_ostree_wks(ostree_use_ab, self.machine)
+        logger.debug("WKS %s", wks_file)
         image_wic = CreateWicImage(
                         image_name = self.image_name,
                         workdir = workdir,
                         machine = self.machine,
                         target_rootfs = self.target_rootfs,
                         deploydir = self.deploydir,
+                        wks_file = wks_file,
                         logger = logger)
+
+        env = self.data['wic'].copy()
+        env['WORKDIR'] = workdir
+        if self.machine == "bcm-2xxx-rpi4":
+            env.update({'OSTREE_SD_BOOT_ALIGN':'4',
+                        'OSTREE_SD_UBOOT_WIC1':'',
+                        'OSTREE_SD_UBOOT_WIC2':'',
+                        'OSTREE_SD_UBOOT_WIC3':'',
+                        'OSTREE_SD_UBOOT_WIC4':''})
+        image_wic.set_wks_in_environ(**env)
 
         image_wic.create()
 
