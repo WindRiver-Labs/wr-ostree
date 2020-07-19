@@ -29,8 +29,6 @@ RDEPENDS_${PN} += "nativesdk-gdk-pixbuf \
 
 SRC_URI = "\
            file://COPYING \
-           file://create_full_image.sh \
-           file://_create_full_image_h.sh \
            file://depmodwrapper \
            file://add_path.sh \
            file://create_full_image/__init__.py \
@@ -92,8 +90,6 @@ def get_remote_uris(feed_uris, feed_base_paths, feed_archs):
 DEFAULT_PACKAGE_FEED = ""
 
 do_copy_src() {
-    install -m 0755 ${WORKDIR}/create_full_image.sh ${S}/
-    install -m 0755 ${WORKDIR}/_create_full_image_h.sh ${S}/
     install -m 0644 ${WORKDIR}/COPYING ${S}/
     install -d ${S}/create_full_image
     install -m 0644 ${WORKDIR}/create_full_image/*.py ${S}/create_full_image
@@ -117,18 +113,8 @@ python do_write_py_template () {
             pyf.write(body)
 }
 
-do_compile_append() {
-	sed -i "/remote repo arg/a export RPM_SIGN_PACKAGES=\"${RPM_SIGN_PACKAGES}\"" ${S}/_create_full_image_h.sh
-	sed -i "/remote repo arg/a export PACKAGE_FEED_SIGN=\"${PACKAGE_FEED_SIGN}\"" ${S}/_create_full_image_h.sh
-	sed -i "/remote repo arg/a export PACKAGE_FEED_ARCHS=\"${PACKAGE_FEED_ARCHS}\"" ${S}/_create_full_image_h.sh
-	sed -i "/remote repo arg/a export PACKAGE_FEED_BASE_PATHS=\"${PACKAGE_FEED_BASE_PATHS}\"" ${S}/_create_full_image_h.sh
-	sed -i "/remote repo arg/a export PACKAGE_FEED_URIS=\"${PACKAGE_FEED_URIS}\"" ${S}/_create_full_image_h.sh
-}
-
 do_install_append() {
 	install -d ${D}${bindir}/crossscripts
-	install -m 0755 ${S}/create_full_image.sh ${D}${bindir}/
-	install -m 0755 ${S}/_create_full_image_h.sh ${D}${bindir}/
 	install -m 0755 ${WORKDIR}/depmodwrapper ${D}${bindir}/crossscripts
 	install -d ${D}${datadir}/create_full_image/
 	cp -rf ${WORKDIR}/create_full_image/data ${D}${datadir}/create_full_image/
