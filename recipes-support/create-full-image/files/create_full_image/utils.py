@@ -15,7 +15,7 @@ def set_logger(logger):
     logger.setLevel(logging.DEBUG)
 
     class ColorFormatter(logging.Formatter):
-        FORMAT = ("$BOLD%(name)-s$RESET - %(levelname)s: %(message)s")
+        FORMAT = ("$BOLD%(name)-s$RESET %(asctime)s - %(levelname)s: %(message)s")
 
         BLACK, RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, WHITE = list(range(8))
 
@@ -39,7 +39,7 @@ def set_logger(logger):
 
         def __init__(self, use_color=True):
             msg = self.formatter_msg(self.FORMAT, use_color)
-            logging.Formatter.__init__(self, msg)
+            logging.Formatter.__init__(self, msg, "%Y%m%d %H:%M:%S")
             self.use_color = use_color
 
         def format(self, record):

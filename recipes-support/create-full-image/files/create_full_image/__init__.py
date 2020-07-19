@@ -125,7 +125,7 @@ class CreateFullImage(object):
                 data = yaml.load(f, Loader=yaml.FullLoader)
                 logger.debug("Yaml File Contentt: %s" % data)
         else:
-            logger.info("No Input YAML File, use default setting:")
+            logger.info("No Input YAML File, use default setting")
 
         self.image_name = data['name'] if 'name' in data else DEFAULT_IMAGE
         self.machine = data['machine'] if 'machine' in data else DEFAULT_MACHINE
@@ -173,9 +173,10 @@ class CreateFullImage(object):
 
         logger.info("Machine: %s" % self.machine)
         logger.info("Image Name: %s" % self.image_name)
-        logger.info("Image Type: %s" % self.image_type)
-        logger.info("Pakcages: %s" % self.packages)
-        logger.info("Pakcage Feeds: %s" % self.pkg_feeds)
+        logger.info("Image Type: %s" % ' '.join(self.image_type))
+        logger.info("Pakcages Number: %d" % len(self.packages))
+        logger.debug("Pakcages: %s" % self.packages)
+        logger.info("Pakcage Feeds:\n%s\n" % '\n'.join(self.pkg_feeds))
         logger.debug("Deploy Directory: %s" % self.outdir)
         logger.debug("Work Directory: %s" % self.workdir)
 
@@ -350,7 +351,7 @@ def main():
         logger.error("Create Target Rootfs Failed")
         sys.exit(1)
     else:
-        logger.info("Create Target Rootfs: %s" % create.target_rootfs)
+        logger.debug("Create Target Rootfs: %s" % create.target_rootfs)
 
     create.do_ostree_initramfs()
 

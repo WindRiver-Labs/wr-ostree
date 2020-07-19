@@ -44,12 +44,12 @@ class Rootfs(object):
         if not os.path.exists(pre_rootfs_dir):
             return
 
-        self.logger.info("pre_rootfs_dir %s" % pre_rootfs_dir)
+        self.logger.debug("pre_rootfs_dir %s" % pre_rootfs_dir)
         for script in os.listdir(pre_rootfs_dir):
             script_full = os.path.join(pre_rootfs_dir, script)
-            self.logger.info("script %s" % script_full)
+            self.logger.debug("script %s" % script_full)
             if not os.access(script_full, os.X_OK):
-                self.logger.info("not script %s" % script_full)
+                self.logger.debug("not script %s" % script_full)
                 continue
 
             self.logger.debug("> Executing %s preprocess rootfs..." % script)

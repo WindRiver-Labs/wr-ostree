@@ -75,7 +75,7 @@ class CreateInitramfs(Image):
             src = src + ".u-boot"
 
         if os.path.exists(src):
-            self.logger.info("Creating symlink: %s -> %s" % (dst, src))
+            self.logger.debug("Creating symlink: %s -> %s" % (dst, src))
             if os.path.islink(dst):
                 os.remove(dst)
             os.symlink(os.path.basename(src), dst)

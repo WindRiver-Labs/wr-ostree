@@ -54,7 +54,7 @@ class DnfRpm:
         self._initialize_intercepts()
 
     def _initialize_intercepts(self):
-        self.logger.info("Initializing intercept dir for %s" % self.target_rootfs)
+        self.logger.debug("Initializing intercept dir for %s" % self.target_rootfs)
         # As there might be more than one instance of PackageManager operating at the same time
         # we need to isolate the intercept_scripts directories from each other,
         # hence the ugly hash digest in dir name.
@@ -104,7 +104,7 @@ class DnfRpm:
             open(platformconfdir + "macros", 'a').write("%_prefer_color 7\n")
 
     def create_configs(self):
-        self.logger.info("create_configs")
+        self.logger.debug("create_configs")
         self._configure_dnf()
         self._configure_rpm()
 
@@ -150,7 +150,7 @@ class DnfRpm:
         if hasattr(self, "rpm_repo_dir"):
             standard_dnf_args.append("--repofrompath=oe-repo,%s" % (self.rpm_repo_dir))
         cmd = [dnf_cmd] + standard_dnf_args + dnf_args
-        self.logger.info('Running %s' % ' '.join(cmd))
+        self.logger.debug('Running %s' % ' '.join(cmd))
 
         res, output = utils.run_cmd(cmd, self.logger, print_output=print_output)
         if res:
