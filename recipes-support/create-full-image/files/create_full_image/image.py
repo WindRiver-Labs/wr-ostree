@@ -139,7 +139,7 @@ class CreateWicImage(Image):
         self._create_symlinks()
 
     def _create_symlinks(self):
-        for suffix_dst, suffix_src in [(".wic", ".rootfs.wic")]:
+        for suffix_dst, suffix_src in [(".wic", ".rootfs.wic"), (".wic.bmap", ".rootfs.wic.bmap")]:
             dst = os.path.join(self.deploydir, self.image_linkname + suffix_dst)
             src = os.path.join(self.deploydir, self.image_fullname + suffix_src)
             if os.path.exists(src):

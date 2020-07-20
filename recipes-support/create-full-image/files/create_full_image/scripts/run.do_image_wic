@@ -23,6 +23,8 @@ do_image_wic() {
 	wic create -D -r ${IMAGE_ROOTFS} -b ${DEPLOY_DIR_IMAGE} -k ${DEPLOY_DIR_IMAGE}  -m -s ${WKS_FILE} -o "$build_wic" ${WIC_CREATE_EXTRA_ARGS}
 
 	mv "$build_wic/$(basename "${wks%.wks}")"*.direct "$out.rootfs.wic"
+
+	bmaptool create "$out.rootfs.wic" -o "$out.rootfs.wic.bmap"
 }
 
 bbfatal() {
