@@ -21,6 +21,7 @@ import subprocess
 import argparse
 import logging
 import shutil
+import atexit
 import yaml
 from collections import OrderedDict
 
@@ -103,6 +104,8 @@ class CreateFullImage(object):
         parser.add_argument('-q', '--quiet',
             help = 'Hide all output except error messages',
             action='store_const', const=logging.ERROR, dest='loglevel')
+        parser.add_argument("--no-clean",
+            help = "Do not cleanup generated rootfs in workdir", action="store_true", default=False)
 
         parser.add_argument('input',
             help='An input yaml file that the tool can be run against a package feed to generate an image',
@@ -170,6 +173,11 @@ class CreateFullImage(object):
             self.image_type = self.args.type
         else:
             self.image_type = ['ostree-repo', 'wic', 'container']
+
+        # Cleanup all generated rootfs dir by default
+        if not self.args.no_clean:
+            cmd = "rm -rf {0}/*/rootfs*".format(self.workdir)
+            atexit.register(utils.run_cmd_oneshot, cmd=cmd, logger=logger)
 
         logger.info("Machine: %s" % self.machine)
         logger.info("Image Name: %s" % self.image_name)
