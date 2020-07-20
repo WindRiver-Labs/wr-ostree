@@ -90,6 +90,9 @@ class CreateWicImage(Image):
     def _add_keys(self):
         self.wks_full_path = ""
         self.wks_in_environ = os.environ.copy()
+        self.date = utils.get_today()
+        self.image_fullname = "%s-%s-%s" % (self.image_name, self.machine, self.date)
+        self.image_linkname =  "%s-%s" % (self.image_name, self.machine)
 
     def set_wks_in_environ(self, **kwargs):
         for k, v in kwargs.items():
@@ -124,6 +127,7 @@ class CreateWicImage(Image):
         wic_env['IMAGE_NAME'] = self.image_name
         wic_env['MACHINE'] = self.machine
         wic_env['WKS_FILE'] = self.wks_full_path
+        wic_env['DATETIME'] = self.date
         cmd = os.path.join(wic_env['OECORE_NATIVE_SYSROOT'], "usr/share/create_full_image/scripts/run.do_image_wic")
         res, output = utils.run_cmd(cmd, self.logger, env=wic_env)
         if res:
@@ -132,6 +136,19 @@ class CreateWicImage(Image):
             raise Exception("Executing %s failed\nExit code %d. Output:\n%s"
                                % (cmd, res, output))
 
+        self._create_symlinks()
+
+    def _create_symlinks(self):
+        for suffix_dst, suffix_src in [(".wic", ".rootfs.wic")]:
+            dst = os.path.join(self.deploydir, self.image_linkname + suffix_dst)
+            src = os.path.join(self.deploydir, self.image_fullname + suffix_src)
+            if os.path.exists(src):
+                self.logger.debug("Creating symlink: %s -> %s" % (dst, src))
+                if os.path.islink(dst):
+                    os.remove(dst)
+                os.symlink(os.path.basename(src), dst)
+            else:
+                self.logger.error("Skipping symlink, source does not exist: %s -> %s" % (dst, src))
 
 class CreateOstreeRepo(Image):
     def _set_allow_keys(self):

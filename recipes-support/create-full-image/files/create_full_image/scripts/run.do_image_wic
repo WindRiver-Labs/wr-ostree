@@ -8,10 +8,10 @@ set -x
 # IMAGE_NAME
 # MACHINE
 # WKS_FILE
+# DATETIME
 
 export LC_ALL="en_US.UTF-8"
 IMAGE_BASENAME="${IMAGE_NAME}"
-DATETIME="`date +"%Y%m%d%H%M%S"`"
 WIC_CREATE_EXTRA_ARGS=""
 do_image_wic() {
 	out="${DEPLOY_DIR_IMAGE}/${IMAGE_BASENAME}-${MACHINE}-${DATETIME}"
@@ -22,7 +22,7 @@ do_image_wic() {
 	fi
 	wic create -D -r ${IMAGE_ROOTFS} -b ${DEPLOY_DIR_IMAGE} -k ${DEPLOY_DIR_IMAGE}  -m -s ${WKS_FILE} -o "$build_wic" ${WIC_CREATE_EXTRA_ARGS}
 
-	mv "$build_wic/$(basename "${wks%.wks}")"*.direct "$out.wic"
+	mv "$build_wic/$(basename "${wks%.wks}")"*.direct "$out.rootfs.wic"
 }
 
 bbfatal() {
