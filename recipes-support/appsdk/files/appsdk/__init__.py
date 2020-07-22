@@ -15,7 +15,7 @@ set_logger(logger)
 
 def main():
     parser = argparse.ArgumentParser(
-        description='AppSDK for CBAS',
+        description='Application SDK Management Tool for CBAS',
         epilog='Use %(prog)s <subcommand> --help to get help')
     parser.add_argument('-d', '--debug',
                         help = "Enable debug output",
@@ -37,6 +37,19 @@ def main():
     
     parser_checksdk = subparsers.add_parser('checksdk', help='Sanity check for SDK')
     parser_checksdk.set_defaults(func=checksdk)
+
+    parser_buildrpm = subparsers.add_parser('buildrpm', help='Build RPM package')
+    parser_buildrpm.add_argument('-f', '--file', required=True,
+                                 help='A yaml or spec file specifying package information')
+    parser_buildrpm.add_argument('-i', '--installdir', required=True,
+                                 help='An installdir serving as input to generate RPM package')
+    parser_buildrpm.add_argument('-o', '--outputdir',
+                                 help='Output directory to hold the generated RPM package',
+                                 default='deploy/rpms')
+    parser_buildrpm.add_argument('--pkgarch',
+                                 help='package arch about the generated RPM package', default=None)
+
+    parser_buildrpm.set_defaults(func=buildrpm)
     
     if len(sys.argv) == 1:
         parser.print_help()
@@ -54,6 +67,10 @@ def gensdk(args):
 def checksdk(args):
     appsdk = AppSDK()
     appsdk.check_sdk()
+
+def buildrpm(args):
+    appsdk = AppSDK()
+    appsdk.buildrpm(args.file, args.installdir, rpmdir=args.outputdir, pkgarch=args.pkgarch)
     
 if __name__ == "__main__":
     try:

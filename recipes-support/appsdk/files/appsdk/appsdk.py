@@ -12,7 +12,7 @@ import yaml
 
 from create_full_image.utils import set_logger
 from create_full_image.utils import run_cmd
-from create_full_image.utils import FEED_ARCHS_DICT
+from create_full_image.constant import FEED_ARCHS_DICT
 from create_full_image.rootfs import Rootfs
 import create_full_image.utils as utils
 
@@ -429,19 +429,293 @@ find {0} {1} -type f | xargs -n100 file | grep ":.*\(ASCII\|script\|source\).*te
         # start
         dir_walk(SCAN_ROOT)
 
+    def construct_buildroot(self, installdir, buildroot):
+        """
+        Construct buildroot from installdir.
+        """
+        if not os.path.exists(installdir):
+            logger.error("%s does not exists!" % installdir)
+            exit(1)
 
+        # Copy the whole installdir to buildroot
+        if os.path.exists(buildroot):
+            shutil.rmtree(buildroot)
+        shutil.copytree(installdir, buildroot, symlinks=True, ignore_dangling_symlinks=True)
 
-def test():
+        # Do any adjustment needed, e.g. /usr merge changes and symlink changes
+        
+    def construct_spec_file(self, pkg_yaml, buildroot, specfile):
+        """
+        Construct RPM spec file according to pkg_yaml and buildroot contents
+        pkg_yaml: yaml file to specify package details
+        installdir: installation directory, which is usually the result of 'make install'
+        specfile: specfile path
+        """
+        logger.info("Constructing spec file from {0} and {1}".format(pkg_yaml, buildroot))
+        
+        # Parse pkg_yaml file to get package information
+        pc = PackageConfig(pkg_yaml)
+
+        # Walk through buildroot and construct files/dirs information for the package
+        pc.parse_buildroot(buildroot)
+
+        # write spec file according to package config information
+        self.write_spec_file(specfile, pc)
+
+        logger.info("Finished constructing spec file: %s" % specfile)
+
+    def write_spec_file(self, specfile, pc):
+        """
+        Write spec file according to package config information
+        specfile: path to .spec file
+        pc: PackageConfig object containing package information
+        """
+        pc.show(specfile)
+        
+    def buildrpm(self, configfile, installdir, pkgarch=None, rpmdir=None, workdir=None):
+        """
+        Build out rpm package from installdir according to configfile.
+        If configfile is a spec file, use it directly. If the config file a yaml file, construct spec file and use it.
+        The generated rpm is put in rpmdir (default to $target_sdk_dir/deploy/rpms)
+        """
+        utils.fake_root(logger)
+        logger.info("Building rpm from {0} according to {1} ...".format(installdir, configfile))
+
+        # sanity checks
+        if not configfile.endswith('.spec') and not configfile.endswith('.yaml') and not configfile.endswith('.yml'):
+            logger.error("%s should be a spec file or yaml file" % configfile)
+            exit(1)
+        
+        # get package arch
+        if not pkgarch:
+            pkgarch = self.real_multimach_target_sys.split('-wrs-')[0]
+            logger.info("Guess pkgarch to be {0} from {1}".format(pkgarch, self.real_multimach_target_sys))
+
+        # prepare dirs
+        if not rpmdir:
+            rpmdir = os.path.join(self.target_sdk_dir, 'deploy/rpms')
+        rpmdir = os.path.abspath(rpmdir)
+        logger.debug("rpmdir = %s" % rpmdir)
+        if not os.path.exists(rpmdir):
+            os.makedirs(rpmdir)
+        if not workdir:
+            workdir = os.path.join(self.target_sdk_dir, 'workdir-packaging')
+        if not os.path.exists(workdir):
+            os.makedirs(workdir)
+        conf_base_name = os.path.basename(configfile).split('.')[0]
+        topdir = os.path.join(workdir, conf_base_name)
+        logger.debug("topdir = %s" % topdir)
+        if not os.path.exists(topdir):
+            os.makedirs(topdir)
+        
+        # Construct buildroot from installdir
+        # installdir -> workdir-packaging/configfile_base_name/buildroot
+        buildroot = os.path.join(topdir, 'buildroot')
+        logger.debug("buildroot = %s" % buildroot)
+        self.construct_buildroot(installdir, buildroot)
+
+        # prepare spec file
+        if configfile.endswith('.spec'):
+            specfile = configfile
+        else:
+            specfile = os.path.join(topdir, conf_base_name + '.spec')
+            self.construct_spec_file(configfile, buildroot, specfile)
+        
+        # construct rpmbuild command
+        cmd = 'rpmbuild'
+        cmd = cmd + " --noclean"
+        cmd = cmd + " --target " + pkgarch.replace('-', '_')
+        cmd = cmd + " --buildroot " + buildroot
+        cmd = cmd + " --dbpath " + os.path.join(self.native_sysroot, 'var/lib/rpm')
+        cmd = cmd + " --define '_topdir %s'" % topdir
+        cmd = cmd + " --define '_rpmdir %s'" % rpmdir
+        cmd = cmd + " --define '_build_id_links none'"
+        cmd = cmd + " --define '_buildhost windriver-appsdk'"
+        cmd = cmd + " --define '_unpackaged_files_terminate_build 0'"
+        cmd = cmd + " --define '_tmppath %s'" % topdir
+        cmd = cmd + " -bb %s" % specfile
+        # run rpmbuild command
+        logger.debug(cmd)
+        output = subprocess.check_output(cmd, shell=True, stderr=subprocess.STDOUT).decode('utf-8')
+
+        # control the output according to log level
+        out_lines = output.split('\n')
+        for ol in out_lines:
+            logger.debug('%s' % ol)
+            if ol.startswith('Wrote: '):
+                generated_rpm_path = ol.split('Wrote: ')[1]
+
+        # clean things up
+        for entry in ["BUILDROOT", "SPECS", "SRPMS", "SOURCES", "BUILD"]:
+            shutil.rmtree("%s/%s" % (topdir, entry))
+        
+        logger.info("Generated %s" % generated_rpm_path)
+        
+class PackageConfig(object):
+    """
+    PackageConfig class to hold information for package settings
+    """
+    def __init__(self, pkg_yaml):
+        if not os.path.exists(pkg_yaml):
+            logger.error("%s does not exist!" % pkg_yaml)
+            exit(1)
+
+        self.pkg_data = {}
+        with open(pkg_yaml) as f:
+            yd = yaml.load(f, Loader=yaml.FullLoader)
+        self.pkg_data['Name'] = yd['name']
+        self.pkg_data['Version'] = yd['version']
+        self.pkg_data['Release'] = yd['release']
+        self.pkg_data['Summary'] = yd['summary']
+        self.pkg_data['License'] = yd['license']
+        self.pkg_data['description'] = yd['description'] if 'description' in yd else yd['summary']
+
+        # scripts
+        map_yd_spec = {}
+        map_yd_spec['post_install'] = 'post'
+        map_yd_spec['pre_install'] = 'pre'
+        map_yd_spec['post_uninstall'] = 'postun'
+        map_yd_spec['pre_uninstall'] = 'preun'
+        for yd_entry in map_yd_spec:
+            spec_entry = map_yd_spec[yd_entry]
+            path_yd_entry = yd_entry + '_path'
+            if yd_entry in yd and path_yd_entry in yd:
+                logger.error("%s and %s both specified. Only one is allowed." % (yd_entry, path_yd_entry))
+                exit(1)
+            if yd_entry in yd:
+                logger.debug("add %{0} section from {1} in {2}".format(spec_entry, yd_entry, pkg_yaml))
+                self.pkg_data[spec_entry] = yd[yd_entry]
+            if path_yd_entry in yd:
+                logger.debug("add %{0} section from {1} in {2}".format(spec_entry, path_yd_entry, pkg_yaml))
+                script_path = yd[path_yd_entry]
+                with open(script_path, 'r') as sf:
+                    self.pkg_data[spec_entry] = sf.read()
+
+        # files and dirs
+        if 'dirs' in yd:
+            self.pkg_data['dirs'] = yd['dirs']
+        else:
+            self.pkg_data['dirs'] = []
+        if 'files' in yd:
+            self.pkg_data['files'] = yd['files']
+        else:
+            self.pkg_data['files'] = ['/*']
+
+    def show(self, outfile=None):
+        """
+        Output package settings in spec file format
+        """
+        if not outfile:
+            out = sys.stdout
+        else:
+            out = open(outfile, 'w')
+
+        # write lines to out
+        for entry in ['Name', 'Version', 'Release', 'Summary', 'License']:
+            out.write('{0}: {1}\n'.format(entry, self.pkg_data[entry]))
+        out.write('\n')
+        for entry in ['description', 'post', 'pre', 'postun', 'preun']:
+            if entry in self.pkg_data:
+                out.write('%{0}\n'.format(entry))
+                out.write('{0}\n'.format(self.pkg_data[entry]))
+        out.write('%files\n')
+        if 'dirs' in self.pkg_data:
+            for dir_entry in self.pkg_data['dirs']:
+                if '(' in dir_entry:
+                    dirpath, dirattr = dir_entry.split(maxsplit=1)
+                    out.write('%attr{0} %dir {1}\n'.format(dirattr, dirpath))
+                else:
+                    dirpath = dir_entry
+                    out.write('%dir {0}\n'.format(dirpath))
+        for file_entry in self.pkg_data['files']:
+            if '(' in file_entry:
+                filepath, fileattr = file_entry.split(maxsplit=1)
+                out.write('%attr{0} {1}\n'.format(fileattr, filepath))
+            else:
+                filepath = file_entry
+                out.write('{0}\n'.format(filepath))                
+
+        if outfile:
+            out.close()
+
+    def parse_buildroot(self, buildroot):
+        """
+        Parse buildroot to get needed files/dirs information
+        """
+        default_layout = {}
+        dirs_0755_root_root = ['/',
+                               '/usr',
+                               '/usr/bin',
+                               '/usr/sbin',
+                               '/usr/local',
+                               '/usr/local/bin',
+                               '/usr/local/sbin',
+                               '/usr/lib',
+                               '/usr/lib64',
+                               '/usr/lib32',
+                               '/usr/libexec',
+                               '/usr/share',
+                               '/usr/share/doc',
+                               '/usr/share/man',
+                               '/usr/include',
+                               '/etc',
+                               '/var']
+        for dir in dirs_0755_root_root:
+            default_layout[dir] = '(0755, root, root)'
+
+        # get dirs specified in yaml
+        yaml_dirs = []
+        for dir_entry in self.pkg_data['dirs']:
+            dirpath = dir_entry.split(maxsplit=1)[0]
+            yaml_dirs.append(dirpath)
+            
+        for root, dirs, files in os.walk(buildroot):
+            for d in dirs:
+                dirpath = os.path.join(root, d)
+                dirpath = dirpath.replace(buildroot, '')
+                if dirpath in yaml_dirs:
+                    logger.debug("% is already specified by user in yaml file" % dirpath)
+                else:
+                    if dirpath in default_layout:
+                        logger.debug("adding %s as %s" % (dirpath, default_layout[dirpath]))
+                        self.pkg_data['dirs'].append('%s %s' % (dirpath, default_layout[dirpath]))
+                
+    
+def test_appsdk():
+    set_logger(logger)
+    logger.setLevel(logging.DEBUG)
     logger.info("testing appsdk.py ...")
-    #AppSDK(sys.argv[1], sys.argv[2]).check_sdk_target_sysroots()
     appsdk = AppSDK()
-    # Because of fakeroot problem, native sysroot needs to be generated first
-    appsdk.populate_native_sysroot()
-    appsdk.populate_target_sysroot(sys.argv[1])
-    appsdk.check_sdk_target_sysroots()
-    appsdk.create_sdk_files()
-    appsdk.archive_sdk()
-    appsdk.create_shar()
+    if len(sys.argv) < 3:
+        logger.error("appsdk.py specfile installdir [pkgarch]")
+        exit(1)
+    specfile = os.path.abspath(sys.argv[1])
+    installdir = os.path.abspath(sys.argv[2])
+    if len(sys.argv) == 4:
+        pkgarch = sys.argv[3]
+    else:
+        pkgarch = None
+    # prepare fakeroot env
+    utils.fake_root(logger)
+    appsdk.buildrpm(specfile, installdir, pkgarch = pkgarch)
+    logger.info("Done")
 
+def test_packageconfig():
+    set_logger(logger)
+    logger.setLevel(logging.DEBUG)
+    logger.info("testing appsdk.py ...")
+    if len(sys.argv) < 2:
+        logger.error("appsdk.py yamlfile")
+        exit(1)
+    yaml_file = sys.argv[1]
+    pc = PackageConfig(yaml_file)
+    if len(sys.argv) == 3:
+        spec_file = sys.argv[2]
+        pc.show(spec_file)
+    else:
+        pc.show()
+    logger.info("Done")
+    
 if __name__ == "__main__":
-    test()
+    test_appsdk()
+    #test_packageconfig()
