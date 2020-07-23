@@ -9,6 +9,7 @@ import logging
 from appsdk.appsdk import AppSDK
 from create_full_image.utils import set_logger
 import create_full_image.utils as utils
+import create_full_image
 
 logger = logging.getLogger('appsdk')
 set_logger(logger)
@@ -56,6 +57,9 @@ def main():
     subparsers = parser.add_subparsers(help='Subcommands. "%(prog)s <subcommand> --help" to get more info')
 
     set_subparser(subparsers)
+
+    # Add genimage to appsdk
+    create_full_image.set_subparser(subparsers)
 
     if len(sys.argv) == 1:
         parser.print_help()

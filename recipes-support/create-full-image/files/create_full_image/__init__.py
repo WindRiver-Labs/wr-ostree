@@ -45,6 +45,59 @@ import create_full_image.utils as utils
 logger = logging.getLogger('cbas')
 set_logger(logger)
 
+def set_parser(parser=None):
+    if parser is None:
+        parser = argparse.ArgumentParser(
+            description='Generate images from package feeds for specified machines',
+            epilog='Use %(prog)s --help to get help')
+        parser.add_argument('-d', '--debug',
+            help = "Enable debug output",
+            action='store_const', const=logging.DEBUG, dest='loglevel', default=logging.INFO)
+        parser.add_argument('-q', '--quiet',
+            help = 'Hide all output except error messages',
+            action='store_const', const=logging.ERROR, dest='loglevel')
+
+    supported_types = [
+        'wic',
+        'ostree-repo',
+        'container',
+        'all',
+    ]
+
+    parser.add_argument('-m', '--machine',
+        choices=[DEFAULT_MACHINE],
+        help='Specify machine')
+    parser.add_argument('-o', '--outdir',
+        default=os.getcwd(),
+        help='Specify output dir, default is current working directory',
+        action='store')
+    parser.add_argument('-w', '--workdir',
+        default=os.getcwd(),
+        help='Specify work dir, default is current working directory',
+        action='store')
+    parser.add_argument('-t', '--type',
+        choices=supported_types,
+        help='Specify image type, default is all',
+        action='append')
+    parser.add_argument('-n', '--name',
+        help='Specify image name',
+        action='store')
+    parser.add_argument('-u', '--url',
+        help='Specify urls of rpm package feeds',
+        action='append')
+    parser.add_argument('-p', '--pkg',
+        help='Specify extra package to be installed',
+        action='append')
+    parser.add_argument("--no-clean",
+        help = "Do not cleanup generated rootfs in workdir", action="store_true", default=False)
+
+    parser.add_argument('input',
+        help='An input yaml file that the tool can be run against a package feed to generate an image',
+        nargs='?')
+
+    return parser
+
+
 class CreateFullImage(object):
     """
     * Create the following images in order:
@@ -53,67 +106,8 @@ class CreateFullImage(object):
         - container image
     """
 
-    def __init__(self):
-        supported_machines = [
-            'intel-x86-64',
-            'bcm-2xxx-rpi4',
-        ]
-
-        self.feed_archs_dict= {
-            'intel-x86-64': ['corei7_64', 'intel_x86_64', 'noarch'],
-            'bcm-2xxx-rpi4': ['aarch64', 'bcm_2xxx_rpi4', 'noarch'],
-        }
-
-        supported_types = [
-            'wic',
-            'ostree-repo',
-            'container',
-            'all',
-        ]
-
-        parser = argparse.ArgumentParser(
-            description='Create images from package feeds for specified machines',
-            epilog='Use %(prog)s --help to get help')
-        parser.add_argument('-m', '--machine',
-            choices=supported_machines,
-            help='Specify machine')
-        parser.add_argument('-o', '--outdir',
-            default=os.getcwd(),
-            help='Specify output dir, default is current working directory',
-            action='store')
-        parser.add_argument('-w', '--workdir',
-            default=os.getcwd(),
-            help='Specify work dir, default is current working directory',
-            action='store')
-        parser.add_argument('-t', '--type',
-            choices=supported_types,
-            help='Specify image type, default is all',
-            action='append')
-        parser.add_argument('-n', '--name',
-            help='Specify image name',
-            action='store')
-        parser.add_argument('-u', '--url',
-            help='Specify urls of rpm package feeds',
-            action='append')
-        parser.add_argument('-p', '--pkg',
-            help='Specify extra package to be installed',
-            action='append')
-        parser.add_argument('-d', '--debug',
-            help = "Enable debug output",
-            action='store_const', const=logging.DEBUG, dest='loglevel', default=logging.INFO)
-        parser.add_argument('-q', '--quiet',
-            help = 'Hide all output except error messages',
-            action='store_const', const=logging.ERROR, dest='loglevel')
-        parser.add_argument("--no-clean",
-            help = "Do not cleanup generated rootfs in workdir", action="store_true", default=False)
-
-        parser.add_argument('input',
-            help='An input yaml file that the tool can be run against a package feed to generate an image',
-            nargs='?')
-
-        self.args = parser.parse_args()
-
-        logger.setLevel(self.args.loglevel)
+    def __init__(self, args):
+        self.args = args
 
         self.today = get_today()
 
@@ -354,9 +348,9 @@ class CreateFullImage(object):
         ostree_ota.create()
 
 
-def main():
+def _main_run(args):
     utils.fake_root(logger)
-    create = CreateFullImage()
+    create = CreateFullImage(args)
     create.do_prepare()
     create.do_rootfs()
     if create.target_rootfs is None:
@@ -377,6 +371,20 @@ def main():
 
     if "container" in create.image_type:
         create.do_image_container()
+
+def main():
+    parser = set_parser()
+    parser.set_defaults(func=_main_run)
+    args = parser.parse_args()
+    logger.setLevel(args.loglevel)
+    args.func(args)
+
+def set_subparser(subparsers=None):
+    if subparsers is None:
+        sys.exit(1)
+    parser_genimage = subparsers.add_parser('genimage', help='Generate images from package feeds for specified machines')
+    parser_genimage = set_parser(parser_genimage)
+    parser_genimage.set_defaults(func=_main_run)
 
 if __name__ == "__main__":
     main()

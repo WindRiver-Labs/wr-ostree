@@ -14,7 +14,7 @@ setuptools.setup(
     url="todo",
     packages=setuptools.find_packages(),
     entry_points = {
-        'console_scripts': ['create_full_image=create_full_image:main'],
+        'console_scripts': ['genimage=create_full_image:main'],
     },
     license="GNU General Public License v2.0",
     classifiers=[
