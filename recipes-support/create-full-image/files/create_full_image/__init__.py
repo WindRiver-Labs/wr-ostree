@@ -132,7 +132,11 @@ class CreateFullImage(object):
 
         self.image_name = data['name'] if 'name' in data else DEFAULT_IMAGE
         self.machine = data['machine'] if 'machine' in data else DEFAULT_MACHINE
-        self.packages = data['packages'] if 'packages' in data else DEFAULT_PACKAGES[self.machine]
+        self.packages = DEFAULT_PACKAGES[self.machine]
+        if 'packages' in data:
+            self.packages += data['packages']
+        self.packages = list(set(self.packages))
+
         self.pkg_feeds = data['package_feeds'] if 'package_feeds' in data else DEFAULT_PACKAGE_FEED
         self.image_features = data['features'] if 'features' in data else DEFAULT_IMAGE_FEATURES
 
