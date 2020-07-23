@@ -100,6 +100,8 @@ class DnfRpm:
             f.write("buildarch_compat: %s: noarch\n" % self.primary_arch)
 
         open(platformconfdir + "macros", 'w').write("%_transaction_color 7\n")
+        open(platformconfdir + "macros", 'w').write("%_var /var\n")
+
         if self.machine == "intel-x86-64":
             open(platformconfdir + "macros", 'a').write("%_prefer_color 7\n")
 
