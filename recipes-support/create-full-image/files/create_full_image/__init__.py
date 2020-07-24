@@ -42,8 +42,7 @@ from create_full_image.image import CreateOstreeOTA
 
 import create_full_image.utils as utils
 
-logger = logging.getLogger('cbas')
-set_logger(logger)
+logger = logging.getLogger('appsdk')
 
 def set_parser(parser=None):
     if parser is None:
@@ -163,7 +162,6 @@ class CreateFullImage(object):
         if not self.pkg_feeds:
             logger.error("The package feeds does not exist, please set it")
             sys.exit(1)
-
 
         if self.args.name:
             self.image_name = self.args.name
@@ -377,6 +375,7 @@ def main():
     parser = set_parser()
     parser.set_defaults(func=_main_run)
     args = parser.parse_args()
+    set_logger(logger)
     logger.setLevel(args.loglevel)
     args.func(args)
 

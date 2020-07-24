@@ -12,7 +12,6 @@ import create_full_image.utils as utils
 import create_full_image
 
 logger = logging.getLogger('appsdk')
-set_logger(logger)
 
 def set_subparser(subparsers=None):
     if subparsers is None:
@@ -66,6 +65,7 @@ def main():
         parser.exit(1)
 
     args = parser.parse_args()
+    set_logger(logger)
     logger.setLevel(args.loglevel)
     args.func(args)
 
