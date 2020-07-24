@@ -83,7 +83,7 @@ def set_parser(parser=None):
         help='Specify image name',
         action='store')
     parser.add_argument('-u', '--url',
-        help='Specify urls of rpm package feeds',
+        help='Specify extra urls of rpm package feeds',
         action='append')
     parser.add_argument('-p', '--pkg',
         help='Specify extra package to be installed',
@@ -129,9 +129,15 @@ class CreateFullImage(object):
         self.packages = DEFAULT_PACKAGES[self.machine]
         if 'packages' in data:
             self.packages += data['packages']
+        if self.args.pkg:
+            self.packages.extend(self.args.pkg)
         self.packages = list(set(self.packages))
 
         self.pkg_feeds = data['package_feeds'] if 'package_feeds' in data else DEFAULT_PACKAGE_FEED
+        if self.args.url:
+            self.pkg_feeds.extend(self.args.url)
+        self.pkg_feeds = list(set(self.pkg_feeds))
+
         self.image_features = data['features'] if 'features' in data else DEFAULT_IMAGE_FEATURES
 
         self.data = data
@@ -154,15 +160,10 @@ class CreateFullImage(object):
             logger.error("MACHINE %s is invalid, SDK is working for %s only" % (self.machine, DEFAULT_MACHINE))
             sys.exit(1)
 
-        if self.args.url:
-            self.pkg_feeds = self.args.url
-
         if not self.pkg_feeds:
             logger.error("The package feeds does not exist, please set it")
             sys.exit(1)
 
-        if self.args.pkg:
-            self.packages.extend(self.args.pkg)
 
         if self.args.name:
             self.image_name = self.args.name
