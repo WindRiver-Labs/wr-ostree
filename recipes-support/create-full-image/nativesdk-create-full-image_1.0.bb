@@ -51,6 +51,7 @@ S = "${WORKDIR}/sources"
 
 inherit nativesdk setuptools3
 
+do_unpack[vardeps] += "MACHINE PACKAGE_FEED_BASE_PATHS PACKAGE_FEED_ARCHS PACKAGE_FEED_URIS"
 do_unpack_append() {
     bb.build.exec_func('do_write_py_template', d)
     bb.build.exec_func('do_copy_src', d)
