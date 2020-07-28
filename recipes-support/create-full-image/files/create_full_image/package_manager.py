@@ -383,10 +383,10 @@ class DnfRpm:
             self.install(install_pkgs, attempt_only=True)
 
 def test():
-    from create_full_image.utils import DEFAULT_PACKAGE_FEED
-    from create_full_image.utils import DEFAULT_PACKAGES
-    from create_full_image.utils import DEFAULT_MACHINE
-    from create_full_image.utils import DEFAULT_IMAGE
+    from create_full_image.constant import DEFAULT_PACKAGE_FEED
+    from create_full_image.constant import DEFAULT_PACKAGES
+    from create_full_image.constant import DEFAULT_MACHINE
+    from create_full_image.constant import DEFAULT_IMAGE
     from create_full_image.utils import  fake_root
 
     logger = logging.getLogger('dnf')

@@ -15,7 +15,7 @@ def set_logger(logger):
     logger.setLevel(logging.DEBUG)
 
     class ColorFormatter(logging.Formatter):
-        FORMAT = ("$BOLD%(name)-s$RESET %(asctime)s - %(levelname)s: %(message)s")
+        FORMAT = ("$BOLD%(name)-s$RESET - %(levelname)s: %(message)s")
 
         BLACK, RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, WHITE = list(range(8))
 
@@ -39,7 +39,7 @@ def set_logger(logger):
 
         def __init__(self, use_color=True):
             msg = self.formatter_msg(self.FORMAT, use_color)
-            logging.Formatter.__init__(self, msg, "%Y%m%d %H:%M:%S")
+            logging.Formatter.__init__(self, msg)
             self.use_color = use_color
 
         def format(self, record):
@@ -112,9 +112,14 @@ def fake_root(logger, workdir = os.path.join(os.getcwd(),"workdir")):
     os.environ['PSEUDO_PREFIX'] = os.path.join(native_sysroot, 'usr')
     os.environ['PSEUDO_LOCALSTATEDIR'] = os.path.join(workdir, 'pseudo')
     os.environ['PSEUDO_NOSYMLINKEXP'] = "1"
-    os.environ['PSEUDO_PASSWD'] = "%s:%s" % (os.path.join(workdir, 'rootfs'), os.environ['OECORE_TARGET_SYSROOT'])
     os.environ['LD_PRELOAD'] = os.path.join(native_sysroot, 'usr/lib/pseudo/lib64/libpseudo.so')
     os.environ['LC_ALL'] = "en_US.UTF-8"
+
+def fake_root_set_passwd(logger, rootfs=None):
+    if rootfs is None:
+        raise Exception("fake_root_set_passwd rootfs is None")
+    os.environ['PSEUDO_PASSWD'] = rootfs
+    logger.debug("PSEUDO_PASSWD %s" % os.environ['PSEUDO_PASSWD'])
 
 def mkdirhier(directory):
     """Create a directory like 'mkdir -p', but does not complain if

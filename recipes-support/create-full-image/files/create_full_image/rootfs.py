@@ -36,6 +36,8 @@ class Rootfs(object):
 
         self.installed_pkgs = OrderedDict()
 
+        utils.fake_root_set_passwd(self.logger, self.target_rootfs)
+
     def _pre_rootfs(self):
         os.environ['IMAGE_ROOTFS'] = self.pm.target_rootfs
         os.environ['libexecdir'] = '/usr/libexec'
