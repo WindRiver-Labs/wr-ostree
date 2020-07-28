@@ -105,6 +105,9 @@ def ordered_dump(data, stream=None, Dumper=yaml.Dumper, **kwds):
     return yaml.dump(data, stream, OrderedDumper, **kwds)
 
 def fake_root(logger, workdir = os.path.join(os.getcwd(),"workdir")):
+    if os.getuid() == 0:
+        raise Exception("Do not use appsdk as root.")
+
     native_sysroot = os.environ['OECORE_NATIVE_SYSROOT']
     os.environ['PSEUDO_PREFIX'] = os.path.join(native_sysroot, 'usr')
     os.environ['PSEUDO_LOCALSTATEDIR'] = os.path.join(workdir, 'pseudo')
@@ -117,7 +120,10 @@ def mkdirhier(directory):
     """Create a directory like 'mkdir -p', but does not complain if
     directory already exists like os.makedirs
     """
-    subprocess.check_call("mkdir -p %s" % directory, shell=True)
+    try:
+        subprocess.check_call("mkdir -p %s" % directory, shell=True, stderr=subprocess.STDOUT)
+    except subprocess.CalledProcessError as e:
+        raise Exception("Create dir %s failed, please make sure you have the permission" % directory)
 
 
 def remove(path, recurse=False, ionice=False):

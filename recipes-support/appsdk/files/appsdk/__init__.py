@@ -49,6 +49,9 @@ def set_subparser(subparsers=None):
     parser_publishrpm.set_defaults(func=publishrpm)
 
 def main():
+    if os.getuid() == 0:
+        raise Exception("Do not use appsdk as root.")
+
     parser = argparse.ArgumentParser(
         description='Application SDK Management Tool for CBAS',
         epilog='Use %(prog)s <subcommand> --help to get help')

@@ -144,9 +144,12 @@ class CreateFullImage(object):
         self.outdir = self.args.outdir
         self.workdir = os.path.join(self.args.workdir, "workdir")
 
+        utils.fake_root(logger, workdir=self.workdir)
         self.deploydir = os.path.join(self.outdir, "deploy")
         self.output_yaml = os.path.join(self.deploydir, "%s-%s.yaml" % (self.image_name, self.machine))
-        utils.mkdirhier(self.deploydir)
+
+        for d in [self.workdir, self.deploydir]:
+            utils.mkdirhier(d)
 
         self.target_rootfs = None
 
@@ -349,7 +352,6 @@ class CreateFullImage(object):
 
 
 def _main_run(args):
-    utils.fake_root(logger)
     create = CreateFullImage(args)
     create.do_prepare()
     create.do_rootfs()
