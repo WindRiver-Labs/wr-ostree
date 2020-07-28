@@ -550,6 +550,89 @@ find {0} {1} -type f | xargs -n100 file | grep ":.*\(ASCII\|script\|source\).*te
             shutil.rmtree("%s/%s" % (topdir, entry))
         
         logger.info("Generated %s" % generated_rpm_path)
+
+    def create_index(self, arg):
+        index_cmd = arg
+        logger.debug("Executing '%s' ..." % index_cmd)
+        result = subprocess.check_output(index_cmd, stderr=subprocess.STDOUT, shell=True).decode("utf-8")
+        if result:
+            logger.debug(result)
+        
+    def createrepo(self, repo_dir):
+        """
+        create rpm repo via createrepo_c on repo_dir
+        """
+        logger.info("Creating rpm repo for %s" % repo_dir)
+        self.create_index("createrepo_c --update -q %s" % repo_dir)
+        logger.info("Created rpm repo for %s" % repo_dir)
+
+    def _get_rpm_arch(self, rpm):
+        cmd = 'rpm -qp --qf "%{left}arch{right}" {0}'.format(rpm, left='{', right='}')
+        rpm_arch = subprocess.check_output(cmd, shell=True).decode("utf-8")
+        logger.debug("Arch for %s is %s" % (rpm, rpm_arch))
+        return rpm_arch
+        
+    def _copy_rpm_to_repo(self, rpm, repo):
+        """
+        Copy one RPM to repo
+        """
+        # path verification
+        if not os.path.exists(rpm):
+            logger.error("%s does not exist" % rpm)
+            exit(1)
+        if not rpm.endswith('.rpm'):
+            logger.error("%s is not RPM package" % rpm)
+            exit(1)
+
+        # normalize paths
+        rpm = os.path.abspath(rpm)
+        repo = os.path.abspath(repo)
+            
+        # rpm already under repo, do nothing
+        if rpm.startswith(repo):
+            logger.info("%s is already under %s" % (rpm, repo))
+            return
+            
+        # get rpm arch
+        rpm_arch = self._get_rpm_arch(rpm)
+
+        # determine rpm dest dir
+        if repo.endswith(rpm_arch):
+            rpm_dest_dir = repo
+        else:
+            rpm_dest_dir = os.path.join(repo, rpm_arch)
+        if not os.path.exists(rpm_dest_dir):
+            os.makedirs(rpm_dest_dir)
+
+        # copy the rpm
+        shutil.copy(rpm, rpm_dest_dir)
+        
+    def copy_rpms_to_repo(self, rpms, repo):
+        """
+        Copy rpms to repo.
+        If repo ends with <arch>, copy rpms directly there.
+        Otherwise, create repo/<arch> first, and then copy rpms to repo/<arch>
+        """
+        for rpm in rpms:
+            self._copy_rpm_to_repo(rpm, repo)
+        
+    def publishrpm(self, repo, rpms):
+        """
+        Publish rpms to repo.
+        repo: rpm repo directory
+        rpms: list of RPM package paths
+        """
+        logger.debug("repo = %s, rpms = %s" % (repo, rpms))
+        logger.info("Publish RPM repo: %s" % repo)
+        #
+        # Copy rpms to repo
+        #
+        if len(rpms):
+            self.copy_rpms_to_repo(rpms, repo)
+        # Pubish the repo
+        self.createrepo(repo)
+        logger.info("Finished publishing rpms to repo %s" % repo)
+        
         
 class PackageConfig(object):
     """

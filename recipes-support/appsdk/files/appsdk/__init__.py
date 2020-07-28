@@ -39,8 +39,14 @@ def set_subparser(subparsers=None):
                                  default='deploy/rpms')
     parser_buildrpm.add_argument('--pkgarch',
                                  help='package arch about the generated RPM package', default=None)
-
     parser_buildrpm.set_defaults(func=buildrpm)
+
+    parser_publishrpm = subparsers.add_parser('publishrpm', help='Publish RPM package')
+    parser_publishrpm.add_argument('-r', '--repo', required=True,
+                                   help='RPM repo path')
+    parser_publishrpm.add_argument('rpms', help='RPM package paths',
+                                   nargs='*')
+    parser_publishrpm.set_defaults(func=publishrpm)
 
 def main():
     parser = argparse.ArgumentParser(
@@ -80,6 +86,10 @@ def checksdk(args):
 def buildrpm(args):
     appsdk = AppSDK()
     appsdk.buildrpm(args.file, args.installdir, rpmdir=args.outputdir, pkgarch=args.pkgarch)
+
+def publishrpm(args):
+    appsdk = AppSDK()
+    appsdk.publishrpm(args.repo, args.rpms)
     
 if __name__ == "__main__":
     try:
