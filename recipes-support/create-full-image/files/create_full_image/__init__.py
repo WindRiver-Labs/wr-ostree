@@ -70,6 +70,10 @@ def set_parser(parser=None):
         default=os.getcwd(),
         help='Specify output dir, default is current working directory',
         action='store')
+    parser.add_argument('-g', '--gpgpath',
+        default=None,
+        help='Specify gpg homedir, default is /tmp/.cbas_gnupg or from Yaml',
+        action='store')
     parser.add_argument('-w', '--workdir',
         default=os.getcwd(),
         help='Specify work dir, default is current working directory',
@@ -179,6 +183,11 @@ class CreateFullImage(object):
             cmd = "rm -rf {0}/*/rootfs*".format(self.workdir)
             atexit.register(utils.run_cmd_oneshot, cmd=cmd, logger=logger)
 
+        if "gpg" not in self.data:
+            self.data["gpg"] = constant.DEFAULT_GPG_DATA
+        if self.args.gpgpath:
+            self.data["gpg"]["gpg_path"] = self.args.gpgpath
+
         logger.info("Machine: %s" % self.machine)
         logger.info("Image Name: %s" % self.image_name)
         logger.info("Image Type: %s" % ' '.join(self.image_type))
@@ -187,15 +196,13 @@ class CreateFullImage(object):
         logger.info("Pakcage Feeds:\n%s\n" % '\n'.join(self.pkg_feeds))
         logger.debug("Deploy Directory: %s" % self.outdir)
         logger.debug("Work Directory: %s" % self.workdir)
+        logger.debug("GPG Path: %s" % self.data["gpg"]["gpg_path"])
 
         self.native_sysroot = os.environ['OECORE_NATIVE_SYSROOT']
         self.data_dir = os.path.join(self.native_sysroot, "usr/share/create_full_image/data")
 
     def do_prepare(self):
-        if "gpg" in self.data:
-            gpg_data = self.data["gpg"]
-        else:
-            gpg_data = self.data["gpg"] = constant.DEFAULT_GPG_DATA
+        gpg_data = self.data["gpg"]
         utils.check_gpg_keys(gpg_data, logger)
 
         if "ostree" not in self.data:
