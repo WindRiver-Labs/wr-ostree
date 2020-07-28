@@ -308,11 +308,12 @@ class CreateFullImage(object):
     def do_image_container(self):
         workdir = os.path.join(self.workdir, self.image_name)
         container = CreateContainer(
-                        workdir,
-                        self.machine,
-                        self.target_rootfs,
-                        self.deploydir,
-                        logger)
+                        image_name = self.image_name,
+                        workdir = workdir,
+                        machine = self.machine,
+                        target_rootfs = self.target_rootfs,
+                        deploydir = self.deploydir,
+                        logger = logger)
         container.create()
 
     def do_ostree_repo(self):
