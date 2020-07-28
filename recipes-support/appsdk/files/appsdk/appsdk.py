@@ -12,7 +12,12 @@ import yaml
 
 from create_full_image.utils import set_logger
 from create_full_image.utils import run_cmd
-from create_full_image.constant import FEED_ARCHS_DICT
+from create_full_image.constant import DEFAULT_PACKAGE_FEED
+from create_full_image.constant import DEFAULT_PACKAGES
+from create_full_image.constant import DEFAULT_MACHINE
+from create_full_image.constant import DEFAULT_IMAGE
+from create_full_image.constant import DEFAULT_IMAGE_FEATURES
+from create_full_image.constant import OSTREE_INITRD_PACKAGES
 from create_full_image.rootfs import Rootfs
 import create_full_image.utils as utils
 
@@ -124,11 +129,13 @@ class AppSDK(object):
         # parse yaml file to get the list of packages to be installed
         with open(target_packages_yaml) as f:
             data = yaml.load(f, Loader=yaml.FullLoader)
-            self.image_name = data['name']
-            self.machine = data['machine'] 
-            self.packages = data['packages']
-            self.pkg_feeds = data['package_feeds']
-            self.image_features = data['features']
+            self.image_name = data['name'] if 'name' in data else DEFAULT_IMAGE
+            self.machine = data['machine'] if 'machine' in data else DEFAULT_MACHINE
+            self.packages = DEFAULT_PACKAGES[self.machine]
+            if 'packages' in data:
+                self.packages += data['packages']
+            self.pkg_feeds = data['package_feeds'] if 'package_feeds' in data else DEFAULT_PACKAGE_FEED
+            self.image_features = data['features'] if 'features' in data else DEFAULT_IMAGE_FEATURES
 
         # qemuwrapper-cross is always needed
         self.packages.append('qemuwrapper-cross')
