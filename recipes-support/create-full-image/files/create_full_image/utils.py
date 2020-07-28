@@ -204,36 +204,15 @@ def copyfile(src, dest, logger, newmtime = None, sstat = None):
             logger.warning("copyfile: failed to create symlink %s to %s (%s)" % (dest, target, e))
             return False
 
-    if stat.S_ISREG(sstat[stat.ST_MODE]):
-        try:
-            srcchown = False
-            if not os.access(src, os.R_OK):
-                # Make sure we can read it
-                srcchown = True
-                os.chmod(src, sstat[stat.ST_MODE] | stat.S_IRUSR)
-
-            # For safety copy then move it over.
-            shutil.copyfile(src, dest + "#new")
-            os.rename(dest + "#new", dest)
-        except Exception as e:
-            logger.warning("copyfile: copy %s to %s failed (%s)" % (src, dest, e))
-            return False
-        finally:
-            if srcchown:
-                os.chmod(src, sstat[stat.ST_MODE])
-                os.utime(src, (sstat[stat.ST_ATIME], sstat[stat.ST_MTIME]))
-
-    else:
-        #we don't yet handle special, so we need to fall back to /bin/mv
-        a = getstatusoutput("/bin/cp -f " + "'" + src + "' '" + dest + "'")
-        if a[0] != 0:
-            logger.warning("copyfile: failed to copy special file %s to %s (%s)" % (src, dest, a))
-            return False # failure
+    a = subprocess.getstatusoutput("/bin/cp -f " + "'" + src + "' '" + dest + "'")
+    if a[0] != 0:
+        logger.warning("copyfile: failed to copy special file %s to %s (%s)" % (src, dest, a))
+        return False # failure
     try:
         os.lchown(dest, sstat[stat.ST_UID], sstat[stat.ST_GID])
         os.chmod(dest, stat.S_IMODE(sstat[stat.ST_MODE])) # Sticky is reset on chown
     except Exception as e:
-        logger.warning("copyfile: failed to chown/chmod %s (%s)" % (dest, e))
+        logger.debug("copyfile: failed to chown/chmod %s (%s)" % (dest, e))
         return False
 
     if newmtime:

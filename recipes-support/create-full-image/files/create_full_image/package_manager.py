@@ -17,6 +17,7 @@ def failed_postinsts_abort(pkgs, log_path, logger):
 then please place them into pkg_postinst_ontarget_${PN} ().
 Deferring to first boot via 'exit 1' is no longer supported.
 Details of the failure are in %s.""" %(pkgs, log_path))
+    sys.exit(1)
 
 class DnfRpm:
     def __init__(self,
@@ -191,7 +192,7 @@ class DnfRpm:
 
         if len(failed_scriptlets_pkgnames) > 0:
             failed_postinsts_abort(list(failed_scriptlets_pkgnames.keys()),
-                                   os.path.join(self.temp_dir, "log.do_rootfs"),
+                                   self.temp_dir,
                                    self.logger)
 
     def remove(self, pkgs, with_dependencies = True):
