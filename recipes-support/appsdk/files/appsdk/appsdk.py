@@ -128,7 +128,7 @@ class AppSDK(object):
 
         # parse yaml file to get the list of packages to be installed
         with open(target_packages_yaml) as f:
-            data = yaml.load(f, Loader=yaml.FullLoader)
+            data = yaml.load(f, Loader=yaml.FullLoader) or dict()
             self.image_name = data['name'] if 'name' in data else DEFAULT_IMAGE
             self.machine = data['machine'] if 'machine' in data else DEFAULT_MACHINE
             self.packages = DEFAULT_PACKAGES[self.machine]
