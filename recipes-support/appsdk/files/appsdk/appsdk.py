@@ -93,7 +93,7 @@ class AppSDK(object):
             logger.error("SDK Sanity Error: {0} does not exists!".format(ld_path))
             exit(1)
         bin_globs = "{0}/bin/* {0}/usr/bin/*".format(self.native_sysroot).split()
-        known_lists = "{0}/bin/gunzip.gzip".format(self.native_sysroot).split()
+        known_lists = "{0}/bin/gunzip.gzip {0}/bin/zcat.gzip".format(self.native_sysroot).split()
         binary_file_to_check = None
         for bg in bin_globs:
             for f in glob.glob(bg):
