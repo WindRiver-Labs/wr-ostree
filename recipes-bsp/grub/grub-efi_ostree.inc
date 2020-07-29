@@ -34,6 +34,11 @@ do_install_append_class-target() {
     if [ "${@bb.utils.contains('DISTRO_FEATURES', 'efi-secure-boot', '1', '0', d)}" = "0" ]; then
         sed -i '/^get_efivar/,/^fi/d' "${D}${EFI_BOOT_PATH}/grub.cfg"
     fi
+
+    efi_target=`echo ${GRUB_IMAGE} | sed 's/^grub-efi-//'`
+    if [ "${@bb.utils.contains('DISTRO_FEATURES', 'efi-secure-boot', '1', '0', d)}" = "0" ]; then
+        install -m 644 ${B}/${GRUB_IMAGE_PREFIX}${GRUB_IMAGE} ${D}${EFI_BOOT_PATH}/$efi_target
+    fi
 }
 
 do_deploy_append_class-target() {
@@ -48,11 +53,6 @@ do_deploy_append_class-target() {
         fi
     fi
     install -m 0600 "${D}${EFI_BOOT_PATH}/grub.cfg" "${DEPLOYDIR}"
-    efi_target=`echo ${GRUB_IMAGE} | sed 's/^grub-efi-//'` 
-
-    if [ "${@bb.utils.contains('DISTRO_FEATURES', 'efi-secure-boot', '1', '0', d)}" = "0" ]; then
-        install -m 644 ${B}/${GRUB_IMAGE_PREFIX}${GRUB_IMAGE} ${D}${EFI_BOOT_PATH}/${efi_target}
-    fi
 }
 
 FILES_${PN} += "${EFI_BOOT_PATH}"
