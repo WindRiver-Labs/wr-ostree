@@ -70,7 +70,7 @@ class AppSDK(object):
         # Check if target_image_yaml exists
         if not os.path.exists(target_image_yaml):
             logger.error("{0} does not exists!".format(target_image_yaml))
-            exit(1)
+            sys.exit(1)
         # Compute self.deploy_dir and self.sdk_name
         if output_sdk_path:
             self.deploy_dir = os.path.dirname(os.path.abspath(output_sdk_path))
@@ -91,7 +91,7 @@ class AppSDK(object):
         ld_path = os.path.join(self.native_sysroot, 'lib/ld-linux-x86-64.so.2')
         if not os.path.exists(ld_path):
             logger.error("SDK Sanity Error: {0} does not exists!".format(ld_path))
-            exit(1)
+            sys.exit(1)
         bin_globs = "{0}/bin/* {0}/usr/bin/*".format(self.native_sysroot).split()
         known_lists = "{0}/bin/gunzip.gzip {0}/bin/zcat.gzip".format(self.native_sysroot).split()
         binary_file_to_check = None
@@ -104,14 +104,14 @@ class AppSDK(object):
                 break
         if not binary_file_to_check:
             logger.error("SDK Sanity Error: {0} does not contain any binaries under /bin and /usr/bin".format(self.native_sysroot))
-            exit(1)
+            sys.exit(1)
         logger.debug("{0} --list {1}".format(ld_path, binary_file_to_check))
         ld_list_cmd = "{0} --list {1}".format(ld_path, binary_file_to_check)
         output = subprocess.check_output(ld_list_cmd, shell=True).decode('utf-8')
         expected_line = "libc.so.6 => {0}/lib/libc.so.6".format(self.native_sysroot)
         if expected_line not in output:
             logger.error("SDK Sanity Error: {0} has relocation problem.".format(binary_file_to_check))
-            exit(1)
+            sys.exit(1)
             
         logger.info("SDK Sanity OK")
 
@@ -442,7 +442,7 @@ find {0} {1} -type f | xargs -n100 file | grep ":.*\(ASCII\|script\|source\).*te
         """
         if not os.path.exists(installdir):
             logger.error("%s does not exists!" % installdir)
-            exit(1)
+            sys.exit(1)
 
         # Copy the whole installdir to buildroot
         if os.path.exists(buildroot):
@@ -491,7 +491,7 @@ find {0} {1} -type f | xargs -n100 file | grep ":.*\(ASCII\|script\|source\).*te
         # sanity checks
         if not configfile.endswith('.spec') and not configfile.endswith('.yaml') and not configfile.endswith('.yml'):
             logger.error("%s should be a spec file or yaml file" % configfile)
-            exit(1)
+            sys.exit(1)
         
         # get package arch
         if not pkgarch:
@@ -586,10 +586,10 @@ find {0} {1} -type f | xargs -n100 file | grep ":.*\(ASCII\|script\|source\).*te
         # path verification
         if not os.path.exists(rpm):
             logger.error("%s does not exist" % rpm)
-            exit(1)
+            sys.exit(1)
         if not rpm.endswith('.rpm'):
             logger.error("%s is not RPM package" % rpm)
-            exit(1)
+            sys.exit(1)
 
         # normalize paths
         rpm = os.path.abspath(rpm)
@@ -648,7 +648,7 @@ class PackageConfig(object):
     def __init__(self, pkg_yaml):
         if not os.path.exists(pkg_yaml):
             logger.error("%s does not exist!" % pkg_yaml)
-            exit(1)
+            sys.exit(1)
 
         self.pkg_data = {}
         with open(pkg_yaml) as f:
@@ -671,7 +671,7 @@ class PackageConfig(object):
             path_yd_entry = yd_entry + '_path'
             if yd_entry in yd and path_yd_entry in yd:
                 logger.error("%s and %s both specified. Only one is allowed." % (yd_entry, path_yd_entry))
-                exit(1)
+                sys.exit(1)
             if yd_entry in yd:
                 logger.debug("add %{0} section from {1} in {2}".format(spec_entry, yd_entry, pkg_yaml))
                 self.pkg_data[spec_entry] = yd[yd_entry]
@@ -778,7 +778,7 @@ def test_appsdk():
     appsdk = AppSDK()
     if len(sys.argv) < 3:
         logger.error("appsdk.py specfile installdir [pkgarch]")
-        exit(1)
+        sys.exit(1)
     specfile = os.path.abspath(sys.argv[1])
     installdir = os.path.abspath(sys.argv[2])
     if len(sys.argv) == 4:
@@ -796,7 +796,7 @@ def test_packageconfig():
     logger.info("testing appsdk.py ...")
     if len(sys.argv) < 2:
         logger.error("appsdk.py yamlfile")
-        exit(1)
+        sys.exit(1)
     yaml_file = sys.argv[1]
     pc = PackageConfig(yaml_file)
     if len(sys.argv) == 3:
