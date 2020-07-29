@@ -122,8 +122,8 @@ class CreateFullImage(object):
                 sys.exit(1)
 
             with open(self.args.input) as f:
-                data = yaml.load(f, Loader=yaml.FullLoader)
-                logger.debug("Yaml File Contentt: %s" % data)
+                data = yaml.load(f, Loader=yaml.FullLoader) or dict()
+                logger.debug("Yaml File Content: %s" % data)
         else:
             logger.info("No Input YAML File, use default setting")
 
