@@ -61,6 +61,11 @@ def main():
     parser.add_argument('-q', '--quiet',
                         help = 'Hide all output except error messages',
                         action='store_const', const=logging.ERROR, dest='loglevel', default=logging.INFO)
+    parser.add_argument('--log-dir',
+                        default=None,
+                        dest='logdir',
+                        help='Specify dir to save debug messages as log.appsdk regardless of the logging level',
+                        action='store')
 
     subparsers = parser.add_subparsers(help='Subcommands. "%(prog)s <subcommand> --help" to get more info')
 
@@ -74,8 +79,7 @@ def main():
         parser.exit(1)
 
     args = parser.parse_args()
-    set_logger(logger)
-    logger.setLevel(args.loglevel)
+    set_logger(logger, level=args.loglevel, log_path=args.logdir)
     args.func(args)
 
 def gensdk(args):

@@ -56,6 +56,12 @@ def set_parser(parser=None):
             help = 'Hide all output except error messages',
             action='store_const', const=logging.ERROR, dest='loglevel')
 
+        parser.add_argument('--log-dir',
+            default=None,
+            dest='logdir',
+            help='Specify dir to save debug messages as log.appsdk regardless of the logging level',
+            action='store')
+
     supported_types = [
         'wic',
         'ostree-repo',
@@ -385,8 +391,7 @@ def main():
     parser = set_parser()
     parser.set_defaults(func=_main_run)
     args = parser.parse_args()
-    set_logger(logger)
-    logger.setLevel(args.loglevel)
+    set_logger(logger, level=args.loglevel, log_path=args.logdir)
     args.func(args)
 
 def set_subparser(subparsers=None):

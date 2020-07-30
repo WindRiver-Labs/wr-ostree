@@ -11,7 +11,7 @@ import re
 import yaml
 from collections import OrderedDict
 
-def set_logger(logger):
+def set_logger(logger, level=logging.DEBUG, log_path=None):
     logger.setLevel(logging.DEBUG)
 
     class ColorFormatter(logging.Formatter):
@@ -50,14 +50,34 @@ def set_logger(logger):
                 record.levelname = levelname_color
             return logging.Formatter.format(self, record)
 
-    # create console handler and set level to debug
+    # create file handler and set level to debug
+    set_logger_file(logger, log_path)
+
+    # create console handler and set level by input param
     ch = logging.StreamHandler()
-    ch.setLevel(logging.DEBUG)
+    ch.setLevel(level)
     if sys.stdout.isatty():
         ch.setFormatter(ColorFormatter())
     else:
         ch.setFormatter(ColorFormatter(use_color=False))
     logger.addHandler(ch)
+
+def set_logger_file(logger, log_path=None):
+    if log_path is None:
+        return
+
+    mkdirhier(log_path)
+    log = os.path.join(log_path, "log.appsdk_{0}".format(int(time.time())))
+    log_symlink = os.path.join(log_path, "log.appsdk")
+    if os.path.islink(log_symlink):
+        os.remove(log_symlink)
+    os.symlink(os.path.basename(log), log_symlink)
+
+    FORMAT = ("%(name)s - %(levelname)s: %(message)s")
+    fh = logging.FileHandler(log)
+    fh.setLevel(logging.DEBUG)
+    fh.setFormatter(logging.Formatter(FORMAT))
+    logger.addHandler(fh)
 
 def run_cmd(cmd, logger, shell=False, print_output=True, env=None):
     logger.debug('Running %s' % cmd)
