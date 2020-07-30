@@ -347,19 +347,21 @@ class CreateFullImage(object):
 
         ostree_repo.create()
 
+        ostree_repo.gen_env(self.data)
+
     def do_ostree_ota(self):
         workdir = os.path.join(self.workdir, self.image_name)
-        # ostree_use_ab, ostree_osname, ostree_skip_boot_diff
-        # ostree_remote_url, gpgid
-        extra_params = self.data["ostree"].copy()
-        extra_params.update({'gpgid': self.data["gpg"]['ostree']['gpgid']})
         ostree_ota = CreateOstreeOTA(
                         image_name = self.image_name,
                         workdir = workdir,
                         machine = self.machine,
                         deploydir = self.deploydir,
                         logger = logger,
-                        **extra_params)
+                        ostree_use_ab = self.data["ostree"]['ostree_use_ab'],
+                        ostree_osname = self.data["ostree"]['ostree_osname'],
+                        ostree_skip_boot_diff = self.data["ostree"]['ostree_skip_boot_diff'],
+                        ostree_remote_url = self.data["ostree"]['ostree_remote_url'],
+                        gpgid = self.data["gpg"]['ostree']['gpgid'])
 
         ostree_ota.create()
 

@@ -91,6 +91,8 @@ def get_remote_uris(feed_uris, feed_base_paths, feed_archs):
 
 DEFAULT_PACKAGE_FEED = ""
 
+IMAGE_BOOT_FILES ??= ""
+
 do_copy_src() {
     install -m 0644 ${WORKDIR}/COPYING ${S}/
     install -d ${S}/create_full_image
