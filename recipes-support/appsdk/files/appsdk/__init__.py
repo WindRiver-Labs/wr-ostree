@@ -43,7 +43,7 @@ def set_subparser(subparsers=None):
 
     parser_publishrpm = subparsers.add_parser('publishrpm', help='Publish RPM package')
     parser_publishrpm.add_argument('-r', '--repo', required=True,
-                                   help='RPM repo path')
+                                   help='Local RPM repo path')
     parser_publishrpm.add_argument('rpms', help='RPM package paths',
                                    nargs='*')
     parser_publishrpm.set_defaults(func=publishrpm)

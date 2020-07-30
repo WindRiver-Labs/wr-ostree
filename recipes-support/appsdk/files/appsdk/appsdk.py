@@ -630,6 +630,10 @@ find {0} {1} -type f | xargs -n100 file | grep ":.*\(ASCII\|script\|source\).*te
         rpms: list of RPM package paths
         """
         logger.debug("repo = %s, rpms = %s" % (repo, rpms))
+        # repo path validation
+        if repo.startswith('http:') or repo.startswith('https:'):
+            logger.error("Invalid repo path: %s. Please use a local path" % repo)
+            sys.exit(1)
         logger.info("Publish RPM repo: %s" % repo)
         #
         # Copy rpms to repo
