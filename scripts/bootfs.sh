@@ -35,7 +35,7 @@ LOCAL_REPO_DIR=""
 
 usage() {
         cat<<EOF
-usage: $0 [args]
+usage: `basename $0` [args]
 
 This command will build a small boot image which can be used for
 deployment with OSTree.
