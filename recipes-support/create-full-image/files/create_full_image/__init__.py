@@ -39,6 +39,7 @@ from create_full_image.image import CreateWicImage
 from create_full_image.image import CreateOstreeRepo
 from create_full_image.image import CreateInitramfs
 from create_full_image.image import CreateOstreeOTA
+from create_full_image.image import CreateBootfs
 
 import create_full_image.utils as utils
 
@@ -66,6 +67,7 @@ def set_parser(parser=None):
         'wic',
         'ostree-repo',
         'container',
+        'ustart',
         'all',
     ]
 
@@ -135,6 +137,7 @@ class CreateFullImage(object):
 
         self.image_name = data['name'] if 'name' in data else DEFAULT_IMAGE
         self.machine = data['machine'] if 'machine' in data else DEFAULT_MACHINE
+        self.image_type = data['image_type'] if 'image_type' in data else ['all']
         self.packages = DEFAULT_PACKAGES[self.machine]
         if 'packages' in data:
             self.packages += data['packages']
@@ -179,10 +182,11 @@ class CreateFullImage(object):
         if self.args.name:
             self.image_name = self.args.name
 
-        if self.args.type and 'all' not in self.args.type:
+        if self.args.type:
             self.image_type = self.args.type
-        else:
-            self.image_type = ['ostree-repo', 'wic', 'container']
+
+        if 'all' in self.image_type:
+            self.image_type = ['ostree-repo', 'wic', 'container', 'ustart']
 
         # Cleanup all generated rootfs dir by default
         if not self.args.no_clean:
@@ -296,6 +300,7 @@ class CreateFullImage(object):
         data = self.data
         data['name'] = self.image_name
         data['machine'] = self.machine
+        data['image_type'] = self.image_type
         data['features'] = self.image_features
         data['package_feeds'] = self.pkg_feeds
         data['packages'] = list(installed_dict.keys())
@@ -332,26 +337,26 @@ class CreateFullImage(object):
     def do_image_container(self):
         workdir = os.path.join(self.workdir, self.image_name)
         container = CreateContainer(
-                        image_name = self.image_name,
-                        workdir = workdir,
-                        machine = self.machine,
-                        target_rootfs = self.target_rootfs,
-                        deploydir = self.deploydir,
-                        logger = logger)
+                        image_name=self.image_name,
+                        workdir=workdir,
+                        machine=self.machine,
+                        target_rootfs=self.target_rootfs,
+                        deploydir=self.deploydir,
+                        logger=logger)
         container.create()
 
     def do_ostree_repo(self):
         workdir = os.path.join(self.workdir, self.image_name)
         ostree_repo = CreateOstreeRepo(
-                        image_name = self.image_name,
-                        workdir = workdir,
-                        machine = self.machine,
-                        target_rootfs = self.target_rootfs,
-                        deploydir = self.deploydir,
-                        logger = logger,
-                        gpg_path = self.data['gpg']['gpg_path'],
-                        gpgid = self.data['gpg']['ostree']['gpgid'],
-                        gpg_password = self.data['gpg']['ostree']['gpg_password'])
+                        image_name=self.image_name,
+                        workdir=workdir,
+                        machine=self.machine,
+                        target_rootfs=self.target_rootfs,
+                        deploydir=self.deploydir,
+                        logger=logger,
+                        gpg_path=self.data['gpg']['gpg_path'],
+                        gpgid=self.data['gpg']['ostree']['gpgid'],
+                        gpg_password=self.data['gpg']['ostree']['gpg_password'])
 
         ostree_repo.create()
 
@@ -360,18 +365,28 @@ class CreateFullImage(object):
     def do_ostree_ota(self):
         workdir = os.path.join(self.workdir, self.image_name)
         ostree_ota = CreateOstreeOTA(
-                        image_name = self.image_name,
-                        workdir = workdir,
-                        machine = self.machine,
-                        deploydir = self.deploydir,
-                        logger = logger,
-                        ostree_use_ab = self.data["ostree"]['ostree_use_ab'],
-                        ostree_osname = self.data["ostree"]['ostree_osname'],
-                        ostree_skip_boot_diff = self.data["ostree"]['ostree_skip_boot_diff'],
-                        ostree_remote_url = self.data["ostree"]['ostree_remote_url'],
-                        gpgid = self.data["gpg"]['ostree']['gpgid'])
+                        image_name=self.image_name,
+                        workdir=workdir,
+                        machine=self.machine,
+                        deploydir=self.deploydir,
+                        logger=logger,
+                        ostree_use_ab=self.data["ostree"]['ostree_use_ab'],
+                        ostree_osname=self.data["ostree"]['ostree_osname'],
+                        ostree_skip_boot_diff=self.data["ostree"]['ostree_skip_boot_diff'],
+                        ostree_remote_url=self.data["ostree"]['ostree_remote_url'],
+                        gpgid=self.data["gpg"]['ostree']['gpgid'])
 
         ostree_ota.create()
+
+    def do_ustart_img(self):
+        workdir = os.path.join(self.workdir, self.image_name)
+        ustart = CreateBootfs(
+                        image_name=self.image_name,
+                        workdir=workdir,
+                        machine=self.machine,
+                        deploydir=self.deploydir,
+                        logger=logger)
+        ustart.create()
 
 
 def _main_run(args):
@@ -387,7 +402,7 @@ def _main_run(args):
     create.do_ostree_initramfs()
 
     # WIC image requires ostress repo
-    if any(img_type in create.image_type for img_type in ["ostree-repo", "wic"]):
+    if any(img_type in create.image_type for img_type in ["ostree-repo", "wic", "ustart"]):
         create.do_ostree_repo()
 
     if "wic" in create.image_type:
@@ -396,6 +411,9 @@ def _main_run(args):
 
     if "container" in create.image_type:
         create.do_image_container()
+
+    if "ustart" in create.image_type:
+        create.do_ustart_img()
 
 def main():
     parser = set_parser()

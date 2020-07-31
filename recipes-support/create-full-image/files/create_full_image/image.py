@@ -198,9 +198,9 @@ class CreateOstreeRepo(Image):
             'BOOT_GPG_PASSPHRASE': data['gpg']['grub']['BOOT_GPG_PASSPHRASE'],
             'BOOT_KEYS_DIR': data['gpg']['grub']['BOOT_KEYS_DIR'],
         }
-        env_file = os.path.join(self.deploydir, '{0}.env'.format(self.image_name))
+        env_file = os.path.join(self.deploydir, '{0}-{1}.env'.format(self.image_name, self.machine))
         with open(env_file, 'w') as f:
-            f.writelines('{}={}\n'.format(k,v) for k, v in env.items())
+            f.writelines('{}="{}"\n'.format(k,v) for k, v in env.items())
 
 class CreateOstreeOTA(Image):
     def _set_allow_keys(self):
@@ -233,6 +233,47 @@ class CreateOstreeOTA(Image):
                                % (cmd, res, output))
             raise Exception("Executing %s failed\nExit code %d. Output:\n%s"
                                % (cmd, res, output))
+
+
+class CreateBootfs(Image):
+    def _set_allow_keys(self):
+        self.allowed_keys.remove('target_rootfs')
+
+    def _add_keys(self):
+        self.date = utils.get_today()
+        self.image_fullname = "%s-%s-%s" % (self.image_name, self.machine, self.date)
+        self.image_linkname =  "%s-%s" % (self.image_name, self.machine)
+
+    def create(self):
+        self.logger.info("Create Ustart Image")
+
+        cmd = os.path.expandvars("$OECORE_NATIVE_SYSROOT/usr/bin/bootfs.sh")
+        cmd = "{0} -L -a instdate=BUILD_DATE -s 0 -e {1}/{2}-{3}.env".format(cmd, self.deploydir, self.image_name, self.machine)
+        res, output = utils.run_cmd(cmd, self.logger, shell=True, cwd=self.workdir)
+        if res:
+            self.logger.error("Executing %s failed\nExit code %d. Output:\n%s"
+                               % (cmd, res, output))
+            raise Exception("Executing %s failed\nExit code %d. Output:\n%s"
+                               % (cmd, res, output))
+
+        self._rename_and_symlink()
+
+    def _rename_and_symlink(self):
+        for suffix in ["ustart.img.gz", "ustart.img.bmap"]:
+            old = os.path.join(self.workdir, suffix)
+            new = os.path.join(self.deploydir, "{0}.{1}".format(self.image_fullname, suffix))
+            self.logger.debug("Rename: %s -> %s" % (old, new))
+            os.rename(old, new)
+
+            dst = os.path.join(self.deploydir, "{0}.{1}".format(self.image_linkname, suffix))
+            src = os.path.join(self.deploydir, "{0}.{1}".format(self.image_fullname, suffix))
+            if os.path.exists(src):
+                self.logger.debug("Creating symlink: %s -> %s" % (dst, src))
+                if os.path.islink(dst):
+                    os.remove(dst)
+                os.symlink(os.path.basename(src), dst)
+            else:
+                self.logger.error("Skipping symlink, source does not exist: %s -> %s" % (dst, src))
 
 
 def test():
