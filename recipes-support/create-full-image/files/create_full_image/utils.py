@@ -79,7 +79,7 @@ def set_logger_file(logger, log_path=None):
     fh.setFormatter(logging.Formatter(FORMAT))
     logger.addHandler(fh)
 
-def run_cmd(cmd, logger, shell=False, print_output=True, env=None):
+def run_cmd(cmd, logger, shell=False, print_output=True, env=None, cwd=None):
     logger.debug('Running %s' % cmd)
     if env is None:
         env = os.environ
@@ -89,6 +89,7 @@ def run_cmd(cmd, logger, shell=False, print_output=True, env=None):
                                stdout=subprocess.PIPE,
                                stderr=subprocess.STDOUT,
                                shell=shell,
+                               cwd=cwd,
                                universal_newlines=True, env=env)
     while True:
         output = process.stdout.readline()
@@ -103,16 +104,17 @@ def run_cmd(cmd, logger, shell=False, print_output=True, env=None):
     logger.debug("rc %d" % rc)
     return rc, outputs
 
-def run_cmd_oneshot(cmd, logger, shell=True, print_output=False):
-    res, output = run_cmd(cmd, logger, shell, print_output)
+def run_cmd_oneshot(cmd, logger, shell=True, print_output=False, cwd=None):
+    res, output = run_cmd(cmd, logger, shell, print_output, cwd=cwd)
     if res:
         logger.error("Executing %s failed\nExit code %d. Output:\n%s"
                            % (cmd, res, output))
         raise Exception("Executing %s failed\nExit code %d. Output:\n%s"
                            % (cmd, res, output))
 
+day_time = time.strftime("%Y%m%d%H%M%S")
 def get_today():
-    return time.strftime("%Y%m%d%H%M%S")
+    return day_time
 
 def ordered_dump(data, stream=None, Dumper=yaml.Dumper, **kwds):
     class OrderedDumper(Dumper):
