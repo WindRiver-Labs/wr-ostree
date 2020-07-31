@@ -40,6 +40,7 @@ SRC_URI = "\
            file://create_full_image/image.py \
            file://create_full_image/container.py \
            file://create_full_image/data/pre_rootfs/create_merged_usr_symlinks.sh \
+           file://create_full_image/data/post_rootfs/add_gpg_key.sh \
            file://create_full_image/scripts/run.do_image_ostree \
            file://create_full_image/scripts/run.do_image_otaimg \
            file://create_full_image/scripts/run.do_image_wic \

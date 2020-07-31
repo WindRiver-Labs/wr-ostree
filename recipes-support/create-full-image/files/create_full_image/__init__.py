@@ -270,6 +270,10 @@ class CreateFullImage(object):
                         OSTREE_INITRD_PACKAGES,
                         logger)
 
+        script_cmd = os.path.join(self.data_dir, 'post_rootfs', 'add_gpg_key.sh')
+        script_cmd = "{0} {1} {2}".format(script_cmd, rootfs.target_rootfs, self.data['gpg']['gpg_path'])
+        rootfs.add_rootfs_post_scripts(script_cmd)
+
         rootfs.create()
 
         rootfs.image_list_installed_packages()
@@ -282,7 +286,6 @@ class CreateFullImage(object):
                         deploydir = self.deploydir,
                         logger = logger)
         initrd.create()
-
 
     def _save_output_yaml(self, installed_dict):
         data = self.data

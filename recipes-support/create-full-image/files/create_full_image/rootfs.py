@@ -38,24 +38,26 @@ class Rootfs(object):
 
         utils.fake_root_set_passwd(self.logger, self.target_rootfs)
 
+        self.rootfs_pre_scripts = [os.path.join(self.data_dir, 'pre_rootfs', 'create_merged_usr_symlinks.sh')]
+        self.rootfs_post_scripts = []
+
+    def add_rootfs_post_scripts(self, script_cmd=None):
+        if script_cmd is None:
+            return
+        self.rootfs_post_scripts.append(script_cmd)
+
+    def add_rootfs_pre_scripts(self, script_cmd=None):
+        if script_cmd is None:
+            return
+        self.rootfs_pre_scripts.append(script_cmd)
+
     def _pre_rootfs(self):
         os.environ['IMAGE_ROOTFS'] = self.pm.target_rootfs
         os.environ['libexecdir'] = '/usr/libexec'
 
-        pre_rootfs_dir = os.path.join(self.data_dir, 'pre_rootfs')
-        if not os.path.exists(pre_rootfs_dir):
-            return
-
-        self.logger.debug("pre_rootfs_dir %s" % pre_rootfs_dir)
-        for script in os.listdir(pre_rootfs_dir):
-            script_full = os.path.join(pre_rootfs_dir, script)
-            self.logger.debug("script %s" % script_full)
-            if not os.access(script_full, os.X_OK):
-                self.logger.debug("not script %s" % script_full)
-                continue
-
-            self.logger.debug("> Executing %s preprocess rootfs..." % script)
-            res, output = utils.run_cmd(script_full, self.logger)
+        for script in self.rootfs_pre_scripts:
+            self.logger.debug("Executing '%s' preprocess rootfs..." % script)
+            res, output = utils.run_cmd(script, self.logger, shell=True)
             if res:
                 self.logger.error("Executing %s preprocess rootfs failed\nExit code %d. Output:\n%s"
                                    % (script, res, output))
@@ -63,17 +65,9 @@ class Rootfs(object):
                                    % (script, res, output))
 
     def _post_rootfs(self):
-        post_rootfs_dir = os.path.join(self.data_dir, 'post_rootfs')
-        if not os.path.exists(post_rootfs_dir):
-            return
-
-        for script in os.listdir(post_rootfs_dir):
-            script_full = os.path.join(post_rootfs_dir, script)
-            if not os.access(script_full, os.X_OK):
-                continue
-
-            self.logger.debug("> Executing %s postprocess rootfs..." % script)
-            res, output = utils.run_cmd(script_full, self.logger)
+        for script in self.rootfs_post_scripts:
+            self.logger.debug("Executing '%s' postprocess rootfs..." % script)
+            res, output = utils.run_cmd(script, self.logger, shell=True)
             if res:
                 self.logger.error("Executing %s postprocess rootfs failed\nExit code %d. Output:\n%s"
                                    % (script, res, output))
