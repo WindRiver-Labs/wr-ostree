@@ -247,6 +247,11 @@ class CreateFullImage(object):
             for files in ["boot/bzImage*", "boot/efi/EFI/BOOT/*"]:
                 cmd = "cp -rf {0}/{1} {2}".format(self.target_rootfs, files, self.deploydir)
                 utils.run_cmd_oneshot(cmd, logger)
+
+                cmd = "ln -snf -r {0} {1}".format(os.path.join(self.deploydir, "bootx64.efi"),
+                                                  os.path.join(self.deploydir, "grub-efi-bootx64.efi"))
+                utils.run_cmd_oneshot(cmd, logger)
+
         else:
             cmd = "cp -rf {0}/boot/* {1}".format(self.target_rootfs, self.deploydir)
             utils.run_cmd_oneshot(cmd, logger)
