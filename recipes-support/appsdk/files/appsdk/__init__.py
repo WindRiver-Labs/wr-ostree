@@ -19,8 +19,8 @@ def set_subparser(subparsers=None):
 
     parser_gensdk = subparsers.add_parser('gensdk', help='Generate a new SDK')
     parser_gensdk.add_argument('-f', '--file',
-                               help='An input yaml file specifying image information. Default to image.yaml in current directory',
-                               default='image.yaml')
+                               help='An input yaml file specifying image information.',
+                               required=True)
     parser_gensdk.add_argument('-o', '--output',
                                help='The path of the generated SDK. Default to deploy/AppSDK.sh in current directory',
                                default='deploy/AppSDK.sh')

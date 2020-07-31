@@ -9,6 +9,7 @@ import re
 import glob
 import logging
 import yaml
+import tempfile
 
 from create_full_image.utils import set_logger
 from create_full_image.utils import run_cmd
@@ -128,7 +129,10 @@ class AppSDK(object):
 
         # parse yaml file to get the list of packages to be installed
         with open(target_packages_yaml) as f:
-            data = yaml.load(f, Loader=yaml.FullLoader) or dict()
+            data = yaml.load(f, Loader=yaml.FullLoader)
+            if not data:
+                logger.warning("Empty input file: %s, using the default settings" % target_packages_yaml)
+                data = {}
             self.image_name = data['name'] if 'name' in data else DEFAULT_IMAGE
             self.machine = data['machine'] if 'machine' in data else DEFAULT_MACHINE
             self.packages = DEFAULT_PACKAGES[self.machine]
@@ -139,7 +143,17 @@ class AppSDK(object):
 
         # qemuwrapper-cross is always needed
         self.packages.append('qemuwrapper-cross')
-            
+
+        # dump default values and show user
+        if not data:
+            with tempfile.NamedTemporaryFile(prefix='appsdk-gensdk-default-', suffix='.yaml', delete=False, mode='w') as tf:
+                yaml.dump({'name': self.image_name,
+                           'machine': self.machine,
+                           'package_feeds': self.pkg_feeds,
+                           'features': self.image_features,
+                           'packages': self.packages}, tf)
+                logger.warning("Please check %s for default settings." % tf.name)
+        
         # prepare pseudo environment
         utils.fake_root(logger)
         
