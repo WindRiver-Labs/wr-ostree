@@ -45,7 +45,6 @@ class CreateInitramfs(Image):
         self.image_linkname =  "%s-%s" % (self.image_name, self.machine)
 
     def create(self):
-        self.logger.info("Create Initramfs")
         self._create_cpio_gz()
         if self.machine == "bcm-2xxx-rpi4":
             self._create_uboot()
@@ -117,8 +116,6 @@ class CreateWicImage(Image):
             self.wks_full_path = self.wks_file
 
     def create(self):
-        self.logger.info("Create Wic Image")
-
         self._write_wks_template()
 
         wic_env = os.environ.copy()
@@ -156,7 +153,6 @@ class CreateOstreeRepo(Image):
         self.allowed_keys.update({"gpgid", "gpg_password", "gpg_path"})
 
     def create(self):
-        self.logger.info("Create Ostree Repo")
         ostreerepo_env = os.environ.copy()
         ostreerepo_env['IMAGE_ROOTFS'] = self.target_rootfs
         ostreerepo_env['DEPLOY_DIR_IMAGE'] = self.deploydir
@@ -213,7 +209,6 @@ class CreateOstreeOTA(Image):
                                  })
 
     def create(self):
-        self.logger.info("Create Ostree OTA")
         ota_env = os.environ.copy()
         ota_env['DEPLOY_DIR_IMAGE'] = self.deploydir
         ota_env['WORKDIR'] = self.workdir
@@ -245,8 +240,6 @@ class CreateBootfs(Image):
         self.image_linkname =  "%s-%s" % (self.image_name, self.machine)
 
     def create(self):
-        self.logger.info("Create Ustart Image")
-
         cmd = os.path.expandvars("$OECORE_NATIVE_SYSROOT/usr/bin/bootfs.sh")
         cmd = "{0} -L -a instdate=BUILD_DATE -s 0 -e {1}/{2}-{3}.env".format(cmd, self.deploydir, self.image_name, self.machine)
         res, output = utils.run_cmd(cmd, self.logger, shell=True, cwd=self.workdir)

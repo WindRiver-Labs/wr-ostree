@@ -24,6 +24,7 @@ import shutil
 import atexit
 import yaml
 from collections import OrderedDict
+import time
 
 from create_full_image.utils import set_logger
 from create_full_image.utils import get_today
@@ -222,6 +223,9 @@ class CreateFullImage(object):
             self.data["wic"] = constant.DEFAULT_WIC_DATA
 
     def do_rootfs(self):
+        logger.info("Create Rootfs: Started")
+        start_time = time.time()
+
         workdir = os.path.join(self.workdir, self.image_name)
         pkg_globs = self.image_features.get("pkg_globs", None)
 
@@ -260,6 +264,8 @@ class CreateFullImage(object):
             cmd = "cp -rf {0}/boot/* {1}".format(self.target_rootfs, self.deploydir)
             utils.run_cmd_oneshot(cmd, logger)
 
+        logger.info("Create Rootfs: Succeeded(took %d seconds)", time.time()-start_time)
+
     def do_ostree_initramfs(self):
         # If the Initramfs exists, reuse it
         image_name = "{0}-{1}.cpio.gz".format(self.ostree_initramfs_name, self.machine)
@@ -269,6 +275,9 @@ class CreateFullImage(object):
         if os.path.islink(image_link) and os.path.exists(os.path.realpath(image_link)):
             logger.info("Reuse existed Initramfs")
             return
+
+        logger.info("Create Initramfs: Started")
+        start_time = time.time()
 
         workdir = os.path.join(self.workdir, self.ostree_initramfs_name)
 
@@ -296,6 +305,8 @@ class CreateFullImage(object):
                         logger = logger)
         initrd.create()
 
+        logger.info("Create Initramfs: Succeeded(took %d seconds)", time.time()-start_time)
+
     def _save_output_yaml(self, installed_dict):
         data = self.data
         data['name'] = self.image_name
@@ -309,6 +320,9 @@ class CreateFullImage(object):
             logger.debug("Save Yaml FIle to : %s" % (self.output_yaml))
 
     def do_image_wic(self):
+        logger.info("Create Wic Image: Started")
+        start_time = time.time()
+
         workdir = os.path.join(self.workdir, self.image_name)
         ostree_use_ab = self.data["ostree"].get("ostree_use_ab", '1')
         wks_file = utils.get_ostree_wks(ostree_use_ab, self.machine)
@@ -333,8 +347,12 @@ class CreateFullImage(object):
         image_wic.set_wks_in_environ(**env)
 
         image_wic.create()
+        logger.info("Create Wic Image: Succeeded(took %d seconds)", time.time()-start_time)
 
     def do_image_container(self):
+        logger.info("Create Docker Container: Started")
+        start_time = time.time()
+
         workdir = os.path.join(self.workdir, self.image_name)
         container = CreateContainer(
                         image_name=self.image_name,
@@ -344,8 +362,12 @@ class CreateFullImage(object):
                         deploydir=self.deploydir,
                         logger=logger)
         container.create()
+        logger.info("Create Docker Container: Succeeded(took %d seconds)", time.time()-start_time)
 
     def do_ostree_repo(self):
+        logger.info("Create Ostree Repo: Started")
+        start_time = time.time()
+
         workdir = os.path.join(self.workdir, self.image_name)
         ostree_repo = CreateOstreeRepo(
                         image_name=self.image_name,
@@ -361,8 +383,12 @@ class CreateFullImage(object):
         ostree_repo.create()
 
         ostree_repo.gen_env(self.data)
+        logger.info("Create Ostree Repo: Succeeded(took %d seconds)", time.time()-start_time)
 
     def do_ostree_ota(self):
+        logger.info("Create Ostree OTA: Started")
+        start_time = time.time()
+
         workdir = os.path.join(self.workdir, self.image_name)
         ostree_ota = CreateOstreeOTA(
                         image_name=self.image_name,
@@ -377,8 +403,12 @@ class CreateFullImage(object):
                         gpgid=self.data["gpg"]['ostree']['gpgid'])
 
         ostree_ota.create()
+        logger.info("Create Ostree OTA: Succeeded(took %d seconds)", time.time()-start_time)
 
     def do_ustart_img(self):
+        logger.info("Create Ustart Image: Started")
+        start_time = time.time()
+
         workdir = os.path.join(self.workdir, self.image_name)
         ustart = CreateBootfs(
                         image_name=self.image_name,
@@ -387,7 +417,7 @@ class CreateFullImage(object):
                         deploydir=self.deploydir,
                         logger=logger)
         ustart.create()
-
+        logger.info("Create Ustart Image: Succeeded(took %d seconds)", time.time()-start_time)
 
 def _main_run(args):
     create = CreateFullImage(args)
