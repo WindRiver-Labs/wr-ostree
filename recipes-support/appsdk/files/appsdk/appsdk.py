@@ -671,6 +671,19 @@ class PackageConfig(object):
         self.pkg_data = {}
         with open(pkg_yaml) as f:
             yd = yaml.load(f, Loader=yaml.FullLoader)
+
+        #
+        # sanity check for yaml file
+        #
+        # name, version, release, summary, license must be present.
+        if not yd:
+            logger.error("%s must not be empty" % pkg_yaml)
+            sys.exit(1)
+        for entry_must in ['name', 'version', 'release', 'summary', 'license']:
+            if entry_must not in yd:
+                logger.error("'%s' must be specified in %s" % (entry_must, pkg_yaml))
+                sys.exit(1)
+        
         self.pkg_data['Name'] = yd['name']
         self.pkg_data['Version'] = yd['version']
         self.pkg_data['Release'] = yd['release']
