@@ -96,6 +96,10 @@ DEFAULT_OSTREE_DATA = {
   'OSTREE_CONSOLE': '${OSTREE_CONSOLE}',
 }
 
+EXTRA_IMAGE_BOOT_FILES = {
+    'intel-x86-64': '',
+    'bcm-2xxx-rpi4': 'initramfs-ostree-image-bcm-2xxx-rpi4.cpio.gz.u-boot;initramfs',
+}
 IMAGE_BOOT_FILES = "${IMAGE_BOOT_FILES}"
 
 DEFAULT_WIC_DATA = {

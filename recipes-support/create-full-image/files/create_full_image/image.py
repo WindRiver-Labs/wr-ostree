@@ -192,7 +192,7 @@ class CreateOstreeRepo(Image):
             'OSTREE_FDISK_RSZ': data['ostree']['OSTREE_FDISK_RSZ'],
             'OSTREE_FDISK_VSZ': data['ostree']['OSTREE_FDISK_VSZ'],
             'OSTREE_CONSOLE': data['ostree']['OSTREE_CONSOLE'],
-            'IMAGE_BOOT_FILES': constant.IMAGE_BOOT_FILES,
+            'IMAGE_BOOT_FILES': '{0} {1}'.format(constant.IMAGE_BOOT_FILES, constant.EXTRA_IMAGE_BOOT_FILES[self.machine]),
             'IMAGE_BASENAME': self.image_name,
             'BOOT_GPG_NAME': data['gpg']['grub']['BOOT_GPG_NAME'],
             'BOOT_GPG_PASSPHRASE': data['gpg']['grub']['BOOT_GPG_PASSPHRASE'],
