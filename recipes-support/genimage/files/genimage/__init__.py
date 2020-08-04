@@ -159,7 +159,7 @@ class CreateFullImage(object):
         self.outdir = self.args.outdir
         self.workdir = os.path.join(self.args.workdir, "workdir")
 
-        utils.fake_root(logger, workdir=self.workdir)
+        utils.fake_root(workdir=self.workdir)
         self.deploydir = os.path.join(self.outdir, "deploy")
         self.output_yaml = os.path.join(self.deploydir, "%s-%s.yaml" % (self.image_name, self.machine))
 
@@ -193,7 +193,7 @@ class CreateFullImage(object):
         # Cleanup all generated rootfs dir by default
         if not self.args.no_clean:
             cmd = "rm -rf {0}/*/rootfs*".format(self.workdir)
-            atexit.register(utils.run_cmd_oneshot, cmd=cmd, logger=logger)
+            atexit.register(utils.run_cmd_oneshot, cmd=cmd)
 
         if "gpg" not in self.data:
             self.data["gpg"] = constant.DEFAULT_GPG_DATA
@@ -215,7 +215,7 @@ class CreateFullImage(object):
 
     def do_prepare(self):
         gpg_data = self.data["gpg"]
-        utils.check_gpg_keys(gpg_data, logger)
+        utils.check_gpg_keys(gpg_data)
 
         if "ostree" not in self.data:
             self.data["ostree"] = constant.DEFAULT_OSTREE_DATA
@@ -253,15 +253,15 @@ class CreateFullImage(object):
         if self.machine == "intel-x86-64":
             for files in ["boot/bzImage*", "boot/efi/EFI/BOOT/*"]:
                 cmd = "cp -rf {0}/{1} {2}".format(self.target_rootfs, files, self.deploydir)
-                utils.run_cmd_oneshot(cmd, logger)
+                utils.run_cmd_oneshot(cmd)
 
                 cmd = "ln -snf -r {0} {1}".format(os.path.join(self.deploydir, "bootx64.efi"),
                                                   os.path.join(self.deploydir, "grub-efi-bootx64.efi"))
-                utils.run_cmd_oneshot(cmd, logger)
+                utils.run_cmd_oneshot(cmd)
 
         else:
             cmd = "cp -rf {0}/boot/* {1}".format(self.target_rootfs, self.deploydir)
-            utils.run_cmd_oneshot(cmd, logger)
+            utils.run_cmd_oneshot(cmd)
 
     @show_task_info("Create Initramfs")
     def do_ostree_initramfs(self):

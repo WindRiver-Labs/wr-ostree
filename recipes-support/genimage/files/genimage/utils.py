@@ -81,7 +81,7 @@ def set_logger_file(logger, log_path=None):
     fh.setFormatter(logging.Formatter(FORMAT))
     logger.addHandler(fh)
 
-def run_cmd(cmd, logger, shell=False, print_output=True, env=None, cwd=None):
+def run_cmd(cmd, shell=False, print_output=True, env=None, cwd=None):
     logger.debug('Running %s' % cmd)
     if env is None:
         env = os.environ
@@ -106,8 +106,8 @@ def run_cmd(cmd, logger, shell=False, print_output=True, env=None, cwd=None):
     logger.debug("rc %d" % rc)
     return rc, outputs
 
-def run_cmd_oneshot(cmd, logger, shell=True, print_output=False, cwd=None):
-    res, output = run_cmd(cmd, logger, shell, print_output, cwd=cwd)
+def run_cmd_oneshot(cmd, shell=True, print_output=False, cwd=None):
+    res, output = run_cmd(cmd, shell, print_output, cwd=cwd)
     if res:
         logger.error("Executing %s failed\nExit code %d. Output:\n%s"
                            % (cmd, res, output))
@@ -128,7 +128,7 @@ def ordered_dump(data, stream=None, Dumper=yaml.Dumper, **kwds):
     OrderedDumper.add_representer(OrderedDict, _dict_representer)
     return yaml.dump(data, stream, OrderedDumper, **kwds)
 
-def fake_root(logger, workdir = os.path.join(os.getcwd(),"workdir")):
+def fake_root(workdir = os.path.join(os.getcwd(),"workdir")):
     if os.getuid() == 0:
         raise Exception("Do not use appsdk as root.")
 
@@ -139,7 +139,7 @@ def fake_root(logger, workdir = os.path.join(os.getcwd(),"workdir")):
     os.environ['LD_PRELOAD'] = os.path.join(native_sysroot, 'usr/lib/pseudo/lib64/libpseudo.so')
     os.environ['LC_ALL'] = "en_US.UTF-8"
 
-def fake_root_set_passwd(logger, rootfs=None):
+def fake_root_set_passwd(rootfs=None):
     if rootfs is None:
         raise Exception("fake_root_set_passwd rootfs is None")
     os.environ['PSEUDO_PASSWD'] = rootfs
@@ -192,7 +192,7 @@ def _check_unsafe_delete_path(path):
         return True
     return False
 
-def copyfile(src, dest, logger, newmtime = None, sstat = None):
+def copyfile(src, dest, newmtime = None, sstat = None):
     """
     Copies a file from src to dest, preserving all permissions and
     attributes; mtime will be preserved even when moving across
@@ -312,10 +312,10 @@ def format_pkg_list(pkg_dict, ret_format=None):
 
     return output_str
 
-def check_gpg_keys(gpg_data, logger):
+def check_gpg_keys(gpg_data):
     gpg_path = os.path.expandvars(gpg_data['gpg_path'])
     if not os.path.isdir(gpg_path):
-        run_cmd_oneshot("mkdir -m 0700 -p %s" % gpg_path, logger)
+        run_cmd_oneshot("mkdir -m 0700 -p %s" % gpg_path)
 
     # The feature is supposed to be "ostree, rpm, boot, ima"
     for feature in ['ostree']:
@@ -324,14 +324,14 @@ def check_gpg_keys(gpg_data, logger):
         gpg_password = gpg_data[feature]['gpg_password']
 
         cmd = "gpg --homedir {0} --list-keys {1}".format(gpg_path, gpgid)
-        res, output = run_cmd(cmd, logger, shell=True)
+        res, output = run_cmd(cmd, shell=True)
         if not res:
             continue
 
         cmd = "gpg --batch --homedir {0} --passphrase {1} --import {2}".format(gpg_path, gpg_password, gpgkey)
-        res, output = run_cmd(cmd, logger, shell=True)
+        res, output = run_cmd(cmd, shell=True)
         if res:
-            run_cmd_oneshot(cmd, logger)
+            run_cmd_oneshot(cmd)
 
 def get_ostree_wks(ostree_use_ab="1", machine="intel-x86-64"):
     ostree_ab_wks = "ab" if ostree_use_ab=="1" else "noab"

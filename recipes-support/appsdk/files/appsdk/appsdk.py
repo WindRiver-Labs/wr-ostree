@@ -155,7 +155,7 @@ class AppSDK(object):
                 logger.warning("Please check %s for default settings." % tf.name)
         
         # prepare pseudo environment
-        utils.fake_root(logger)
+        utils.fake_root()
         
         # install packages into target sysroot dir
         rootfs = Rootfs(self.sdk_output,
@@ -499,7 +499,7 @@ find {0} {1} -type f | xargs -n100 file | grep ":.*\(ASCII\|script\|source\).*te
         If configfile is a spec file, use it directly. If the config file a yaml file, construct spec file and use it.
         The generated rpm is put in rpmdir (default to $target_sdk_dir/deploy/rpms)
         """
-        utils.fake_root(logger)
+        utils.fake_root()
         logger.info("Building rpm from {0} according to {1} ...".format(installdir, configfile))
 
         # sanity checks
@@ -817,7 +817,7 @@ def test_appsdk():
     else:
         pkgarch = None
     # prepare fakeroot env
-    utils.fake_root(logger)
+    utils.fake_root()
     appsdk.buildrpm(specfile, installdir, pkgarch = pkgarch)
     logger.info("Done")
 

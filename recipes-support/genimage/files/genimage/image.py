@@ -53,19 +53,19 @@ class CreateInitramfs(Image):
     def _create_uboot(self):
         cmd = "cd %s && mkimage -A arm64 -O linux -T ramdisk -C none -n %s -d %s.rootfs.cpio.gz %s.rootfs.cpio.gz.u-boot" % \
              (self.deploydir, self.image_fullname, self.image_fullname, self.image_fullname)
-        utils.run_cmd_oneshot(cmd, self.logger)
+        utils.run_cmd_oneshot(cmd)
 
         cmd = "rm %s/%s.rootfs.cpio.gz" % (self.deploydir, self.image_fullname)
-        utils.run_cmd_oneshot(cmd, self.logger)
+        utils.run_cmd_oneshot(cmd)
 
     def _create_cpio_gz(self):
         cmd = "cd %s && find . | sort | cpio --reproducible -o -H newc > %s/%s.rootfs.cpio" % \
              (self.target_rootfs, self.deploydir, self.image_fullname)
-        utils.run_cmd_oneshot(cmd, self.logger)
+        utils.run_cmd_oneshot(cmd)
 
         cmd = "cd %s && gzip -f -9 -n -c --rsyncable %s.rootfs.cpio > %s.rootfs.cpio.gz && rm %s.rootfs.cpio" % \
             (self.deploydir, self.image_fullname, self.image_fullname, self.image_fullname)
-        utils.run_cmd_oneshot(cmd, self.logger)
+        utils.run_cmd_oneshot(cmd)
 
     def _create_symlinks(self):
         dst = os.path.join(self.deploydir, self.image_linkname + ".cpio.gz")
@@ -127,7 +127,7 @@ class CreateWicImage(Image):
         wic_env['WKS_FILE'] = self.wks_full_path
         wic_env['DATETIME'] = self.date
         cmd = os.path.join(wic_env['OECORE_NATIVE_SYSROOT'], "usr/share/genimage/scripts/run.do_image_wic")
-        res, output = utils.run_cmd(cmd, self.logger, env=wic_env)
+        res, output = utils.run_cmd(cmd, env=wic_env)
         if res:
             self.logger.error("Executing %s failed\nExit code %d. Output:\n%s"
                                % (cmd, res, output))
@@ -165,7 +165,7 @@ class CreateOstreeRepo(Image):
         ostreerepo_env['GPGPATH'] = self.gpg_path
 
         cmd = os.path.expandvars("$OECORE_NATIVE_SYSROOT/usr/share/genimage/scripts/run.do_image_ostree")
-        res, output = utils.run_cmd(cmd, self.logger, env=ostreerepo_env)
+        res, output = utils.run_cmd(cmd, env=ostreerepo_env)
         if res:
             self.logger.error("Executing %s failed\nExit code %d. Output:\n%s"
                                % (cmd, res, output))
@@ -222,7 +222,7 @@ class CreateOstreeOTA(Image):
         ota_env['OSTREE_REMOTE_URL'] = self.ostree_remote_url
 
         cmd = os.path.expandvars("$OECORE_NATIVE_SYSROOT/usr/share/genimage/scripts/run.do_image_otaimg")
-        res, output = utils.run_cmd(cmd, self.logger, env=ota_env)
+        res, output = utils.run_cmd(cmd, env=ota_env)
         if res:
             self.logger.error("Executing %s failed\nExit code %d. Output:\n%s"
                                % (cmd, res, output))
@@ -242,7 +242,7 @@ class CreateBootfs(Image):
     def create(self):
         cmd = os.path.expandvars("$OECORE_NATIVE_SYSROOT/usr/bin/bootfs.sh")
         cmd = "{0} -L -a instdate=BUILD_DATE -s 0 -e {1}/{2}-{3}.env".format(cmd, self.deploydir, self.image_name, self.machine)
-        res, output = utils.run_cmd(cmd, self.logger, shell=True, cwd=self.workdir)
+        res, output = utils.run_cmd(cmd, shell=True, cwd=self.workdir)
         if res:
             self.logger.error("Executing %s failed\nExit code %d. Output:\n%s"
                                % (cmd, res, output))
@@ -278,7 +278,7 @@ def test():
     set_logger(logger)
     logger.setLevel(logging.DEBUG)
 
-    fake_root(logger)
+    fake_root()
 
     image_name = "initramfs-ostree-image"
     workdir = "/buildarea/raid5/hjia/wrlinux-20/build_master-wr_all_2020061521/build/tmp-glibc/deploy/sdk/dnf/workdir/initramfs-ostree-image"

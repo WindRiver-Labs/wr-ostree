@@ -36,7 +36,7 @@ class Rootfs(object):
 
         self.installed_pkgs = OrderedDict()
 
-        utils.fake_root_set_passwd(self.logger, self.target_rootfs)
+        utils.fake_root_set_passwd(self.target_rootfs)
 
         self.rootfs_pre_scripts = [os.path.join(self.data_dir, 'pre_rootfs', 'create_merged_usr_symlinks.sh')]
         self.rootfs_post_scripts = []
@@ -57,7 +57,7 @@ class Rootfs(object):
 
         for script in self.rootfs_pre_scripts:
             self.logger.debug("Executing '%s' preprocess rootfs..." % script)
-            res, output = utils.run_cmd(script, self.logger, shell=True)
+            res, output = utils.run_cmd(script, shell=True)
             if res:
                 self.logger.error("Executing %s preprocess rootfs failed\nExit code %d. Output:\n%s"
                                    % (script, res, output))
@@ -67,7 +67,7 @@ class Rootfs(object):
     def _post_rootfs(self):
         for script in self.rootfs_post_scripts:
             self.logger.debug("Executing '%s' postprocess rootfs..." % script)
-            res, output = utils.run_cmd(script, self.logger, shell=True)
+            res, output = utils.run_cmd(script, shell=True)
             if res:
                 self.logger.error("Executing %s postprocess rootfs failed\nExit code %d. Output:\n%s"
                                    % (script, res, output))

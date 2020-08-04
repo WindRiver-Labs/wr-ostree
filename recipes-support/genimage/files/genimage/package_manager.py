@@ -69,7 +69,7 @@ class DnfRpm:
         utils.remove(self.intercepts_dir, True)
         utils.mkdirhier(self.intercepts_dir)
         for intercept in postinst_intercepts:
-            utils.copyfile(intercept, os.path.join(self.intercepts_dir, os.path.basename(intercept)), self.logger)
+            utils.copyfile(intercept, os.path.join(self.intercepts_dir, os.path.basename(intercept)))
 
     def _configure_dnf(self):
         # libsolv handles 'noarch' internally, we don't need to specify it explicitly
@@ -155,7 +155,7 @@ class DnfRpm:
         cmd = [dnf_cmd] + standard_dnf_args + dnf_args
         self.logger.debug('Running %s' % ' '.join(cmd))
 
-        res, output = utils.run_cmd(cmd, self.logger, print_output=print_output)
+        res, output = utils.run_cmd(cmd, print_output=print_output)
         if res:
             if print_output:
                 (self.logger.info, self.logger.error)[fatal]("Could not invoke dnf. Command "
@@ -208,7 +208,7 @@ class DnfRpm:
             cmd = shutil.which("rpm", path=os.getenv('PATH'))
             args = ["-e", "-v", "--nodeps", "--root=%s" %self.target_rootfs]
             self.logger.info("Running %s" % ' '.join([cmd] + args + pkgs))
-            res, output = utils.run_cmd([cmd] + args + pkgs, self.logger)
+            res, output = utils.run_cmd([cmd] + args + pkgs)
             if res:
                 self.logger.error("Could not invoke rpm. Command "
                      "'%s' returned %d:\n%s" % (' '.join([cmd] + args + pkgs), res, output))
@@ -270,7 +270,7 @@ class DnfRpm:
         self.logger.debug("Saving postinstall script of %s" % (pkg))
         cmd = shutil.which("rpm", path=os.getenv('PATH'))
         args = ["-q", "--root=%s" % self.target_rootfs, "--queryformat", "%{postin}", pkg]
-        res, output = utils.run_cmd([cmd] + args, self.logger)
+        res, output = utils.run_cmd([cmd] + args)
         if res:
             self.logger.error("Could not invoke rpm. Command "
                      "'%s' returned %d:\n%s" % (' '.join([cmd] + args), res, output))
@@ -331,7 +331,7 @@ class DnfRpm:
                 continue
 
             self.logger.debug("> Executing %s intercept ..." % script)
-            res, output = utils.run_cmd(script_full, self.logger)
+            res, output = utils.run_cmd(script_full)
             if res:
                 if "qemuwrapper: qemu usermode is not supported" in output:
                     self.logger.debug("The postinstall intercept hook '%s' could not be executed due to missing qemu usermode support, details in %s/%s"
@@ -366,7 +366,7 @@ class DnfRpm:
             cmd = [self.oe_pkgdata_util,
                    "-p", self.pkgdatadir, "glob", installed_pkgs.name,
                    globs]
-            res, output = utils.run_cmd(cmd, self.logger)
+            res, output = utils.run_cmd(cmd)
             if res:
                 self.logger.error("Could not compute complementary packages list. Command "
                          "'%s' returned %d:\n%s" %
@@ -393,7 +393,7 @@ def test():
     set_logger(logger)
     logger.setLevel(logging.DEBUG)
 
-    fake_root(logger)
+    fake_root()
     package = DEFAULT_PACKAGES[DEFAULT_MACHINE]
     pm = DnfRpm(logger=logger, machine=DEFAULT_MACHINE)
     pm.create_configs()

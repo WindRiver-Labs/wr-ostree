@@ -14,13 +14,13 @@ class CreateContainer(Image):
     def create(self):
         cmd = "tar --numeric-owner -cf %s/%s.rootfs.tar -C %s ." % \
                 (self.deploydir,self.image_fullname, self.target_rootfs)
-        utils.run_cmd_oneshot(cmd, self.logger)
+        utils.run_cmd_oneshot(cmd)
 
         cmd = "pbzip2 -f -k %s/%s.rootfs.tar" % (self.deploydir, self.image_fullname)
-        utils.run_cmd_oneshot(cmd, self.logger)
+        utils.run_cmd_oneshot(cmd)
 
         cmd = "rm -f %s/%s.rootfs.tar" % (self.deploydir, self.image_fullname)
-        utils.run_cmd_oneshot(cmd, self.logger)
+        utils.run_cmd_oneshot(cmd)
 
         self._create_symlinks()
 
