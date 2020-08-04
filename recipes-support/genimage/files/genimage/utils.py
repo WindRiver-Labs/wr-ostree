@@ -11,6 +11,8 @@ import re
 import yaml
 from collections import OrderedDict
 
+logger = logging.getLogger('appsdk')
+
 def set_logger(logger, level=logging.DEBUG, log_path=None):
     logger.setLevel(logging.DEBUG)
 
@@ -338,3 +340,15 @@ def get_ostree_wks(ostree_use_ab="1", machine="intel-x86-64"):
     wks_full_path = os.path.join(os.environ['OECORE_NATIVE_SYSROOT'], "usr/share/genimage/data/wic", wks_template)
 
     return wks_full_path
+
+def show_task_info(msg):
+    def show_task_info_decorator(func):
+        def func_wrapper(self):
+            logger.info("%s: Started", msg)
+            start_time = time.time()
+            func(self)
+            logger.info("%s: Succeeded(took %d seconds) ", msg, time.time()-start_time)
+
+        return func_wrapper
+    return show_task_info_decorator
+
