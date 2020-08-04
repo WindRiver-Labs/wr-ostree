@@ -335,6 +335,6 @@ def get_ostree_wks(ostree_use_ab="1", machine="intel-x86-64"):
     ostree_ab_wks = "ab" if ostree_use_ab=="1" else "noab"
     ostree_arch_wks = "ostree-grub" if machine=="intel-x86-64" else "ostree-uboot-sd"
     wks_template = "{0}-{1}.wks.in".format(ostree_arch_wks, ostree_ab_wks)
-    wks_full_path = os.path.join(os.environ['OECORE_NATIVE_SYSROOT'], "usr/share/create_full_image/data/wic", wks_template)
+    wks_full_path = os.path.join(os.environ['OECORE_NATIVE_SYSROOT'], "usr/share/genimage/data/wic", wks_template)
 
     return wks_full_path

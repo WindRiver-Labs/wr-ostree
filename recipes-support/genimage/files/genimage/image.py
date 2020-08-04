@@ -3,8 +3,8 @@ import subprocess
 import os
 import os.path
 
-from create_full_image import utils
-from create_full_image import constant
+from genimage import utils
+from genimage import constant
 
 class Image(object, metaclass=ABCMeta):
     """
@@ -126,7 +126,7 @@ class CreateWicImage(Image):
         wic_env['MACHINE'] = self.machine
         wic_env['WKS_FILE'] = self.wks_full_path
         wic_env['DATETIME'] = self.date
-        cmd = os.path.join(wic_env['OECORE_NATIVE_SYSROOT'], "usr/share/create_full_image/scripts/run.do_image_wic")
+        cmd = os.path.join(wic_env['OECORE_NATIVE_SYSROOT'], "usr/share/genimage/scripts/run.do_image_wic")
         res, output = utils.run_cmd(cmd, self.logger, env=wic_env)
         if res:
             self.logger.error("Executing %s failed\nExit code %d. Output:\n%s"
@@ -164,7 +164,7 @@ class CreateOstreeRepo(Image):
         ostreerepo_env['OSTREE_GPG_PASSPHRASE'] = self.gpg_password
         ostreerepo_env['GPGPATH'] = self.gpg_path
 
-        cmd = os.path.expandvars("$OECORE_NATIVE_SYSROOT/usr/share/create_full_image/scripts/run.do_image_ostree")
+        cmd = os.path.expandvars("$OECORE_NATIVE_SYSROOT/usr/share/genimage/scripts/run.do_image_ostree")
         res, output = utils.run_cmd(cmd, self.logger, env=ostreerepo_env)
         if res:
             self.logger.error("Executing %s failed\nExit code %d. Output:\n%s"
@@ -221,7 +221,7 @@ class CreateOstreeOTA(Image):
         ota_env['OSTREE_SKIP_BOOT_DIFF'] = self.ostree_skip_boot_diff
         ota_env['OSTREE_REMOTE_URL'] = self.ostree_remote_url
 
-        cmd = os.path.expandvars("$OECORE_NATIVE_SYSROOT/usr/share/create_full_image/scripts/run.do_image_otaimg")
+        cmd = os.path.expandvars("$OECORE_NATIVE_SYSROOT/usr/share/genimage/scripts/run.do_image_otaimg")
         res, output = utils.run_cmd(cmd, self.logger, env=ota_env)
         if res:
             self.logger.error("Executing %s failed\nExit code %d. Output:\n%s"
@@ -271,8 +271,8 @@ class CreateBootfs(Image):
 
 def test():
     import logging
-    from create_full_image.utils import  fake_root
-    from create_full_image.utils import  set_logger
+    from genimage.utils import  fake_root
+    from genimage.utils import  set_logger
 
     logger = logging.getLogger('image')
     set_logger(logger)

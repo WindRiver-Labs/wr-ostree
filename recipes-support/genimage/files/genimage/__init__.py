@@ -26,23 +26,23 @@ import yaml
 from collections import OrderedDict
 import time
 
-from create_full_image.utils import set_logger
-from create_full_image.utils import get_today
-from create_full_image.constant import DEFAULT_PACKAGE_FEED
-from create_full_image.constant import DEFAULT_PACKAGES
-from create_full_image.constant import DEFAULT_MACHINE
-from create_full_image.constant import DEFAULT_IMAGE
-from create_full_image.constant import DEFAULT_IMAGE_FEATURES
-from create_full_image.constant import OSTREE_INITRD_PACKAGES
-from create_full_image.rootfs import Rootfs
-from create_full_image.container import CreateContainer
-from create_full_image.image import CreateWicImage
-from create_full_image.image import CreateOstreeRepo
-from create_full_image.image import CreateInitramfs
-from create_full_image.image import CreateOstreeOTA
-from create_full_image.image import CreateBootfs
+from genimage.utils import set_logger
+from genimage.utils import get_today
+from genimage.constant import DEFAULT_PACKAGE_FEED
+from genimage.constant import DEFAULT_PACKAGES
+from genimage.constant import DEFAULT_MACHINE
+from genimage.constant import DEFAULT_IMAGE
+from genimage.constant import DEFAULT_IMAGE_FEATURES
+from genimage.constant import OSTREE_INITRD_PACKAGES
+from genimage.rootfs import Rootfs
+from genimage.container import CreateContainer
+from genimage.image import CreateWicImage
+from genimage.image import CreateOstreeRepo
+from genimage.image import CreateInitramfs
+from genimage.image import CreateOstreeOTA
+from genimage.image import CreateBootfs
 
-import create_full_image.utils as utils
+import genimage.utils as utils
 
 logger = logging.getLogger('appsdk')
 
@@ -210,7 +210,7 @@ class CreateFullImage(object):
         logger.debug("GPG Path: %s" % self.data["gpg"]["gpg_path"])
 
         self.native_sysroot = os.environ['OECORE_NATIVE_SYSROOT']
-        self.data_dir = os.path.join(self.native_sysroot, "usr/share/create_full_image/data")
+        self.data_dir = os.path.join(self.native_sysroot, "usr/share/genimage/data")
 
     def do_prepare(self):
         gpg_data = self.data["gpg"]

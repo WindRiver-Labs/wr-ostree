@@ -11,16 +11,16 @@ import logging
 import yaml
 import tempfile
 
-from create_full_image.utils import set_logger
-from create_full_image.utils import run_cmd
-from create_full_image.constant import DEFAULT_PACKAGE_FEED
-from create_full_image.constant import DEFAULT_PACKAGES
-from create_full_image.constant import DEFAULT_MACHINE
-from create_full_image.constant import DEFAULT_IMAGE
-from create_full_image.constant import DEFAULT_IMAGE_FEATURES
-from create_full_image.constant import OSTREE_INITRD_PACKAGES
-from create_full_image.rootfs import Rootfs
-import create_full_image.utils as utils
+from genimage.utils import set_logger
+from genimage.utils import run_cmd
+from genimage.constant import DEFAULT_PACKAGE_FEED
+from genimage.constant import DEFAULT_PACKAGES
+from genimage.constant import DEFAULT_MACHINE
+from genimage.constant import DEFAULT_IMAGE
+from genimage.constant import DEFAULT_IMAGE_FEATURES
+from genimage.constant import OSTREE_INITRD_PACKAGES
+from genimage.rootfs import Rootfs
+import genimage.utils as utils
 
 logger = logging.getLogger('appsdk')
 
@@ -57,7 +57,7 @@ class AppSDK(object):
         self.real_multimach_target_sys = os.path.basename(os.environ['OECORE_TARGET_SYSROOT'])
         # current native sysroot dir
         self.native_sysroot = os.environ['OECORE_NATIVE_SYSROOT']
-        self.data_dir = os.path.join(self.native_sysroot, "usr/share/create_full_image/data")
+        self.data_dir = os.path.join(self.native_sysroot, "usr/share/genimage/data")
         self.sdk_sys = os.path.basename(self.native_sysroot)
         self.target_sdk_dir = os.path.dirname(os.path.dirname(self.native_sysroot))
         # new sdk's sysroot dirs

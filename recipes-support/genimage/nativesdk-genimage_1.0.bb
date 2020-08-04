@@ -32,18 +32,18 @@ SRC_URI = "\
            file://COPYING \
            file://depmodwrapper \
            file://add_path.sh \
-           file://create_full_image/__init__.py \
-           file://create_full_image/utils.py \
-           file://create_full_image/constant.py.in \
-           file://create_full_image/package_manager.py \
-           file://create_full_image/rootfs.py \
-           file://create_full_image/image.py \
-           file://create_full_image/container.py \
-           file://create_full_image/data/pre_rootfs/create_merged_usr_symlinks.sh \
-           file://create_full_image/data/post_rootfs/add_gpg_key.sh \
-           file://create_full_image/scripts/run.do_image_ostree \
-           file://create_full_image/scripts/run.do_image_otaimg \
-           file://create_full_image/scripts/run.do_image_wic \
+           file://genimage/__init__.py \
+           file://genimage/utils.py \
+           file://genimage/constant.py.in \
+           file://genimage/package_manager.py \
+           file://genimage/rootfs.py \
+           file://genimage/image.py \
+           file://genimage/container.py \
+           file://genimage/data/pre_rootfs/create_merged_usr_symlinks.sh \
+           file://genimage/data/post_rootfs/add_gpg_key.sh \
+           file://genimage/scripts/run.do_image_ostree \
+           file://genimage/scripts/run.do_image_otaimg \
+           file://genimage/scripts/run.do_image_wic \
            file://METADATA.in \
            file://README.md \
            file://setup.py \
@@ -96,8 +96,8 @@ IMAGE_BOOT_FILES ??= ""
 
 do_copy_src() {
     install -m 0644 ${WORKDIR}/COPYING ${S}/
-    install -d ${S}/create_full_image
-    install -m 0644 ${WORKDIR}/create_full_image/*.py ${S}/create_full_image
+    install -d ${S}/genimage
+    install -m 0644 ${WORKDIR}/genimage/*.py ${S}/genimage
 
     install -m 0644 ${WORKDIR}/METADATA.in ${S}
     install -m 0644 ${WORKDIR}/README.md ${S}
@@ -106,7 +106,7 @@ do_copy_src() {
 
 python do_write_py_template () {
     # constant.py.in -> constant.py and expand variables
-    py_templates = [os.path.join(d.getVar("WORKDIR"),"create_full_image","constant.py.in")]
+    py_templates = [os.path.join(d.getVar("WORKDIR"),"genimage","constant.py.in")]
     for py_t in py_templates:
         body = "null"
         with open(py_t, "r") as pytf:
@@ -121,16 +121,16 @@ python do_write_py_template () {
 do_install_append() {
 	install -d ${D}${bindir}/crossscripts
 	install -m 0755 ${WORKDIR}/depmodwrapper ${D}${bindir}/crossscripts
-	install -d ${D}${datadir}/create_full_image/
-	cp -rf ${WORKDIR}/create_full_image/data ${D}${datadir}/create_full_image/
-	cp -rf ${WORKDIR}/create_full_image/scripts ${D}${datadir}/create_full_image/
+	install -d ${D}${datadir}/genimage/
+	cp -rf ${WORKDIR}/genimage/data ${D}${datadir}/genimage/
+	cp -rf ${WORKDIR}/genimage/scripts ${D}${datadir}/genimage/
 	mkdir -p ${D}${SDKPATHNATIVE}/environment-setup.d
 	install -m 0755 ${WORKDIR}/add_path.sh ${D}${SDKPATHNATIVE}/environment-setup.d
-	install -d ${D}${datadir}/create_full_image/rpm_keys/
-	cp ${OSTREE_GPGDIR}/RPM-GPG-PRIVKEY-${OSTREE_GPGID} ${D}${datadir}/create_full_image/rpm_keys/
+	install -d ${D}${datadir}/genimage/rpm_keys/
+	cp ${OSTREE_GPGDIR}/RPM-GPG-PRIVKEY-${OSTREE_GPGID} ${D}${datadir}/genimage/rpm_keys/
 
-	install -d ${D}${datadir}/create_full_image/data/wic/
-	cp -f ${LAYER_PATH_ostree-layer}/wic/ostree-*.wks.in ${D}${datadir}/create_full_image/data/wic/
+	install -d ${D}${datadir}/genimage/data/wic/
+	cp -f ${LAYER_PATH_ostree-layer}/wic/ostree-*.wks.in ${D}${datadir}/genimage/data/wic/
 
 }
 

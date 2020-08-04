@@ -7,9 +7,9 @@ import glob
 import re
 import logging
 from appsdk.appsdk import AppSDK
-from create_full_image.utils import set_logger
-import create_full_image.utils as utils
-import create_full_image
+from genimage.utils import set_logger
+import genimage.utils as utils
+import genimage
 
 logger = logging.getLogger('appsdk')
 
@@ -72,7 +72,7 @@ def main():
     set_subparser(subparsers)
 
     # Add genimage to appsdk
-    create_full_image.set_subparser(subparsers)
+    genimage.set_subparser(subparsers)
 
     if len(sys.argv) == 1:
         parser.print_help()

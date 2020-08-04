@@ -71,7 +71,7 @@ DEFAULT_GPG_DATA = {
   'gpg_path':'/tmp/.cbas_gnupg',
   'ostree': {
     'gpgid': '${OSTREE_GPGID}',
-    'gpgkey': '$OECORE_NATIVE_SYSROOT/usr/share/create_full_image/rpm_keys/RPM-GPG-PRIVKEY-${OSTREE_GPGID}',
+    'gpgkey': '$OECORE_NATIVE_SYSROOT/usr/share/genimage/rpm_keys/RPM-GPG-PRIVKEY-${OSTREE_GPGID}',
     'gpg_password': '${OSTREE_GPG_PASSPHRASE}'
   },
   'grub': {

@@ -2,8 +2,8 @@ import subprocess
 import os
 import os.path
 
-from create_full_image import utils
-from create_full_image.image import Image
+from genimage import utils
+from genimage.image import Image
 
 class CreateContainer(Image):
     def _add_keys(self):

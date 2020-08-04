@@ -4,8 +4,8 @@ import subprocess
 import yaml
 from collections import OrderedDict
 
-from create_full_image.package_manager import DnfRpm
-import create_full_image.utils as utils
+from genimage.package_manager import DnfRpm
+import genimage.utils as utils
 
 class Rootfs(object):
     def __init__(self,

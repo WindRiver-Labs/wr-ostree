@@ -8,9 +8,9 @@ import hashlib
 import re
 import tempfile
 
-from create_full_image.utils import set_logger
-from create_full_image.constant import FEED_ARCHS_DICT
-import create_full_image.utils as utils
+from genimage.utils import set_logger
+from genimage.constant import FEED_ARCHS_DICT
+import genimage.utils as utils
 
 def failed_postinsts_abort(pkgs, log_path, logger):
     logger.error("""Postinstall scriptlets of %s have failed. If the intention is to defer them to first boot,
@@ -383,11 +383,11 @@ class DnfRpm:
             self.install(install_pkgs, attempt_only=True)
 
 def test():
-    from create_full_image.constant import DEFAULT_PACKAGE_FEED
-    from create_full_image.constant import DEFAULT_PACKAGES
-    from create_full_image.constant import DEFAULT_MACHINE
-    from create_full_image.constant import DEFAULT_IMAGE
-    from create_full_image.utils import  fake_root
+    from genimage.constant import DEFAULT_PACKAGE_FEED
+    from genimage.constant import DEFAULT_PACKAGES
+    from genimage.constant import DEFAULT_MACHINE
+    from genimage.constant import DEFAULT_IMAGE
+    from genimage.utils import  fake_root
 
     logger = logging.getLogger('dnf')
     set_logger(logger)
