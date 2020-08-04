@@ -73,16 +73,13 @@ def set_parser(parser=None):
         'all',
     ]
 
-    parser.add_argument('-m', '--machine',
-        choices=[DEFAULT_MACHINE],
-        help='Specify machine')
     parser.add_argument('-o', '--outdir',
         default=os.getcwd(),
         help='Specify output dir, default is current working directory',
         action='store')
     parser.add_argument('-g', '--gpgpath',
         default=None,
-        help='Specify gpg homedir, default is /tmp/.cbas_gnupg or from Yaml',
+        help='Specify gpg homedir, it overrides \'gpg_path\' in Yaml, default is /tmp/.cbas_gnupg',
         action='store')
     parser.add_argument('-w', '--workdir',
         default=os.getcwd(),
@@ -90,10 +87,10 @@ def set_parser(parser=None):
         action='store')
     parser.add_argument('-t', '--type',
         choices=supported_types,
-        help='Specify image type, default is all',
+        help='Specify image type, it overrides \'image_type\' in Yaml, default is all',
         action='append')
     parser.add_argument('-n', '--name',
-        help='Specify image name',
+        help='Specify image name, it overrides \'name\' in Yaml',
         action='store')
     parser.add_argument('-u', '--url',
         help='Specify extra urls of rpm package feeds',
@@ -169,9 +166,6 @@ class CreateFullImage(object):
         self.target_rootfs = None
 
         self.ostree_initramfs_name = "initramfs-ostree-image"
-
-        if self.args.machine:
-            self.machine = self.args.machine
 
         if self.machine != DEFAULT_MACHINE:
             logger.error("MACHINE %s is invalid, SDK is working for %s only" % (self.machine, DEFAULT_MACHINE))
