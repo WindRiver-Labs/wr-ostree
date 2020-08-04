@@ -262,9 +262,17 @@ class CreateFullImage(object):
         image_name = "{0}-{1}.cpio.gz".format(self.ostree_initramfs_name, self.machine)
         if self.machine == "bcm-2xxx-rpi4":
             image_name += ".u-boot"
-        image_link = os.path.join(self.deploydir, image_name)
-        if os.path.islink(image_link) and os.path.exists(os.path.realpath(image_link)):
+
+        image = os.path.join(self.deploydir, image_name)
+        if os.path.exists(os.path.realpath(image)):
             logger.info("Reuse existed Initramfs")
+            return
+
+        image_back = os.path.join(self.native_sysroot, "usr/share/genimage/data/initramfs", image_name)
+        if os.path.exists(image_back):
+            logger.info("Reuse existed Initramfs of SDK")
+            cmd = "cp -f {0} {1}".format(image_back, self.deploydir)
+            utils.run_cmd_oneshot(cmd)
             return
 
         workdir = os.path.join(self.workdir, self.ostree_initramfs_name)
