@@ -30,7 +30,8 @@ RDEPENDS_${PN} += "nativesdk-gdk-pixbuf \
 
 SRC_URI = "\
            file://COPYING \
-           file://depmodwrapper \
+           file://crossscripts/depmodwrapper \
+           file://crossscripts/shlibsign \
            file://add_path.sh \
            file://genimage/__init__.py \
            file://genimage/utils.py \
@@ -120,7 +121,7 @@ python do_write_py_template () {
 
 do_install_append() {
 	install -d ${D}${bindir}/crossscripts
-	install -m 0755 ${WORKDIR}/depmodwrapper ${D}${bindir}/crossscripts
+	install -m 0755 ${WORKDIR}/crossscripts/* ${D}${bindir}/crossscripts
 	install -d ${D}${datadir}/genimage/
 	cp -rf ${WORKDIR}/genimage/data ${D}${datadir}/genimage/
 	cp -rf ${WORKDIR}/genimage/scripts ${D}${datadir}/genimage/
