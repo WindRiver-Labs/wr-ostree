@@ -233,7 +233,6 @@ class CreateFullImage(object):
                         self.machine,
                         self.pkg_feeds,
                         self.packages,
-                        logger,
                         pkg_globs=pkg_globs)
 
         rootfs.create()
@@ -280,8 +279,7 @@ class CreateFullImage(object):
                         self.data_dir,
                         self.machine,
                         self.pkg_feeds,
-                        OSTREE_INITRD_PACKAGES,
-                        logger)
+                        OSTREE_INITRD_PACKAGES)
 
         script_cmd = os.path.join(self.data_dir, 'post_rootfs', 'add_gpg_key.sh')
         script_cmd = "{0} {1} {2}".format(script_cmd, rootfs.target_rootfs, self.data['gpg']['gpg_path'])
@@ -296,8 +294,7 @@ class CreateFullImage(object):
                         workdir = workdir,
                         machine = self.machine,
                         target_rootfs = rootfs.target_rootfs,
-                        deploydir = self.deploydir,
-                        logger = logger)
+                        deploydir = self.deploydir)
         initrd.create()
 
     def _save_output_yaml(self, installed_dict):
@@ -324,8 +321,7 @@ class CreateFullImage(object):
                         machine = self.machine,
                         target_rootfs = self.target_rootfs,
                         deploydir = self.deploydir,
-                        wks_file = wks_file,
-                        logger = logger)
+                        wks_file = wks_file)
 
         env = self.data['wic'].copy()
         env['WORKDIR'] = workdir
@@ -347,8 +343,7 @@ class CreateFullImage(object):
                         workdir=workdir,
                         machine=self.machine,
                         target_rootfs=self.target_rootfs,
-                        deploydir=self.deploydir,
-                        logger=logger)
+                        deploydir=self.deploydir)
         container.create()
 
     @show_task_info("Create Ostree Repo")
@@ -360,7 +355,6 @@ class CreateFullImage(object):
                         machine=self.machine,
                         target_rootfs=self.target_rootfs,
                         deploydir=self.deploydir,
-                        logger=logger,
                         gpg_path=self.data['gpg']['gpg_path'],
                         gpgid=self.data['gpg']['ostree']['gpgid'],
                         gpg_password=self.data['gpg']['ostree']['gpg_password'])
@@ -377,7 +371,6 @@ class CreateFullImage(object):
                         workdir=workdir,
                         machine=self.machine,
                         deploydir=self.deploydir,
-                        logger=logger,
                         ostree_use_ab=self.data["ostree"]['ostree_use_ab'],
                         ostree_osname=self.data["ostree"]['ostree_osname'],
                         ostree_skip_boot_diff=self.data["ostree"]['ostree_skip_boot_diff'],
@@ -393,8 +386,7 @@ class CreateFullImage(object):
                         image_name=self.image_name,
                         workdir=workdir,
                         machine=self.machine,
-                        deploydir=self.deploydir,
-                        logger=logger)
+                        deploydir=self.deploydir)
         ustart.create()
 
 def _main_run(args):

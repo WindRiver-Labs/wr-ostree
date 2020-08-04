@@ -163,7 +163,6 @@ class AppSDK(object):
                         self.machine,
                         self.pkg_feeds,
                         self.packages,
-                        logger,
                         target_rootfs=target_sysroot_dir,
                         pkg_globs="*-src *-dev *-dbg")
 

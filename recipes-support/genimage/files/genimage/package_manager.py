@@ -12,7 +12,9 @@ from genimage.utils import set_logger
 from genimage.constant import FEED_ARCHS_DICT
 import genimage.utils as utils
 
-def failed_postinsts_abort(pkgs, log_path, logger):
+logger = logging.getLogger('appsdk')
+
+def failed_postinsts_abort(pkgs, log_path):
     logger.error("""Postinstall scriptlets of %s have failed. If the intention is to defer them to first boot,
 then please place them into pkg_postinst_ontarget_${PN} ().
 Deferring to first boot via 'exit 1' is no longer supported.
@@ -23,15 +25,7 @@ class DnfRpm:
     def __init__(self,
                  workdir = os.path.join(os.getcwd(),"workdir"),
                  target_rootfs = os.path.join(os.getcwd(), "workdir/rootfs"),
-                 machine = 'intel-x86-64',
-                 logger = None):
-
-        if logger is  None:
-            logger = logging.getLogger('dnf')
-            set_logger(logger)
-            logger.setLevel(logging.DEBUG)
-
-        self.logger = logger
+                 machine = 'intel-x86-64'):
 
         self.workdir = workdir
         self.target_rootfs = target_rootfs
@@ -55,7 +49,7 @@ class DnfRpm:
         self._initialize_intercepts()
 
     def _initialize_intercepts(self):
-        self.logger.debug("Initializing intercept dir for %s" % self.target_rootfs)
+        logger.debug("Initializing intercept dir for %s" % self.target_rootfs)
         # As there might be more than one instance of PackageManager operating at the same time
         # we need to isolate the intercept_scripts directories from each other,
         # hence the ugly hash digest in dir name.
@@ -65,7 +59,7 @@ class DnfRpm:
         postinst_intercepts_path = "%s/usr/share/poky/scripts/postinst-intercepts" % os.environ['OECORE_NATIVE_SYSROOT']
         postinst_intercepts = utils.which_wild('*', postinst_intercepts_path)
 
-        self.logger.debug('Collected intercepts:\n%s' % ''.join('  %s\n' % i for i in postinst_intercepts))
+        logger.debug('Collected intercepts:\n%s' % ''.join('  %s\n' % i for i in postinst_intercepts))
         utils.remove(self.intercepts_dir, True)
         utils.mkdirhier(self.intercepts_dir)
         for intercept in postinst_intercepts:
@@ -107,7 +101,7 @@ class DnfRpm:
             open(platformconfdir + "macros", 'a').write("%_prefer_color 7\n")
 
     def create_configs(self):
-        self.logger.debug("create_configs")
+        logger.debug("create_configs")
         self._configure_dnf()
         self._configure_rpm()
 
@@ -153,15 +147,15 @@ class DnfRpm:
         if hasattr(self, "rpm_repo_dir"):
             standard_dnf_args.append("--repofrompath=oe-repo,%s" % (self.rpm_repo_dir))
         cmd = [dnf_cmd] + standard_dnf_args + dnf_args
-        self.logger.debug('Running %s' % ' '.join(cmd))
+        logger.debug('Running %s' % ' '.join(cmd))
 
         res, output = utils.run_cmd(cmd, print_output=print_output)
         if res:
             if print_output:
-                (self.logger.info, self.logger.error)[fatal]("Could not invoke dnf. Command "
+                (logger.info, logger.error)[fatal]("Could not invoke dnf. Command "
                      "'%s' returned %d:\n%s" % (' '.join(cmd), res, output))
             else:
-                (self.logger.info, self.logger.error)[fatal]("Could not invoke dnf. Command "
+                (logger.info, logger.error)[fatal]("Could not invoke dnf. Command "
                      "'%s' returned %d:" % (' '.join(cmd), res))
 
             raise Exception("Could not invoke dnf. Command "
@@ -170,7 +164,7 @@ class DnfRpm:
         return output
 
     def install(self, pkgs, attempt_only = False):
-        self.logger.debug("dnf install: %s, attemplt %s" % (pkgs, attempt_only))
+        logger.debug("dnf install: %s, attemplt %s" % (pkgs, attempt_only))
         if len(pkgs) == 0:
             return
         self._prepare_pkg_transaction()
@@ -192,11 +186,10 @@ class DnfRpm:
 
         if len(failed_scriptlets_pkgnames) > 0:
             failed_postinsts_abort(list(failed_scriptlets_pkgnames.keys()),
-                                   self.temp_dir,
-                                   self.logger)
+                                   self.temp_dir)
 
     def remove(self, pkgs, with_dependencies = True):
-        self.logger.debug("dnf remove: %s" % (pkgs))
+        logger.debug("dnf remove: %s" % (pkgs))
         if not pkgs:
             return
 
@@ -207,10 +200,10 @@ class DnfRpm:
         else:
             cmd = shutil.which("rpm", path=os.getenv('PATH'))
             args = ["-e", "-v", "--nodeps", "--root=%s" %self.target_rootfs]
-            self.logger.info("Running %s" % ' '.join([cmd] + args + pkgs))
+            logger.info("Running %s" % ' '.join([cmd] + args + pkgs))
             res, output = utils.run_cmd([cmd] + args + pkgs)
             if res:
-                self.logger.error("Could not invoke rpm. Command "
+                logger.error("Could not invoke rpm. Command "
                      "'%s' returned %d:\n%s" % (' '.join([cmd] + args + pkgs), res, output))
                 raise Exception("Could not invoke rpm. Command "
                      "'%s' returned %d:\n%s" % (' '.join([cmd] + args + pkgs), res, output))
@@ -267,12 +260,12 @@ class DnfRpm:
         return max(numbers) + 1
 
     def save_rpmpostinst(self, pkg):
-        self.logger.debug("Saving postinstall script of %s" % (pkg))
+        logger.debug("Saving postinstall script of %s" % (pkg))
         cmd = shutil.which("rpm", path=os.getenv('PATH'))
         args = ["-q", "--root=%s" % self.target_rootfs, "--queryformat", "%{postin}", pkg]
         res, output = utils.run_cmd([cmd] + args)
         if res:
-            self.logger.error("Could not invoke rpm. Command "
+            logger.error("Could not invoke rpm. Command "
                      "'%s' returned %d:\n%s" % (' '.join([cmd] + args), res, output))
             raise Exception("Could not invoke rpm. Command "
                      "'%s' returned %d:\n%s" % (' '.join([cmd] + args), res, output))
@@ -304,7 +297,7 @@ class DnfRpm:
                     break
 
             if registered_pkgs is not None:
-                self.logger.debug("If an image is being built, the postinstalls for the following packages "
+                logger.debug("If an image is being built, the postinstalls for the following packages "
                         "will be postponed for first boot: %s" %
                         registered_pkgs)
 
@@ -314,7 +307,7 @@ class DnfRpm:
     def run_intercepts(self):
         intercepts_dir = self.intercepts_dir
 
-        self.logger.debug("Running intercept scripts:")
+        logger.debug("Running intercept scripts:")
         os.environ['D'] = self.target_rootfs
         os.environ['STAGING_DIR_NATIVE'] = os.environ['OECORE_NATIVE_SYSROOT']
         os.environ['libdir_native'] = "/usr/lib"
@@ -330,15 +323,15 @@ class DnfRpm:
                 self._postpone_to_first_boot(script_full)
                 continue
 
-            self.logger.debug("> Executing %s intercept ..." % script)
+            logger.debug("> Executing %s intercept ..." % script)
             res, output = utils.run_cmd(script_full)
             if res:
                 if "qemuwrapper: qemu usermode is not supported" in output:
-                    self.logger.debug("The postinstall intercept hook '%s' could not be executed due to missing qemu usermode support, details in %s/%s"
+                    logger.debug("The postinstall intercept hook '%s' could not be executed due to missing qemu usermode support, details in %s/%s"
                             % (script, self.temp_dir, "log.do_rootfs"))
                     self._postpone_to_first_boot(script_full)
                 else:
-                    self.logger.error("The postinstall intercept hook '%s' failed, details in %s/%s" % (script, self.temp_dir, "log.do_rootfs"))
+                    logger.error("The postinstall intercept hook '%s' failed, details in %s/%s" % (script, self.temp_dir, "log.do_rootfs"))
                     raise Exception("The postinstall intercept hook '%s' failed, details in %s/%s" % (script, self.temp_dir, "log.do_rootfs"))
 
     def install_complementary(self, globs=None):
@@ -368,7 +361,7 @@ class DnfRpm:
                    globs]
             res, output = utils.run_cmd(cmd)
             if res:
-                self.logger.error("Could not compute complementary packages list. Command "
+                logger.error("Could not compute complementary packages list. Command "
                          "'%s' returned %d:\n%s" %
                          (' '.join(cmd), res, output))
                 raise Exception("Could not invoke dnf. Command "
@@ -377,7 +370,7 @@ class DnfRpm:
             complementary_pkgs = set(output.split())
             skip_pkgs = sorted(complementary_pkgs & provided_pkgs)
             install_pkgs = sorted(complementary_pkgs - provided_pkgs)
-            self.logger.debug("Installing complementary packages ... %s (skipped already provided packages %s)" % (
+            logger.debug("Installing complementary packages ... %s (skipped already provided packages %s)" % (
                 ' '.join(install_pkgs),
                 ' '.join(skip_pkgs)))
             self.install(install_pkgs, attempt_only=True)
@@ -395,7 +388,7 @@ def test():
 
     fake_root()
     package = DEFAULT_PACKAGES[DEFAULT_MACHINE]
-    pm = DnfRpm(logger=logger, machine=DEFAULT_MACHINE)
+    pm = DnfRpm(machine=DEFAULT_MACHINE)
     pm.create_configs()
     pm.update()
     pm.insert_feeds_uris(DEFAULT_PACKAGE_FEED)

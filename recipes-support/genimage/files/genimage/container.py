@@ -1,9 +1,12 @@
 import subprocess
 import os
 import os.path
+import logging
 
 from genimage import utils
 from genimage.image import Image
+
+logger = logging.getLogger('appsdk')
 
 class CreateContainer(Image):
     def _add_keys(self):
@@ -29,9 +32,9 @@ class CreateContainer(Image):
         src = os.path.join(self.deploydir, self.image_fullname + ".rootfs.tar.bz2")
 
         if os.path.exists(src):
-            self.logger.debug("Creating symlink: %s -> %s" % (dst, src))
+            logger.debug("Creating symlink: %s -> %s" % (dst, src))
             if os.path.islink(dst):
                 os.remove(dst)
             os.symlink(os.path.basename(src), dst)
         else:
-            self.logger.error("Skipping symlink, source does not exist: %s -> %s" % (dst, src))
+            logger.error("Skipping symlink, source does not exist: %s -> %s" % (dst, src))

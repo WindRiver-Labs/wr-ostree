@@ -3,9 +3,12 @@ import os.path
 import subprocess
 import yaml
 from collections import OrderedDict
+import logging
 
 from genimage.package_manager import DnfRpm
 import genimage.utils as utils
+
+logger = logging.getLogger('appsdk')
 
 class Rootfs(object):
     def __init__(self,
@@ -14,7 +17,6 @@ class Rootfs(object):
                  machine,
                  pkg_feeds,
                  packages,
-                 logger,
                  target_rootfs=None,
                  pkg_globs=None):
 
@@ -23,7 +25,6 @@ class Rootfs(object):
         self.machine = machine
         self.pkg_feeds = pkg_feeds
         self.packages = packages
-        self.logger = logger
         self.pkg_globs = pkg_globs
         if target_rootfs:
             self.target_rootfs = target_rootfs
@@ -31,7 +32,7 @@ class Rootfs(object):
             self.target_rootfs = os.path.join(self.workdir, "rootfs")
         self.packages_yaml = os.path.join(self.workdir, "packages.yaml")
 
-        self.pm = DnfRpm(self.workdir, self.target_rootfs, self.machine, logger)
+        self.pm = DnfRpm(self.workdir, self.target_rootfs, self.machine)
         self.pm.create_configs()
 
         self.installed_pkgs = OrderedDict()
@@ -56,20 +57,20 @@ class Rootfs(object):
         os.environ['libexecdir'] = '/usr/libexec'
 
         for script in self.rootfs_pre_scripts:
-            self.logger.debug("Executing '%s' preprocess rootfs..." % script)
+            logger.debug("Executing '%s' preprocess rootfs..." % script)
             res, output = utils.run_cmd(script, shell=True)
             if res:
-                self.logger.error("Executing %s preprocess rootfs failed\nExit code %d. Output:\n%s"
+                logger.error("Executing %s preprocess rootfs failed\nExit code %d. Output:\n%s"
                                    % (script, res, output))
                 raise Exception("Executing %s postprocess rootfs failed\nExit code %d. Output:\n%s"
                                    % (script, res, output))
 
     def _post_rootfs(self):
         for script in self.rootfs_post_scripts:
-            self.logger.debug("Executing '%s' postprocess rootfs..." % script)
+            logger.debug("Executing '%s' postprocess rootfs..." % script)
             res, output = utils.run_cmd(script, shell=True)
             if res:
-                self.logger.error("Executing %s postprocess rootfs failed\nExit code %d. Output:\n%s"
+                logger.error("Executing %s postprocess rootfs failed\nExit code %d. Output:\n%s"
                                    % (script, res, output))
                 raise Exception("Executing %s postprocess rootfs failed\nExit code %d. Output:\n%s"
                                    % (script, res, output))
@@ -80,7 +81,7 @@ class Rootfs(object):
 
         with open(self.packages_yaml, "w") as f:
             utils.ordered_dump(self.installed_pkgs, f, Dumper=yaml.SafeDumper)
-            self.logger.debug("Save Installed Packages Yaml FIle to : %s" % (self.packages_yaml))
+            logger.debug("Save Installed Packages Yaml FIle to : %s" % (self.packages_yaml))
 
     def create(self):
         self._pre_rootfs()

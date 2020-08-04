@@ -2,16 +2,19 @@ from abc import ABCMeta, abstractmethod
 import subprocess
 import os
 import os.path
+import logging
 
 from genimage import utils
 from genimage import constant
+
+logger = logging.getLogger('appsdk')
 
 class Image(object, metaclass=ABCMeta):
     """
     This is an abstract class. Do not instantiate this directly.
     """
     def __init__(self, **kwargs):
-        self.allowed_keys = {'image_name', 'workdir', 'machine', 'target_rootfs', 'deploydir', 'logger'}
+        self.allowed_keys = {'image_name', 'workdir', 'machine', 'target_rootfs', 'deploydir'}
         self._set_allow_keys()
 
         for k, v in kwargs.items():
@@ -75,12 +78,12 @@ class CreateInitramfs(Image):
             src = src + ".u-boot"
 
         if os.path.exists(src):
-            self.logger.debug("Creating symlink: %s -> %s" % (dst, src))
+            logger.debug("Creating symlink: %s -> %s" % (dst, src))
             if os.path.islink(dst):
                 os.remove(dst)
             os.symlink(os.path.basename(src), dst)
         else:
-            self.logger.error("Skipping symlink, source does not exist: %s -> %s" % (dst, src))
+            logger.error("Skipping symlink, source does not exist: %s -> %s" % (dst, src))
 
 
 class CreateWicImage(Image):
@@ -129,7 +132,7 @@ class CreateWicImage(Image):
         cmd = os.path.join(wic_env['OECORE_NATIVE_SYSROOT'], "usr/share/genimage/scripts/run.do_image_wic")
         res, output = utils.run_cmd(cmd, env=wic_env)
         if res:
-            self.logger.error("Executing %s failed\nExit code %d. Output:\n%s"
+            logger.error("Executing %s failed\nExit code %d. Output:\n%s"
                                % (cmd, res, output))
             raise Exception("Executing %s failed\nExit code %d. Output:\n%s"
                                % (cmd, res, output))
@@ -141,12 +144,12 @@ class CreateWicImage(Image):
             dst = os.path.join(self.deploydir, self.image_linkname + suffix_dst)
             src = os.path.join(self.deploydir, self.image_fullname + suffix_src)
             if os.path.exists(src):
-                self.logger.debug("Creating symlink: %s -> %s" % (dst, src))
+                logger.debug("Creating symlink: %s -> %s" % (dst, src))
                 if os.path.islink(dst):
                     os.remove(dst)
                 os.symlink(os.path.basename(src), dst)
             else:
-                self.logger.error("Skipping symlink, source does not exist: %s -> %s" % (dst, src))
+                logger.error("Skipping symlink, source does not exist: %s -> %s" % (dst, src))
 
 class CreateOstreeRepo(Image):
     def _set_allow_keys(self):
@@ -167,7 +170,7 @@ class CreateOstreeRepo(Image):
         cmd = os.path.expandvars("$OECORE_NATIVE_SYSROOT/usr/share/genimage/scripts/run.do_image_ostree")
         res, output = utils.run_cmd(cmd, env=ostreerepo_env)
         if res:
-            self.logger.error("Executing %s failed\nExit code %d. Output:\n%s"
+            logger.error("Executing %s failed\nExit code %d. Output:\n%s"
                                % (cmd, res, output))
             raise Exception("Executing %s failed\nExit code %d. Output:\n%s"
                                % (cmd, res, output))
@@ -224,7 +227,7 @@ class CreateOstreeOTA(Image):
         cmd = os.path.expandvars("$OECORE_NATIVE_SYSROOT/usr/share/genimage/scripts/run.do_image_otaimg")
         res, output = utils.run_cmd(cmd, env=ota_env)
         if res:
-            self.logger.error("Executing %s failed\nExit code %d. Output:\n%s"
+            logger.error("Executing %s failed\nExit code %d. Output:\n%s"
                                % (cmd, res, output))
             raise Exception("Executing %s failed\nExit code %d. Output:\n%s"
                                % (cmd, res, output))
@@ -244,7 +247,7 @@ class CreateBootfs(Image):
         cmd = "{0} -L -a instdate=BUILD_DATE -s 0 -e {1}/{2}-{3}.env".format(cmd, self.deploydir, self.image_name, self.machine)
         res, output = utils.run_cmd(cmd, shell=True, cwd=self.workdir)
         if res:
-            self.logger.error("Executing %s failed\nExit code %d. Output:\n%s"
+            logger.error("Executing %s failed\nExit code %d. Output:\n%s"
                                % (cmd, res, output))
             raise Exception("Executing %s failed\nExit code %d. Output:\n%s"
                                % (cmd, res, output))
@@ -255,22 +258,21 @@ class CreateBootfs(Image):
         for suffix in ["ustart.img.gz", "ustart.img.bmap"]:
             old = os.path.join(self.workdir, suffix)
             new = os.path.join(self.deploydir, "{0}.{1}".format(self.image_fullname, suffix))
-            self.logger.debug("Rename: %s -> %s" % (old, new))
+            logger.debug("Rename: %s -> %s" % (old, new))
             os.rename(old, new)
 
             dst = os.path.join(self.deploydir, "{0}.{1}".format(self.image_linkname, suffix))
             src = os.path.join(self.deploydir, "{0}.{1}".format(self.image_fullname, suffix))
             if os.path.exists(src):
-                self.logger.debug("Creating symlink: %s -> %s" % (dst, src))
+                logger.debug("Creating symlink: %s -> %s" % (dst, src))
                 if os.path.islink(dst):
                     os.remove(dst)
                 os.symlink(os.path.basename(src), dst)
             else:
-                self.logger.error("Skipping symlink, source does not exist: %s -> %s" % (dst, src))
+                logger.error("Skipping symlink, source does not exist: %s -> %s" % (dst, src))
 
 
 def test():
-    import logging
     from genimage.utils import  fake_root
     from genimage.utils import  set_logger
 
@@ -290,8 +292,7 @@ def test():
                     workdir,
                     machine,
                     target_rootfs,
-                    deploydir,
-                    logger)
+                    deploydir)
     initrd.create()
 
 if __name__ == "__main__":
