@@ -217,6 +217,14 @@ class CreateFullImage(object):
         if "wic" not in self.data:
             self.data["wic"] = constant.DEFAULT_WIC_DATA
 
+    def do_post(self):
+        for f in ["qemu-u-boot-bcm-2xxx-rpi4.bin", "ovmf.qcow2"]:
+            qemu_data = os.path.join(self.native_sysroot, "usr/share/qemu_data", f)
+            if os.path.exists(qemu_data):
+                logger.debug("Deploy %s", f)
+                cmd = "cp -f {0} {1}".format(qemu_data, self.deploydir)
+                utils.run_cmd_oneshot(cmd)
+
     @show_task_info("Create Rootfs")
     def do_rootfs(self):
         workdir = os.path.join(self.workdir, self.image_name)
@@ -416,6 +424,8 @@ def _main_run(args):
 
     if "ustart" in create.image_type:
         create.do_ustart_img()
+
+    create.do_post()
 
 def main():
     parser = set_parser()

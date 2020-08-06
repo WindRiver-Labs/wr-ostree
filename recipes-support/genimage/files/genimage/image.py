@@ -118,8 +118,21 @@ class CreateWicImage(Image):
         elif os.path.exists(self.wks_file):
             self.wks_full_path = self.wks_file
 
+    def _write_qemuboot_conf(self):
+        qemuboot_conf_in = os.path.expandvars("$OECORE_NATIVE_SYSROOT/usr/share/qemu_data/qemuboot.conf.in")
+        with open(qemuboot_conf_in, "r") as qemuboot_conf_in_f:
+            content = qemuboot_conf_in_f.read()
+            content = content.replace("@DEPLOYDIR@", self.deploydir)
+            content = content.replace("@IMAGE_LINK_NAME@", self.image_linkname)
+            content = content.replace("@IMAGE_NAME@", self.image_fullname)
+
+        qemuboot_conf = os.path.join(self.deploydir, "{0}.qemuboot.conf".format(self.image_fullname))
+        with open(qemuboot_conf, "w") as qemuboot_conf_f:
+            qemuboot_conf_f.write(content)
+
     def create(self):
         self._write_wks_template()
+        self._write_qemuboot_conf()
 
         wic_env = os.environ.copy()
         wic_env['IMAGE_ROOTFS'] = self.target_rootfs
@@ -140,7 +153,9 @@ class CreateWicImage(Image):
         self._create_symlinks()
 
     def _create_symlinks(self):
-        for suffix_dst, suffix_src in [(".wic", ".rootfs.wic"), (".wic.bmap", ".rootfs.wic.bmap")]:
+        for suffix_dst, suffix_src in [(".wic", ".rootfs.wic"),
+                                       (".wic.bmap", ".rootfs.wic.bmap"),
+                                       (".qemuboot.conf", ".qemuboot.conf")]:
             dst = os.path.join(self.deploydir, self.image_linkname + suffix_dst)
             src = os.path.join(self.deploydir, self.image_fullname + suffix_src)
             if os.path.exists(src):
