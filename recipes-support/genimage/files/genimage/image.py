@@ -40,6 +40,36 @@ class Image(object, metaclass=ABCMeta):
     def create(self):
         pass
 
+    def _write_readme(self, image_type=None):
+        image_type_suffix = {
+            "container": "container.tar.bz2",
+            "ustart": "ustart.img.gz",
+            "wic": "wic"
+        }
+        if image_type is None or image_type not in image_type_suffix:
+            return
+
+        if image_type == "container":
+            src = os.path.join(os.path.expandvars("$OECORE_NATIVE_SYSROOT/usr/share/genimage/doc"),
+                "container.README.md.in")
+        else:
+            src = os.path.join(os.path.expandvars("$OECORE_NATIVE_SYSROOT/usr/share/genimage/doc"),
+                "{0}_{1}.README.md.in".format(image_type, self.machine))
+
+        if not os.path.exists(src):
+            logger.error("%s not exist", src)
+            return
+
+        image_name = "{0}-{1}".format(self.image_name, self.machine)
+        readme = os.path.join(self.deploydir, "{0}.{1}.README.md".format(image_name, image_type_suffix[image_type]))
+
+        with open(src, "r") as src_f:
+            content = src_f.read()
+            content = content.replace("@IMAGE_NAME@", image_name)
+
+        with open(readme, "w") as readme_f:
+            readme_f.write(content)
+
 
 class CreateInitramfs(Image):
     def _add_keys(self):
@@ -133,6 +163,7 @@ class CreateWicImage(Image):
     def create(self):
         self._write_wks_template()
         self._write_qemuboot_conf()
+        self._write_readme("wic")
 
         wic_env = os.environ.copy()
         wic_env['IMAGE_ROOTFS'] = self.target_rootfs
@@ -258,6 +289,8 @@ class CreateBootfs(Image):
         self.image_linkname =  "%s-%s" % (self.image_name, self.machine)
 
     def create(self):
+        self._write_readme("ustart")
+
         cmd = os.path.expandvars("$OECORE_NATIVE_SYSROOT/usr/bin/bootfs.sh")
         cmd = "{0} -L -a instdate=BUILD_DATE -s 0 -e {1}/{2}-{3}.env".format(cmd, self.deploydir, self.image_name, self.machine)
         res, output = utils.run_cmd(cmd, shell=True, cwd=self.workdir)

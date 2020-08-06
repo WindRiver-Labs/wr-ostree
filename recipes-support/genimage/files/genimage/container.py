@@ -15,6 +15,8 @@ class CreateContainer(Image):
         self.image_linkname =  "%s-%s" % (self.image_name, self.machine)
 
     def create(self):
+        self._write_readme("container")
+
         cmd = "tar --numeric-owner -cf %s/%s.container.rootfs.tar -C %s ." % \
                 (self.deploydir,self.image_fullname, self.target_rootfs)
         utils.run_cmd_oneshot(cmd)

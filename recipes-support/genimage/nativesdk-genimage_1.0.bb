@@ -45,6 +45,11 @@ SRC_URI = "\
            file://genimage/scripts/run.do_image_ostree \
            file://genimage/scripts/run.do_image_otaimg \
            file://genimage/scripts/run.do_image_wic \
+           file://genimage/doc/wic_bcm-2xxx-rpi4.README.md.in \
+           file://genimage/doc/ustart_bcm-2xxx-rpi4.README.md.in \
+           file://genimage/doc/wic_intel-x86-64.README.md.in \
+           file://genimage/doc/ustart_intel-x86-64.README.md.in \
+           file://genimage/doc/container.README.md.in \
            file://METADATA.in \
            file://README.md \
            file://setup.py \
@@ -144,6 +149,7 @@ do_install_append() {
 	install -d ${D}${datadir}/genimage/
 	cp -rf ${WORKDIR}/genimage/data ${D}${datadir}/genimage/
 	cp -rf ${WORKDIR}/genimage/scripts ${D}${datadir}/genimage/
+	cp -rf ${WORKDIR}/genimage/doc ${D}${datadir}/genimage/
 	mkdir -p ${D}${SDKPATHNATIVE}/environment-setup.d
 	install -m 0755 ${WORKDIR}/add_path.sh ${D}${SDKPATHNATIVE}/environment-setup.d
 	install -d ${D}${datadir}/genimage/rpm_keys/
