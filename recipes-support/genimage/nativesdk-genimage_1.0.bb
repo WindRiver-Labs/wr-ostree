@@ -31,7 +31,7 @@ RDEPENDS_${PN} += "nativesdk-gdk-pixbuf \
 SRC_URI = "\
            file://COPYING \
            file://crossscripts/depmodwrapper \
-           file://crossscripts/shlibsign \
+           file://crossscript_wrapper.in \
            file://add_path.sh \
            file://genimage/__init__.py \
            file://genimage/utils.py \
@@ -56,6 +56,7 @@ inherit nativesdk setuptools3
 
 do_unpack[vardeps] += "MACHINE PACKAGE_FEED_BASE_PATHS PACKAGE_FEED_ARCHS PACKAGE_FEED_URIS"
 do_unpack_append() {
+    bb.build.exec_func('do_create_cross_cmd_wrapper', d)
     bb.build.exec_func('do_write_py_template', d)
     bb.build.exec_func('do_copy_src', d)
 }
@@ -118,6 +119,23 @@ python do_write_py_template () {
         with open(py, "w") as pyf:
             pyf.write(body)
 }
+
+CROSS_CMDS ?= " \
+    /usr/bin/shlibsign \
+"
+python do_create_cross_cmd_wrapper () {
+    # cmd_wrapper.in -> shlibsign or ...
+    cross_cmds = (d.getVar("CROSS_CMDS") or "").split()
+    dest = os.path.join(d.getVar("WORKDIR"), "crossscripts")
+    wrapper_template = os.path.join(d.getVar("WORKDIR"),"crossscript_wrapper.in")
+    with open(wrapper_template, "r") as template:
+        cmd_content = template.read()
+        for cmd in cross_cmds:
+            cmd_name = os.path.basename(cmd)
+            with open(os.path.join(dest, cmd_name), "w") as cmd_f:
+                cmd_f.write(cmd_content.replace("@COMMAND@", cmd))
+}
+
 
 do_install_append() {
 	install -d ${D}${bindir}/crossscripts

@@ -4,4 +4,4 @@ if [ x"$D" = "x" ]; then
     echo "$D is not set"
     exit 1
 fi
-PSEUDO_UNLOAD=1 qemuwrapper -L $D $D/usr/bin/shlibsign "$@"
+PSEUDO_UNLOAD=1 qemuwrapper -L $D $D@COMMAND@ "$@"
