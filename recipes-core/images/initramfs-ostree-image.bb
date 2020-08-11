@@ -41,6 +41,8 @@ PACKAGE_INSTALL = "ostree \
   grep \
   sed \
   gawk \
+  glib-networking \
+  ca-certificates \
   ${INITRAMFS_PKGS} \
 "
 
