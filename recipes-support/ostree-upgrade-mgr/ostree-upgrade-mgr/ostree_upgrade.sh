@@ -369,7 +369,7 @@ usage: $0 [args]
   -r   Redeploy the current branch without doing a network pull
   -s   Skip the fsck integrity checks
 
-  -F   Local Factory reset, uses -b -e -f -r -s
+  -F   Local Redeploy and Reset, uses -b -e -f -r -s
   -U   Factory upgrade reset, uses -b -e -f -s
 
 EOF
