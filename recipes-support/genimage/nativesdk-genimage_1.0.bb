@@ -21,6 +21,8 @@ RDEPENDS_${PN} = "nativesdk-dnf \
                   nativesdk-gzip \
                   nativesdk-u-boot-mkimage \
                   nativesdk-pbzip2 \
+                  nativesdk-ca-certificates \
+                  nativesdk-glib-networking \
 "
 
 # Required by do_rootfs's intercept_scripts in sdk

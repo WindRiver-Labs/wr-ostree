@@ -75,6 +75,8 @@ class Rootfs(object):
                 raise Exception("Executing %s postprocess rootfs failed\nExit code %d. Output:\n%s"
                                    % (script, res, output))
 
+        self.pm.update_feeds_uris()
+
     def _save_installed(self):
         for k, v in self.pm.list_installed().items():
             self.installed_pkgs[k] = v
@@ -86,8 +88,8 @@ class Rootfs(object):
     def create(self):
         self._pre_rootfs()
 
-        self.pm.update()
         self.pm.insert_feeds_uris(self.pkg_feeds)
+        self.pm.update()
         self.pm.install(self.packages)
 
         self._save_installed()

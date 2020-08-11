@@ -132,8 +132,17 @@ class DnfRpm:
             repo_base = "oe-remote-repo" + "-".join(urlparse(uri).path.split("/"))
             repo_name = "OE Remote Repo:" + " ".join(urlparse(uri).path.split("/"))
             repo_uri = uri
+            repo_cacert = os.path.join(os.environ["OECORE_NATIVE_SYSROOT"], "etc/ssl/certs/ca-certificates.crt")
             open(os.path.join(self.target_rootfs, "etc", "yum.repos.d", repo_base + ".repo"), 'w').write(
-                    "[%s]\nname=%s\nbaseurl=%s\n%s" % (repo_base, repo_name, repo_uri, gpg_opts))
+                    "[%s]\nname=%s\nbaseurl=%s\nsslcacert=%s\n%s" % (repo_base, repo_name, repo_uri, repo_cacert, gpg_opts))
+
+    def update_feeds_uris(self):
+        # Clean up sslcacert in repo since target image does not require it
+        repo_dir = os.path.join(self.target_rootfs, "etc", "yum.repos.d")
+        for repo in os.listdir(repo_dir):
+            repo_path = os.path.join(repo_dir, repo)
+            cmd = "sed -i '/^sslcacert=.*$/d' {0}".format(repo_path)
+            utils.run_cmd_oneshot(cmd)
 
     def _invoke_dnf(self, dnf_args, fatal = True, print_output = True ):
         os.environ['RPM_ETCCONFIGDIR'] = self.target_rootfs

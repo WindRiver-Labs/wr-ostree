@@ -18,6 +18,8 @@ DEFAULT_PACKAGES_COMMON = '''
     kernel-modules
     i2c-tools
     packagegroup-busybox-replacement
+    glib-networking
+    ca-certificates
     ostree
     ostree-upgrade-mgr
     os-release
@@ -51,6 +53,8 @@ DEFAULT_PACKAGES = {
 }
 
 OSTREE_INITRD_PACKAGES = '''
+    glib-networking
+    ca-certificates
     ostree ostree-switchroot
     initramfs-ostree bash
     kmod bzip2 gnupg kbd
