@@ -93,7 +93,7 @@ modify_boot_scr() {
 		perl -p -i -e "s#instdev=.*?([ \"])#instdev=$INST_DEV\$1#" $OUTDIR/boot.scr.raw
 	fi
 	OLDPATH="$PATH"
-	FOUND_ARGS=`cat $OUTDIR/boot.scr.raw | grep ^setenv\ instdef | sed -e 's/^setenv instdef "//;s/"$//'`
+	FOUND_ARGS=`cat $OUTDIR/boot.scr.raw | grep ^setenv\ instdef | sed -e 's/^setenv instdef "//;s/"$//;' -e "s/instab=./instab=$OSTREE_USE_AB/"`
 	PATH=$RECIPE_SYSROOT_NATIVE/usr/bin:$RECIPE_SYSROOT_NATIVE/bin:$PATH
 	echo "Using \$BRANCH = $INST_BRANCH"
 	echo "Using \$URL = $iurl"
