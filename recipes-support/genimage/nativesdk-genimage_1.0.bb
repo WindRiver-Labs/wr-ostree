@@ -44,6 +44,7 @@ SRC_URI = "\
            file://genimage/container.py \
            file://genimage/data/pre_rootfs/create_merged_usr_symlinks.sh \
            file://genimage/data/post_rootfs/add_gpg_key.sh \
+           file://genimage/data/post_rootfs/update_boot_scr.sh \
            file://genimage/scripts/run.do_image_ostree \
            file://genimage/scripts/run.do_image_otaimg \
            file://genimage/scripts/run.do_image_wic \

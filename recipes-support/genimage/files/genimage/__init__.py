@@ -237,6 +237,15 @@ class CreateFullImage(object):
                         self.packages,
                         pkg_globs=pkg_globs)
 
+        if self.machine == "bcm-2xxx-rpi4":
+            script_cmd = os.path.join(self.data_dir, 'post_rootfs', 'update_boot_scr.sh')
+            script_cmd = "{0} {1} {2} {3} {4}".format(script_cmd,
+                                                      rootfs.target_rootfs,
+                                                      self.image_name,
+                                                      self.data["ostree"]['ostree_use_ab'],
+                                                      self.data["ostree"]['ostree_remote_url'])
+            rootfs.add_rootfs_post_scripts(script_cmd)
+
         rootfs.create()
 
         installed_dict = rootfs.image_list_installed_packages()
