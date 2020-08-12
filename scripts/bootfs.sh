@@ -297,6 +297,11 @@ build_bootfs() {
 }
 
 write_wic() {
+	echo "Writing ustart.env"
+	echo "FAKEROOTCMD=\"${FAKEROOTCMD}\"" > ustart.env
+	echo "RECIPE_SYSROOT_NATIVE=\"${RECIPE_SYSROOT_NATIVE}\"" >> ustart.env
+	echo "IMAGE_ROOTFS=\"${OUTDIR}\"" >> ustart.env
+	echo "DEPLOY_DIR_IMAGE=\"${DEPLOY_DIR_IMAGE}\"" >> ustart.env
 	echo "Writing: ustart.wks"
 
 	if [ "$grub" != "" ] ; then
@@ -538,13 +543,13 @@ fi
 
 echo "Env settings from: $ENVFILE"
 
-cp $ENVFILE ustart.env
 eval `grep ^FAKEROOTCMD $ENVFILE`
 eval `grep ^RECIPE_SYSROOT_NATIVE $ENVFILE`
 eval `grep ^IMAGE_BOOT_FILES $ENVFILE`
 eval `grep ^DEPLOY_DIR_IMAGE $ENVFILE`
 eval `grep ^IMAGE_BASENAME $ENVFILE`
 eval `grep ^BOOT_ $ENVFILE`
+eval `grep ^STAGING_DIR= $ENVFILE`
 eval `grep ^OSTREE_ $ENVFILE | perl -p -e '($a,$b) = split(/=/,$_,2); $a =~ s/-/_/g; $_ = "$a=$b"'`
 eval `grep ^DISTRO_FEATURES= $ENVFILE`
 
@@ -570,10 +575,30 @@ if [ "$OSTREE_REMOTE_URL" = "" ] ; then
 	fi
 fi
 
+if [ ! -d "$RECIPE_SYSROOT_NATIVE" ] ; then
+	if [ ! -d "${STAGING_DIR}/x86_64" ] ; then
+		echo "Running: bitbake build-sysroots"
+		bitbake build-sysroots
+	fi
+	if [ ! -d "${STAGING_DIR}/x86_64" ] ; then
+		fatal "Could not locate sysroot binaries"
+	fi
+	RECIPE_SYSROOT_NATIVE="${STAGING_DIR}/x86_64"
+fi
+
 export PSEUDO_PREFIX=$RECIPE_SYSROOT_NATIVE/usr
 export PSEUDO_LOCALSTATEDIR=$PWD/pseudo
 export PSEUDO_PASSWD=$PWD/rootfs/etc
 export PSEUDO_NOSYMLINKEXP=1
+
+# Double check the FAKEROOTCMD and PSEUDO_PREFIX
+if [ ! -e "${FAKEROOTCMD}" ] ; then
+	echo "ERROR: Could not locate $FAKEROOTCMD"
+	exit 1
+fi
+if [ ! -d "$PSEUDO_PREFIX" ] ; then
+	PSEUDO_PREFIX=$(dirname $(dirname $FAKEROOTCMD))
+fi
 
 if [ -z "$INST_BRANCH" ] ; then
 	INST_BRANCH=$IMAGE_BASENAME
