@@ -882,8 +882,15 @@ fi
 PHYS_SYSROOT="/sysroot"
 OSTREE_BOOT_DEVICE="LABEL=otaboot"
 OSTREE_ROOT_DEVICE="LABEL=otaroot"
-mount_flags="rw,noatime,iversion"
-
+mount_flags="rw,noatime"
+if [ -x /init.ima ] ; then
+	mount --help 2>&1 |grep -q BusyBox
+	if [ $? = 0 ] ; then
+		mount_flags="rw,noatime,i_version"
+	else
+		mount_flags="rw,noatime,iversion"
+	fi
+fi
 for arg in ${OSTREE_KERNEL_ARGS}; do
         kargs_list="${kargs_list} --karg-append=$arg"
 done

@@ -4,7 +4,14 @@ DESCRIPTION = "OSTree initramfs image"
 INITRAMFS_FEATURES ??= "busybox"
 
 PkgsBusyBox = "busybox busybox-udhcpc"
-PkgsCoreUtils = "coreutils dhcp-client util-linux-umount util-linux-switch-root iproute2"
+PkgsCoreUtils = "coreutils \
+  dhcp-client \
+  util-linux \
+  util-linux-umount \
+  util-linux-mount \
+  util-linux-setsid \
+  util-linux-switch-root \
+  iproute2"
 
 INITRAMFS_PKGS = "${@bb.utils.contains('INITRAMFS_FEATURES', 'busybox', "${PkgsBusyBox}", "${PkgsCoreUtils}", d)}"
 
@@ -16,9 +23,6 @@ PACKAGE_INSTALL = "ostree \
   bzip2 \
   gnupg \
   kbd \
-  util-linux \
-  util-linux-setsid \
-  util-linux-mount \
   util-linux-blkid \
   util-linux-lsblk \
   util-linux-fdisk \

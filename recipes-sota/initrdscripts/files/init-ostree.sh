@@ -176,6 +176,15 @@ fi
 [ -z $OSTREE_ROOT_DEVICE ] && fatal "No OSTREE root device specified, please add 'ostree_root=LABEL=xyz' in bootline!"
 
 OSTREE_LABEL_ROOT=$(echo $OSTREE_ROOT_DEVICE | cut -f 2 -d'=')
+IVERSION=""
+if [ -x /init.ima ] ; then
+	mount --help 2>&1 |grep -q BusyBox
+	if [ $? = 0 ] ; then
+		IVERSION=",i_version"
+	else
+		IVERSION=",iversion"
+	fi
+fi
 
 rm_var_check() {
 	[ $ALLOW_RM_VAR != 1 -o ! -e /sysroot/ostree/repo/RESETVAR ] && return
@@ -198,7 +207,7 @@ rm_var_check() {
 
 		if [ "$e" = "ERASE" ] ; then
 			echo "Erasing /var..."
-			mount -o rw,noatime,iversion $datapart /var
+			mount -o rw,noatime${IVERSION} $datapart /var
 			if [ $? != 0 ] ; then
 				echo "Error could not mount"
 				return
@@ -214,7 +223,7 @@ rm_var_check() {
 				t=ext4
 			fi
 			mkfs.$t -F -L $fluxdata_label $datapart
-			mount -o rw,noatime,iversion $datapart /var
+			mount -o rw,noatime${IVERSION} $datapart /var
 			if [ $? != 0 ] ; then
 				echo "Error could not mount"
 				return
@@ -231,7 +240,7 @@ rm_var_check() {
 }
 
 try_to_mount_rootfs() {
-	local mount_flags="rw,noatime,iversion"
+	local mount_flags="rw,noatime${IVERSION}"
 	mount_flags="${mount_flags},${ROOT_FLAGS}"
 
 	mount -o $mount_flags "${OSTREE_ROOT_DEVICE}" "${ROOT_MOUNT}" 2>/dev/null && return 0
