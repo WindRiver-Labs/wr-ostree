@@ -549,8 +549,11 @@ grub_partition() {
 	lsz=${lsz// /}
 	# EFI Partition
 	if [ ! -e ${fs_dev}1 ] ; then
-		echo "WARNING WARNING - ${fs_dev}1 does not exist, creating"
-		INSTSF=0
+		sgdisk -i 1 ${dev} |grep -q ^"Partition name"
+		if [ $? != 0 ] ; then
+			echo "WARNING WARNING - ${fs_dev}1 does not exist, creating"
+			INSTSF=0
+		fi
 	fi
 	if [ $INSTSF = 1 ] ; then
 		for e in `sgdisk -p ${dev} 2> /dev/null |grep -A 1024 ^Number |grep -v ^Number |awk '{print $1}' |grep -v ^1\$`; do
@@ -610,8 +613,11 @@ grub_partition() {
 
 ufdisk_partition() {
 	if [ ! -e ${fs_dev}1 ] ; then
-		echo "WARNING WARNING - ${fs_dev}1 does not exist, creating"
-		INSTSF=0
+		sfdisk -l ${dev} | grep -q ${fs_dev}1
+		if [ $? != 0 ] ; then
+			echo "WARNING WARNING - ${fs_dev}1 does not exist, creating"
+			INSTSF=0
+		fi
 	fi
 	if [ $INSTSF = 1 ] ; then
 		pts=`mktemp`
