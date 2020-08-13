@@ -1018,7 +1018,10 @@ if [ -e ${PHYS_SYSROOT}/boot/loader/uEnv.txt ] ; then
 	bootdir=$(grep ^bootdir= ${PHYS_SYSROOT}/boot/loader/uEnv.txt)
 	bootdir=${bootdir#bootdir=}
 	if [ "$bootdir" != "" ] && [ -e "${PHYS_SYSROOT}/boot$bootdir" ] ; then
+		# Backup boot.scr (modified by bootfs.sh) to avoid be overridden by the one in bootdir
+		[ -e ${PHYS_SYSROOT}/boot/efi/boot.scr ] && mv ${PHYS_SYSROOT}/boot/efi/boot.scr ${PHYS_SYSROOT}/boot/efi/boot.scr-back
 		cp -r ${PHYS_SYSROOT}/boot$bootdir/* ${PHYS_SYSROOT}/boot/efi
+		[ -e ${PHYS_SYSROOT}/boot/efi/boot.scr-back ] && mv ${PHYS_SYSROOT}/boot/efi/boot.scr-back ${PHYS_SYSROOT}/boot/efi/boot.scr
 	fi
 	printf "123A" > ${PHYS_SYSROOT}/boot/efi/boot_ab_flag
 	# The first 0 is the boot count, the second zero is the boot entry default
