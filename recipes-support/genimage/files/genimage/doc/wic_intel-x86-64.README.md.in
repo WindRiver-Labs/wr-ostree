@@ -53,7 +53,7 @@ and un-mount those that are mounted, for example:
     $ umount /dev/sdf2
 
 Now burn the image onto the USB drive:
-    $ sudo dd if=@IMAGE_NAME@.wic of=/dev/sdf conv=notrunc
+    $ sudo dd if=@IMAGE_NAME@.wic of=/dev/sdf bs=1M status=progress
 
     $ sync
     $ eject /dev/sdf

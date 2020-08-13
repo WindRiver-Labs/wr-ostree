@@ -54,7 +54,7 @@ and un-mount those that are mounted, for example:
     $ umount /dev/sdf2
 
 Now burn the image onto the micro SD card:
-    $ sudo zcat @IMAGE_NAME@.ustart.img.gz | dd of=/dev/sdf conv=notrunc
+    $ zcat @IMAGE_NAME@.ustart.img.gz | sudo dd of=/dev/sdf bs=1M status=progress
 
     $ sync
     $ eject /dev/sdf
