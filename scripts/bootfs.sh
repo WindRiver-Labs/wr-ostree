@@ -84,6 +84,9 @@ modify_boot_scr() {
 
 	perl -p -i -e "s#^( *setenv BRANCH) .*#\$1 $INST_BRANCH# if (\$_ !~ /oBRANCH/) " $OUTDIR/boot.scr.raw
 	perl -p -i -e "s#^( *setenv exinargs).*#\$1 \\\"$EXTRA_INST_ARGS\\\"#" $OUTDIR/boot.scr.raw
+	perl -p -i -e "s#Autostarting network install#Autostarting ERASE and INSTALL#" $OUTDIR/boot.scr.raw
+	perl -p -i -e "s#Re-install from network=run#Re-install from ostree_repo=run#" $OUTDIR/boot.scr.raw
+
 	iurl="$OSTREE_REMOTE_URL"
 	if [ "$INST_URL" != "" ] ; then
 		iurl="$INST_URL"

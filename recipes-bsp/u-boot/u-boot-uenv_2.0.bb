@@ -159,7 +159,7 @@ if test -n \${ninstargs}; then
 else
  setenv netinst "\${netinstpre}fatload \${devtype} \${devnum}:1 \${loadaddr} ${OSTREE_KERNEL};fatload \${devtype} \${devnum}:1 \${initrd_addr} initramfs; setenv bootargs \\"\${fdtargs} \${instdef} \${exinargs}\\";${OSTREE_UBOOT_CMD} \${loadaddr} \${initrd_addr} \${fdt_addr}"
 fi
-setenv autoinst echo "!!!Autostarting ERASE and INSTALL, you have 5 seconds to reset the board!!!"\;sleep 5\;run netinst
+setenv autoinst echo "!!!Autostarting network install, you have 5 seconds to reset the board!!!"\;sleep 5\;run netinst
 if test "\${no_autonetinst}" != 1 && test -n \${URL} ; then
  if test "\${ex}" != "_b"; then
   if test ! -e \${devtype} \${devnum}:\$mmcpart 1/vmlinuz && test ! -e \${devtype} \${devnum}:\$mmcpart 2/vmlinuz; then
@@ -181,7 +181,7 @@ if test \${no_menu} != yes; then
   setenv bootmenu_1 Boot Primary volume=setenv bdef 30\;run switchab\;setenv go 1
  fi
  if test -n \${URL} && test \${ninst} = 1; then
-  setenv bootmenu_2 Re-install from ostree_repo=run netinst
+  setenv bootmenu_2 Re-install from network=run netinst
  else
   setenv bootmenu_2
  fi
