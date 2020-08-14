@@ -197,6 +197,34 @@ class CreateWicImage(Image):
             else:
                 logger.error("Skipping symlink, source does not exist: %s -> %s" % (dst, src))
 
+class CreateVMImage(Image):
+    def _set_allow_keys(self):
+        self.allowed_keys = {'image_name', 'machine', 'deploydir', 'vm_type'}
+
+    def _add_keys(self):
+        self.date = utils.get_today()
+        self.image_fullname = "%s-%s-%s" % (self.image_name, self.machine, self.date)
+        self.image_linkname =  "%s-%s" % (self.image_name, self.machine)
+
+    def create(self):
+        img = os.path.join(self.deploydir, "{0}.rootfs.wic".format(self.image_fullname))
+        cmd = "qemu-img convert -O {0} {1} {2}.{3}".format(self.vm_type, img, img, self.vm_type)
+        utils.run_cmd_oneshot(cmd)
+
+        self._create_symlinks()
+
+    def _create_symlinks(self):
+        dst = os.path.join(self.deploydir, "{0}.wic.{1}".format(self.image_linkname, self.vm_type))
+        src = os.path.join(self.deploydir, "{0}.rootfs.wic.{1}".format(self.image_fullname, self.vm_type))
+        if os.path.exists(src):
+            logger.debug("Creating symlink: %s -> %s" % (dst, src))
+            if os.path.islink(dst):
+                os.remove(dst)
+            os.symlink(os.path.basename(src), dst)
+        else:
+            logger.error("Skipping symlink, source does not exist: %s -> %s" % (dst, src))
+
+
 class CreateOstreeRepo(Image):
     def _set_allow_keys(self):
         self.allowed_keys.update({"gpgid", "gpg_password", "gpg_path"})

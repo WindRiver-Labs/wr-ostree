@@ -38,6 +38,7 @@ from genimage.constant import OSTREE_INITRD_PACKAGES
 from genimage.rootfs import Rootfs
 from genimage.container import CreateContainer
 from genimage.image import CreateWicImage
+from genimage.image import CreateVMImage
 from genimage.image import CreateOstreeRepo
 from genimage.image import CreateInitramfs
 from genimage.image import CreateOstreeOTA
@@ -67,6 +68,8 @@ def set_parser(parser=None):
 
     supported_types = [
         'wic',
+        'vmdk',
+        'vdi',
         'ostree-repo',
         'container',
         'ustart',
@@ -182,7 +185,7 @@ class CreateFullImage(object):
             self.image_type = self.args.type
 
         if 'all' in self.image_type:
-            self.image_type = ['ostree-repo', 'wic', 'container', 'ustart']
+            self.image_type = ['ostree-repo', 'wic', 'container', 'ustart', 'vmdk', 'vdi']
 
         # Cleanup all generated rootfs dir by default
         if not self.args.no_clean:
@@ -354,6 +357,22 @@ class CreateFullImage(object):
 
         image_wic.create()
 
+    @show_task_info("Create Vmdk Image")
+    def do_image_vmdk(self):
+        vmdk = CreateVMImage(image_name=self.image_name,
+                             machine=self.machine,
+                             deploydir=self.deploydir,
+                             vm_type="vmdk")
+        vmdk.create()
+
+    @show_task_info("Create Vdi Image")
+    def do_image_vdi(self):
+        vdi = CreateVMImage(image_name=self.image_name,
+                            machine=self.machine,
+                            deploydir=self.deploydir,
+                            vm_type="vdi")
+        vdi.create()
+
     @show_task_info("Create Docker Container")
     def do_image_container(self):
         workdir = os.path.join(self.workdir, self.image_name)
@@ -421,12 +440,17 @@ def _main_run(args):
     create.do_ostree_initramfs()
 
     # WIC image requires ostress repo
-    if any(img_type in create.image_type for img_type in ["ostree-repo", "wic", "ustart"]):
+    if any(img_type in create.image_type for img_type in ["ostree-repo", "wic", "ustart", "vmdk", "vdi"]):
         create.do_ostree_repo()
 
-    if "wic" in create.image_type:
+    if "wic" in create.image_type or "vmdk" in create.image_type or "vdi" in create.image_type:
         create.do_ostree_ota()
         create.do_image_wic()
+        if "vmdk" in create.image_type:
+            create.do_image_vmdk()
+
+        if "vdi" in create.image_type:
+            create.do_image_vdi()
 
     if "container" in create.image_type:
         create.do_image_container()
