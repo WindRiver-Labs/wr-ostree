@@ -15,8 +15,7 @@
 #* along with this program; if not, write to the Free Software
 #* Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 
-partbase=`cat /proc/mounts |grep "sysroot " | awk '{print $1}' | awk -F 'p' '{print $1}'`
-part=${partbase}'p1'
+part=`blkid --label boot`
 tdir=`mktemp -d`
 if [ "$tdir" != "" ] ; then
 	mount ${part} ${tdir}
