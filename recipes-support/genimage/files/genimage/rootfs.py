@@ -18,6 +18,7 @@ class Rootfs(object):
                  pkg_feeds,
                  packages,
                  target_rootfs=None,
+                 image_linguas=None,
                  pkg_globs=None):
 
         self.workdir = workdir
@@ -25,7 +26,10 @@ class Rootfs(object):
         self.machine = machine
         self.pkg_feeds = pkg_feeds
         self.packages = packages
-        self.pkg_globs = pkg_globs
+        self.pkg_globs = "" if pkg_globs is None else pkg_globs
+        if image_linguas:
+            self.pkg_globs += " %s" % self._image_linguas_globs(image_linguas)
+            self.packages = list(map(lambda s: "locale-base-%s" % s, image_linguas.split())) + self.packages
         if target_rootfs:
             self.target_rootfs = target_rootfs
         else:
@@ -41,6 +45,26 @@ class Rootfs(object):
 
         self.rootfs_pre_scripts = [os.path.join(self.data_dir, 'pre_rootfs', 'create_merged_usr_symlinks.sh')]
         self.rootfs_post_scripts = []
+
+    def _image_linguas_globs(self, image_linguas=""):
+        logger.debug("image_linguas %s", image_linguas)
+        if not image_linguas:
+            return ""
+
+        globs = ""
+        split_linguas = set()
+
+        for translation in image_linguas.split():
+            split_linguas.add(translation)
+            split_linguas.add(translation.split('-')[0])
+
+        split_linguas = sorted(split_linguas)
+
+        for lang in split_linguas:
+            globs += " *-locale-%s" % lang
+
+        logger.debug("globs %s", globs)
+        return globs
 
     def add_rootfs_post_scripts(self, script_cmd=None):
         if script_cmd is None:

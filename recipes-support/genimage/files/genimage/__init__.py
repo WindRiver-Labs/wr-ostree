@@ -152,7 +152,7 @@ class CreateFullImage(object):
             self.pkg_feeds.extend(self.args.url)
         self.pkg_feeds = list(set(self.pkg_feeds))
 
-        self.image_features = data['features'] if 'features' in data else DEFAULT_IMAGE_FEATURES
+        self.features = data['features'] if 'features' in data else DEFAULT_IMAGE_FEATURES
 
         self.data = data
 
@@ -231,13 +231,14 @@ class CreateFullImage(object):
     @show_task_info("Create Rootfs")
     def do_rootfs(self):
         workdir = os.path.join(self.workdir, self.image_name)
-        pkg_globs = self.image_features.get("pkg_globs", None)
-
+        pkg_globs = self.features.get("pkg_globs", None)
+        image_linguas = self.features.get("image_linguas", None)
         rootfs = Rootfs(workdir,
                         self.data_dir,
                         self.machine,
                         self.pkg_feeds,
                         self.packages,
+                        image_linguas=image_linguas,
                         pkg_globs=pkg_globs)
 
         if self.machine == "bcm-2xxx-rpi4":
@@ -324,7 +325,7 @@ class CreateFullImage(object):
         data['name'] = self.image_name
         data['machine'] = self.machine
         data['image_type'] = self.image_type
-        data['features'] = self.image_features
+        data['features'] = self.features
         data['package_feeds'] = self.pkg_feeds
         data['packages'] = list(installed_dict.keys())
         with open(self.output_yaml, "w") as f:

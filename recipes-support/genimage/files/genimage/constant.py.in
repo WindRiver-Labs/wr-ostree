@@ -5,7 +5,8 @@ DEFAULT_PACKAGE_FEED = "${DEFAULT_PACKAGE_FEED}".split()
 DEFAULT_IMAGE = "wrlinux-image-small"
 
 DEFAULT_IMAGE_FEATURES = {
-    'pkg_globs': None
+    'pkg_globs': None,
+    'image_linguas': '${IMAGE_LINGUAS}',
 }
 
 FEED_ARCHS_DICT = {
