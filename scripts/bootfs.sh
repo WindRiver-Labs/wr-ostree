@@ -86,6 +86,7 @@ modify_boot_scr() {
 	perl -p -i -e "s#^( *setenv exinargs).*#\$1 \\\"$EXTRA_INST_ARGS\\\"#" $OUTDIR/boot.scr.raw
 	perl -p -i -e "s#Autostarting network install#Autostarting ERASE and INSTALL#" $OUTDIR/boot.scr.raw
 	perl -p -i -e "s#Re-install from network=run#Re-install from ostree_repo=run#" $OUTDIR/boot.scr.raw
+	perl -p -i -e "s#instab=[^ ]* #instab=$OSTREE_USE_AB #" $OUTDIR/boot.scr.raw
 
 	iurl="$OSTREE_REMOTE_URL"
 	if [ "$INST_URL" != "" ] ; then
@@ -96,7 +97,7 @@ modify_boot_scr() {
 		perl -p -i -e "s#instdev=.*?([ \"])#instdev=$INST_DEV\$1#" $OUTDIR/boot.scr.raw
 	fi
 	OLDPATH="$PATH"
-	FOUND_ARGS=`cat $OUTDIR/boot.scr.raw | grep ^setenv\ instdef | sed -e 's/^setenv instdef "//;s/"$//;' -e "s/instab=./instab=$OSTREE_USE_AB/"`
+	FOUND_ARGS=`cat $OUTDIR/boot.scr.raw | grep ^setenv\ instdef | sed -e 's/^setenv instdef "//;s/"$//;'`
 	PATH=$RECIPE_SYSROOT_NATIVE/usr/bin:$RECIPE_SYSROOT_NATIVE/bin:$PATH
 	echo "Using \$BRANCH = $INST_BRANCH"
 	echo "Using \$URL = $iurl"
