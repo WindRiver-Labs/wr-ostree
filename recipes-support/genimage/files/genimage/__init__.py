@@ -105,8 +105,9 @@ def set_parser(parser=None):
         help = "Do not cleanup generated rootfs in workdir", action="store_true", default=False)
 
     parser.add_argument('input',
-        help='An input yaml file that the tool can be run against a package feed to generate an image',
-        nargs='?')
+        help='Input yaml files that the tool can be run against a package feed to generate an image',
+        action='store',
+        nargs='*')
 
     return parser
 
@@ -125,17 +126,32 @@ class CreateFullImage(object):
         self.today = get_today()
 
         data = dict()
-        if self.args.input:
-            logger.info("Input YAML File: %s" % self.args.input)
-            if not os.path.exists(self.args.input):
-                logger.error("Input yaml file '%s' does not exist" % self.args.input)
+        for yaml_file in self.args.input:
+            logger.info("Input YAML File: %s" % yaml_file)
+            if not os.path.exists(yaml_file):
+                logger.error("Input yaml file '%s' does not exist" % yaml_file)
                 sys.exit(1)
 
-            with open(self.args.input) as f:
-                data = yaml.load(f, Loader=yaml.FullLoader) or dict()
-                logger.debug("Yaml File Content: %s" % data)
-        else:
+            with open(yaml_file) as f:
+                d = yaml.load(f, Loader=yaml.FullLoader) or dict()
+
+            for key in d:
+                if key not in data:
+                    data[key] = d[key]
+                    continue
+
+                # Collect packages from all Yaml file as many as possible
+                if key == 'packages':
+                    data[key].extend(d[key])
+
+                # Except packages, the duplicated param is not allowed
+                elif key in data:
+                    logger.error("There is duplicated '%s' in Yaml File %s", key, yaml_file)
+                    sys.exit(1)
+
+        if not self.args.input:
             logger.info("No Input YAML File, use default setting")
+        logger.debug("Yaml File Content: %s" % data)
 
         self.image_name = data['name'] if 'name' in data else DEFAULT_IMAGE
         self.machine = data['machine'] if 'machine' in data else DEFAULT_MACHINE
