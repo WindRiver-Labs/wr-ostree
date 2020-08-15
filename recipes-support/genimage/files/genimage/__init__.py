@@ -250,6 +250,14 @@ class CreateFullImage(object):
                                                       self.data["ostree"]['ostree_remote_url'])
             rootfs.add_rootfs_post_scripts(script_cmd)
 
+        if 'sysvinit' not in self.packages:
+            script_cmd = os.path.join(self.data_dir, 'post_rootfs', 'set_systemd_default_target.sh')
+            if 'packagegroup-core-x11-base' in self.packages:
+                script_cmd = "{0} {1} graphical.target".format(script_cmd, rootfs.target_rootfs)
+            else:
+                script_cmd = "{0} {1} multi-user.target".format(script_cmd, rootfs.target_rootfs)
+            rootfs.add_rootfs_post_scripts(script_cmd)
+
         rootfs.create()
 
         installed_dict = rootfs.image_list_installed_packages()
