@@ -226,6 +226,11 @@ class CreateFullImage(object):
         self.native_sysroot = os.environ['OECORE_NATIVE_SYSROOT']
         self.data_dir = os.path.join(self.native_sysroot, "usr/share/genimage/data")
 
+        dest = os.path.join(self.deploydir, "yaml_example")
+        src = os.path.join(self.data_dir, "yaml_example")
+        cmd = "ln -snf -r {0} {1}".format(src, dest)
+        utils.run_cmd_oneshot(cmd)
+
     def do_prepare(self):
         gpg_data = self.data["gpg"]
         utils.check_gpg_keys(gpg_data)

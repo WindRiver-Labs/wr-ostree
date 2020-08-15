@@ -1,0 +1,5 @@
+packages:
+- vboxguestdrivers
+- kernel-module-vboxsf
+- kernel-module-vboxvideo
+- kernel-module-vboxguest

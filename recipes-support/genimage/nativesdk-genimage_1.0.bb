@@ -47,6 +47,9 @@ SRC_URI = "\
            file://genimage/data/post_rootfs/add_gpg_key.sh \
            file://genimage/data/post_rootfs/update_boot_scr.sh \
            file://genimage/data/post_rootfs/set_systemd_default_target.sh \
+           file://genimage/data/yaml_example/vboxguestdrivers.yaml \
+           file://genimage/data/yaml_example/xfce_desktop.yaml \
+           file://genimage/data/yaml_example/package_management.yaml \
            file://genimage/scripts/run.do_image_ostree \
            file://genimage/scripts/run.do_image_otaimg \
            file://genimage/scripts/run.do_image_wic \
