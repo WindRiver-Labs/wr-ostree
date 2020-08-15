@@ -283,7 +283,7 @@ class CreateFullImage(object):
 
         installed_dict = rootfs.image_list_installed_packages()
 
-        self._save_output_yaml(installed_dict)
+        self._save_output_yaml(installed_dict, rootfs.get_kernel_ver())
 
         # Generate image manifest
         manifest_name = "{0}/{1}-{2}.manifest".format(self.deploydir, self.image_name, self.machine)
@@ -349,14 +349,22 @@ class CreateFullImage(object):
                         deploydir = self.deploydir)
         initrd.create()
 
-    def _save_output_yaml(self, installed_dict):
+    def _save_output_yaml(self, installed_dict, kernel_ver=None):
+        if kernel_ver is None:
+            kernel_ver = '5.4.57-yocto-standard'
+
         data = self.data
         data['name'] = self.image_name
         data['machine'] = self.machine
         data['image_type'] = self.image_type
         data['features'] = self.features
         data['package_feeds'] = self.pkg_feeds
-        data['packages'] = list(installed_dict.keys())
+
+        # Remove kernel version suffix from package name
+        # such as kernel-5.4.57-yocto-standard -> kernel
+        data['packages'] = [p.replace('-{0}'.format(kernel_ver), '') for p in installed_dict.keys()]
+        data['packages'] = sorted(list(set(data['packages'])))
+
         with open(self.output_yaml, "w") as f:
             utils.ordered_dump(data, f, Dumper=yaml.SafeDumper)
             logger.debug("Save Yaml FIle to : %s" % (self.output_yaml))
