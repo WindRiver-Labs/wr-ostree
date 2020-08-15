@@ -124,5 +124,38 @@ class Rootfs(object):
 
         self._post_rootfs()
 
+        self._generate_kernel_module_deps()
+
     def image_list_installed_packages(self):
         return self.installed_pkgs
+
+    def _check_for_kernel_modules(self, modules_dir):
+        for root, dirs, files in os.walk(modules_dir, topdown=True):
+            for name in files:
+                found_ko = name.endswith(".ko")
+                if found_ko:
+                    return found_ko
+        return False
+
+    def get_kernel_ver(self):
+        kernel_abi_ver_file = os.path.join(self.pm.pkgdatadir,
+                                           'kernel-depmod',
+                                           'kernel-abiversion')
+        if not os.path.exists(kernel_abi_ver_file):
+            logger.error("No kernel-abiversion file found (%s), cannot run depmod, aborting" % kernel_abi_ver_file)
+            return None
+
+        kernel_ver = open(kernel_abi_ver_file).read().strip(' \n')
+        return kernel_ver
+
+    def _generate_kernel_module_deps(self):
+        modules_dir = os.path.join(self.target_rootfs, 'lib', 'modules')
+        # if we don't have any modules don't bother to do the depmod
+        if not self._check_for_kernel_modules(modules_dir):
+            logger.warn("No Kernel Modules found, not running depmod")
+            return
+
+        kernel_ver = self.get_kernel_ver()
+        versioned_modules_dir = os.path.join(self.target_rootfs, modules_dir, kernel_ver)
+        utils.mkdirhier(versioned_modules_dir)
+        utils.run_cmd_oneshot("depmodwrapper -a -b {0} {1}".format(self.target_rootfs, kernel_ver))
