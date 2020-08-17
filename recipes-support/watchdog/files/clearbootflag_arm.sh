@@ -15,7 +15,9 @@
 #* along with this program; if not, write to the Free Software
 #* Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 
-part=`blkid --label boot`
+partbase=`cat /proc/mounts |grep "sysroot " | awk '{print $1}'`
+### ASSUME sysroot is on a partitio <= 9 ###
+part=${partbase::-1}'1'
 tdir=`mktemp -d`
 if [ "$tdir" != "" ] ; then
 	mount ${part} ${tdir}
