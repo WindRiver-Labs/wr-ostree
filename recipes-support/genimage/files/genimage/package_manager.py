@@ -117,7 +117,7 @@ class DnfRpm:
     def get_gpgkey(self):
         return None
 
-    def insert_feeds_uris(self, remote_uris):
+    def insert_feeds_uris(self, remote_uris, save_repo=True):
         from urllib.parse import urlparse
 
         gpg_opts = ''
@@ -127,29 +127,26 @@ class DnfRpm:
         else:
             gpg_opts += 'gpgcheck=0\n'
 
+        utils.mkdirhier(os.path.join(self.temp_dir, "yum.repos.d"))
         utils.mkdirhier(os.path.join(self.target_rootfs, "etc", "yum.repos.d"))
         for uri in remote_uris:
             repo_base = "oe-remote-repo" + "-".join(urlparse(uri).path.split("/"))
             repo_name = "OE Remote Repo:" + " ".join(urlparse(uri).path.split("/"))
             repo_uri = uri
             repo_cacert = os.path.join(os.environ["OECORE_NATIVE_SYSROOT"], "etc/ssl/certs/ca-certificates.crt")
-            open(os.path.join(self.target_rootfs, "etc", "yum.repos.d", repo_base + ".repo"), 'w').write(
+            open(os.path.join(self.temp_dir, "yum.repos.d", repo_base + ".repo"), 'w').write(
                     "[%s]\nname=%s\nbaseurl=%s\nsslcacert=%s\n%s" % (repo_base, repo_name, repo_uri, repo_cacert, gpg_opts))
 
-    def update_feeds_uris(self):
-        # Clean up sslcacert in repo since target image does not require it
-        repo_dir = os.path.join(self.target_rootfs, "etc", "yum.repos.d")
-        for repo in os.listdir(repo_dir):
-            repo_path = os.path.join(repo_dir, repo)
-            cmd = "sed -i '/^sslcacert=.*$/d' {0}".format(repo_path)
-            utils.run_cmd_oneshot(cmd)
+            if save_repo:
+                open(os.path.join(self.target_rootfs, "etc", "yum.repos.d", repo_base + ".repo"), 'w').write(
+                        "[%s]\nname=%s\nbaseurl=%s\n%s" % (repo_base, repo_name, repo_uri, gpg_opts))
 
     def _invoke_dnf(self, dnf_args, fatal = True, print_output = True ):
         os.environ['RPM_ETCCONFIGDIR'] = self.target_rootfs
         dnf_cmd = shutil.which("dnf", path=os.getenv('PATH'))
         standard_dnf_args = ["-v", "--rpmverbosity=info", "-y",
                              "-c", os.path.join(self.target_rootfs, "etc/dnf/dnf.conf"),
-                             "--setopt=reposdir=%s" %(os.path.join(self.target_rootfs, "etc/yum.repos.d")),
+                             "--setopt=reposdir=%s" %(os.path.join(self.temp_dir, "yum.repos.d")),
                              "--installroot=%s" % (self.target_rootfs),
                              "--setopt=logdir=%s" % (self.temp_dir)
                             ]
