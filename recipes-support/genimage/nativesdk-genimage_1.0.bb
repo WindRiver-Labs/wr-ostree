@@ -50,6 +50,7 @@ SRC_URI = "\
            file://genimage/data/yaml_example/vboxguestdrivers.yaml \
            file://genimage/data/yaml_example/xfce_desktop.yaml \
            file://genimage/data/yaml_example/package_management.yaml \
+           file://genimage/data/oci_config/config.json \
            file://genimage/scripts/run.do_image_ostree \
            file://genimage/scripts/run.do_image_otaimg \
            file://genimage/scripts/run.do_image_wic \
