@@ -172,8 +172,8 @@ class CreateFullImage(object):
 
         self.data = data
 
-        self.outdir = self.args.outdir
-        self.workdir = os.path.join(self.args.workdir, "workdir")
+        self.outdir = os.path.realpath(self.args.outdir)
+        self.workdir = os.path.realpath(os.path.join(self.args.workdir, "workdir"))
 
         utils.fake_root(workdir=self.workdir)
         self.deploydir = os.path.join(self.outdir, "deploy")
