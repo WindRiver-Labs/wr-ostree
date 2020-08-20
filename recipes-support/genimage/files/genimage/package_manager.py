@@ -160,13 +160,6 @@ class DnfRpm:
 
         res, output = utils.run_cmd(cmd, print_output=print_output)
         if res:
-            if print_output:
-                (logger.info, logger.error)[fatal]("Could not invoke dnf. Command "
-                     "'%s' returned %d:\n%s" % (' '.join(cmd), res, output))
-            else:
-                (logger.info, logger.error)[fatal]("Could not invoke dnf. Command "
-                     "'%s' returned %d:" % (' '.join(cmd), res))
-
             raise Exception("Could not invoke dnf. Command "
                      "'%s' returned %d:\n%s" % (' '.join(cmd), res, output))
 
@@ -212,8 +205,6 @@ class DnfRpm:
             logger.info("Running %s" % ' '.join([cmd] + args + pkgs))
             res, output = utils.run_cmd([cmd] + args + pkgs)
             if res:
-                logger.error("Could not invoke rpm. Command "
-                     "'%s' returned %d:\n%s" % (' '.join([cmd] + args + pkgs), res, output))
                 raise Exception("Could not invoke rpm. Command "
                      "'%s' returned %d:\n%s" % (' '.join([cmd] + args + pkgs), res, output))
 
@@ -274,8 +265,6 @@ class DnfRpm:
         args = ["-q", "--root=%s" % self.target_rootfs, "--queryformat", "%{postin}", pkg]
         res, output = utils.run_cmd([cmd] + args)
         if res:
-            logger.error("Could not invoke rpm. Command "
-                     "'%s' returned %d:\n%s" % (' '.join([cmd] + args), res, output))
             raise Exception("Could not invoke rpm. Command "
                      "'%s' returned %d:\n%s" % (' '.join([cmd] + args), res, output))
 
@@ -336,12 +325,11 @@ class DnfRpm:
             res, output = utils.run_cmd(script_full)
             if res:
                 if "qemuwrapper: qemu usermode is not supported" in output:
-                    logger.debug("The postinstall intercept hook '%s' could not be executed due to missing qemu usermode support, details in %s/%s"
-                            % (script, self.temp_dir, "log.do_rootfs"))
+                    logger.debug("The postinstall intercept hook '%s' could not be executed due to missing qemu usermode support"
+                            % (script))
                     self._postpone_to_first_boot(script_full)
                 else:
-                    logger.error("The postinstall intercept hook '%s' failed, details in %s/%s" % (script, self.temp_dir, "log.do_rootfs"))
-                    raise Exception("The postinstall intercept hook '%s' failed, details in %s/%s" % (script, self.temp_dir, "log.do_rootfs"))
+                    raise Exception("The postinstall intercept hook '%s' failed\n%s" % (script, output))
 
     def install_complementary(self, globs=None):
         """
@@ -370,11 +358,9 @@ class DnfRpm:
                    globs]
             res, output = utils.run_cmd(cmd)
             if res:
-                logger.error("Could not compute complementary packages list. Command "
+                raise Exception("Could not compute complementary packages list. Command "
                          "'%s' returned %d:\n%s" %
                          (' '.join(cmd), res, output))
-                raise Exception("Could not invoke dnf. Command "
-                         "'%s' returned %d:\n%s" % (' '.join(cmd), res, output))
 
             complementary_pkgs = set(output.split())
             skip_pkgs = sorted(complementary_pkgs & provided_pkgs)

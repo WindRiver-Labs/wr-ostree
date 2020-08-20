@@ -176,8 +176,6 @@ class CreateWicImage(Image):
         cmd = os.path.join(wic_env['OECORE_NATIVE_SYSROOT'], "usr/share/genimage/scripts/run.do_image_wic")
         res, output = utils.run_cmd(cmd, env=wic_env)
         if res:
-            logger.error("Executing %s failed\nExit code %d. Output:\n%s"
-                               % (cmd, res, output))
             raise Exception("Executing %s failed\nExit code %d. Output:\n%s"
                                % (cmd, res, output))
 
@@ -244,8 +242,6 @@ class CreateOstreeRepo(Image):
         cmd = os.path.expandvars("$OECORE_NATIVE_SYSROOT/usr/share/genimage/scripts/run.do_image_ostree")
         res, output = utils.run_cmd(cmd, env=ostreerepo_env)
         if res:
-            logger.error("Executing %s failed\nExit code %d. Output:\n%s"
-                               % (cmd, res, output))
             raise Exception("Executing %s failed\nExit code %d. Output:\n%s"
                                % (cmd, res, output))
 
@@ -301,8 +297,6 @@ class CreateOstreeOTA(Image):
         cmd = os.path.expandvars("$OECORE_NATIVE_SYSROOT/usr/share/genimage/scripts/run.do_image_otaimg")
         res, output = utils.run_cmd(cmd, env=ota_env)
         if res:
-            logger.error("Executing %s failed\nExit code %d. Output:\n%s"
-                               % (cmd, res, output))
             raise Exception("Executing %s failed\nExit code %d. Output:\n%s"
                                % (cmd, res, output))
 
@@ -323,8 +317,6 @@ class CreateBootfs(Image):
         cmd = "{0} -L -a instdate=BUILD_DATE -s 0 -e {1}/{2}-{3}.env".format(cmd, self.deploydir, self.image_name, self.machine)
         res, output = utils.run_cmd(cmd, shell=True, cwd=self.workdir)
         if res:
-            logger.error("Executing %s failed\nExit code %d. Output:\n%s"
-                               % (cmd, res, output))
             raise Exception("Executing %s failed\nExit code %d. Output:\n%s"
                                % (cmd, res, output))
 

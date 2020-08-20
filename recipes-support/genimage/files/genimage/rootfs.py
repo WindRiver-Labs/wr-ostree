@@ -84,8 +84,6 @@ class Rootfs(object):
             logger.debug("Executing '%s' preprocess rootfs..." % script)
             res, output = utils.run_cmd(script, shell=True)
             if res:
-                logger.error("Executing %s preprocess rootfs failed\nExit code %d. Output:\n%s"
-                                   % (script, res, output))
                 raise Exception("Executing %s postprocess rootfs failed\nExit code %d. Output:\n%s"
                                    % (script, res, output))
 
@@ -94,8 +92,6 @@ class Rootfs(object):
             logger.debug("Executing '%s' postprocess rootfs..." % script)
             res, output = utils.run_cmd(script, shell=True)
             if res:
-                logger.error("Executing %s postprocess rootfs failed\nExit code %d. Output:\n%s"
-                                   % (script, res, output))
                 raise Exception("Executing %s postprocess rootfs failed\nExit code %d. Output:\n%s"
                                    % (script, res, output))
 

@@ -109,8 +109,6 @@ def run_cmd(cmd, shell=False, print_output=True, env=None, cwd=None):
 def run_cmd_oneshot(cmd, shell=True, print_output=False, cwd=None):
     res, output = run_cmd(cmd, shell, print_output, cwd=cwd)
     if res:
-        logger.error("Executing %s failed\nExit code %d. Output:\n%s"
-                           % (cmd, res, output))
         raise Exception("Executing %s failed\nExit code %d. Output:\n%s"
                            % (cmd, res, output))
 

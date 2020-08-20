@@ -465,7 +465,7 @@ class CreateFullImage(object):
                         deploydir=self.deploydir)
         ustart.create()
 
-def _main_run(args):
+def _main_run_internal(args):
     create = CreateFullImage(args)
     create.do_prepare()
     create.do_rootfs()
@@ -497,6 +497,13 @@ def _main_run(args):
         create.do_ustart_img()
 
     create.do_post()
+
+def _main_run(args):
+    try:
+        ret = _main_run_internal(args)
+    except Exception as e:
+            logger.error(e)
+            raise
 
 def main():
     parser = set_parser()
