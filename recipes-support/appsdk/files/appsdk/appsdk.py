@@ -14,6 +14,7 @@ import tempfile
 from genimage.utils import set_logger
 from genimage.utils import run_cmd
 from genimage.constant import DEFAULT_PACKAGE_FEED
+from genimage.constant import DEFAULT_REMOTE_PKGDATADIR
 from genimage.constant import DEFAULT_PACKAGES
 from genimage.constant import DEFAULT_MACHINE
 from genimage.constant import DEFAULT_IMAGE
@@ -139,6 +140,7 @@ class AppSDK(object):
             if 'packages' in data:
                 self.packages += data['packages']
             self.pkg_feeds = data['package_feeds'] if 'package_feeds' in data else DEFAULT_PACKAGE_FEED
+            self.remote_pkgdatadir = data['remote_pkgdatadir'] if 'remote_pkgdatadir' in data else DEFAULT_REMOTE_PKGDATADIR
             self.image_features = data['features'] if 'features' in data else DEFAULT_IMAGE_FEATURES
 
         # qemuwrapper-cross is always needed
@@ -150,6 +152,7 @@ class AppSDK(object):
                 yaml.dump({'name': self.image_name,
                            'machine': self.machine,
                            'package_feeds': self.pkg_feeds,
+                           'remote_pkgdatadir': self.remote_pkgdatadir,
                            'features': self.image_features,
                            'packages': self.packages}, tf)
                 logger.warning("Please check %s for default settings." % tf.name)
@@ -163,6 +166,7 @@ class AppSDK(object):
                         self.machine,
                         self.pkg_feeds,
                         self.packages,
+                        remote_pkgdatadir=self.remote_pkgdatadir,
                         target_rootfs=target_sysroot_dir,
                         pkg_globs="*-src *-dev *-dbg")
 

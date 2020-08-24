@@ -43,7 +43,7 @@ class DnfRpm:
         self.primary_arch = machine.replace('-', '_')
         self.machine = machine
 
-        self.pkgdatadir = os.path.join(os.environ['OECORE_NATIVE_SYSROOT'], "usr/share/pkgdata", machine)
+        self.pkgdatadir = os.path.join(os.environ['OECORE_NATIVE_SYSROOT'], "../pkgdata", machine)
         self.oe_pkgdata_util = os.path.join(os.environ['OECORE_NATIVE_SYSROOT'], "usr/share/poky/scripts/oe-pkgdata-util")
 
         self._initialize_intercepts()

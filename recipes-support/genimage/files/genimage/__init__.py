@@ -30,6 +30,7 @@ from genimage.utils import set_logger
 from genimage.utils import get_today
 from genimage.utils import show_task_info
 from genimage.constant import DEFAULT_PACKAGE_FEED
+from genimage.constant import DEFAULT_REMOTE_PKGDATADIR
 from genimage.constant import DEFAULT_PACKAGES
 from genimage.constant import DEFAULT_MACHINE
 from genimage.constant import DEFAULT_IMAGE
@@ -164,6 +165,9 @@ class CreateFullImage(object):
         self.packages = list(set(self.packages))
 
         self.pkg_feeds = data['package_feeds'] if 'package_feeds' in data else DEFAULT_PACKAGE_FEED
+
+        self.remote_pkgdatadir = data['remote_pkgdatadir'] if 'remote_pkgdatadir' in data else DEFAULT_REMOTE_PKGDATADIR
+
         if self.args.url:
             self.pkg_feeds.extend(self.args.url)
         self.pkg_feeds = list(set(self.pkg_feeds))
@@ -259,6 +263,7 @@ class CreateFullImage(object):
                         self.machine,
                         self.pkg_feeds,
                         self.packages,
+                        remote_pkgdatadir=self.remote_pkgdatadir,
                         image_linguas=image_linguas,
                         pkg_globs=pkg_globs)
 
@@ -359,6 +364,7 @@ class CreateFullImage(object):
         data['image_type'] = self.image_type
         data['features'] = self.features
         data['package_feeds'] = self.pkg_feeds
+        data['remote_pkgdatadir'] = self.remote_pkgdatadir
 
         # Remove kernel version suffix from package name
         # such as kernel-5.4.57-yocto-standard -> kernel

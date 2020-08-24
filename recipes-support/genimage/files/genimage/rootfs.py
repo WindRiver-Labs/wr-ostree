@@ -17,6 +17,7 @@ class Rootfs(object):
                  machine,
                  pkg_feeds,
                  packages,
+                 remote_pkgdatadir=None,
                  target_rootfs=None,
                  image_linguas=None,
                  pkg_globs=None):
@@ -44,6 +45,10 @@ class Rootfs(object):
         utils.fake_root_set_passwd(self.target_rootfs)
 
         self.rootfs_pre_scripts = [os.path.join(self.data_dir, 'pre_rootfs', 'create_merged_usr_symlinks.sh')]
+        if remote_pkgdatadir:
+            script_cmd = "{0} {1}".format(os.path.join(self.data_dir, 'pre_rootfs', 'update_pkgdata.sh'), remote_pkgdatadir)
+            self.rootfs_pre_scripts.append(script_cmd)
+
         self.rootfs_post_scripts = []
 
     def _image_linguas_globs(self, image_linguas=""):
