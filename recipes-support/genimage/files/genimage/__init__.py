@@ -239,11 +239,19 @@ class CreateFullImage(object):
         gpg_data = self.data["gpg"]
         utils.check_gpg_keys(gpg_data)
 
-        if "ostree" not in self.data:
+        if not self.data.get("ostree", None):
             self.data["ostree"] = constant.DEFAULT_OSTREE_DATA
+        else:
+            for ostree_param in constant.DEFAULT_OSTREE_DATA:
+                if ostree_param not in self.data["ostree"]:
+                    self.data["ostree"][ostree_param] = constant.DEFAULT_OSTREE_DATA[ostree_param]
 
-        if "wic" not in self.data:
+        if not self.data.get("wic", None):
             self.data["wic"] = constant.DEFAULT_WIC_DATA
+        else:
+            for wic_param in constant.DEFAULT_WIC_DATA:
+                if wic_param not in self.data["wic"]:
+                    self.data["wic"][wic_param] = constant.DEFAULT_WIC_DATA[wic_param]
 
     def do_post(self):
         for f in ["qemu-u-boot-bcm-2xxx-rpi4.bin", "ovmf.qcow2"]:
