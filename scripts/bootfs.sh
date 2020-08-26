@@ -82,8 +82,10 @@ modify_boot_scr() {
 		EXTRA_INST_ARGS="$EXTRA_INST_ARGS instl=$INSTL"
 	fi
 
+	sed -i -e "s#console=[^ ]* console=[^ ]*#${OSTREE_CONSOLE}#g" $OUTDIR/boot.scr.raw
+	sed -i -e "s#^\(setenv exinargs\).*#\1 $EXTRA_INST_ARGS#" $OUTDIR/boot.scr.raw
+
 	perl -p -i -e "s#^( *setenv BRANCH) .*#\$1 $INST_BRANCH# if (\$_ !~ /oBRANCH/) " $OUTDIR/boot.scr.raw
-	perl -p -i -e "s#^( *setenv exinargs).*#\$1 \\\"$EXTRA_INST_ARGS\\\"#" $OUTDIR/boot.scr.raw
 	perl -p -i -e "s#Autostarting network install#Autostarting ERASE and INSTALL#" $OUTDIR/boot.scr.raw
 	perl -p -i -e "s#Re-install from network=run#Re-install from ostree_repo=run#" $OUTDIR/boot.scr.raw
 	perl -p -i -e "s#instab=[^ ]* #instab=$OSTREE_USE_AB #" $OUTDIR/boot.scr.raw
