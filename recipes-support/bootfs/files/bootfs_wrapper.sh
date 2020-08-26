@@ -42,4 +42,4 @@ export IMAGE_ROOTFS="$PWD/bootfs"
 export DEPLOY_DIR_IMAGE
 eval `grep ^DEPLOY_DIR_IMAGE $ENVFILE`
 
-$OECORE_NATIVE_SYSROOT/usr/share/bootfs/scripts/bootfs.sh $@
+$OECORE_NATIVE_SYSROOT/usr/share/bootfs/scripts/bootfs.sh "$@"
