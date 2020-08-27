@@ -168,8 +168,6 @@ do_image_otaimg() {
 	#create an image with the free space equal the rootfs size
 	wic_deployed_var_path=$(find ${PHYS_SYSROOT}/ostree/deploy/${OSTREE_OSNAME}/deploy/ -maxdepth 2 -name "var"|head -1)
 	rm -rf $WORKDIR/rootfs_ota_var
-	id
-	ls $wic_deployed_var_path -al
 	cp ${wic_deployed_var_path} -ar $WORKDIR/rootfs_ota_var
 
 	# rootfs data for EFI partition

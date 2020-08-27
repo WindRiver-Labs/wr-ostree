@@ -276,6 +276,7 @@ class CreateFullImage(object):
                         pkg_globs=pkg_globs)
 
         if self.machine == "bcm-2xxx-rpi4":
+            os.environ['OSTREE_CONSOLE'] = self.data["ostree"]['OSTREE_CONSOLE']
             script_cmd = os.path.join(self.data_dir, 'post_rootfs', 'update_boot_scr.sh')
             script_cmd = "{0} {1} {2} {3} {4}".format(script_cmd,
                                                       rootfs.target_rootfs,
