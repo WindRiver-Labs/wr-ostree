@@ -25,6 +25,7 @@ RDEPENDS_${PN} = "nativesdk-dnf \
                   nativesdk-glib-networking \
                   nativesdk-kmod \
                   nativesdk-wget \
+                  nativesdk-python3-texttable \
 "
 
 # Required by do_rootfs's intercept_scripts in sdk

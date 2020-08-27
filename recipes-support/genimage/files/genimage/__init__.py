@@ -25,6 +25,7 @@ import atexit
 import yaml
 from collections import OrderedDict
 import time
+from texttable import Texttable
 
 from genimage.utils import set_logger
 from genimage.utils import get_today
@@ -480,6 +481,67 @@ class CreateFullImage(object):
                         deploydir=self.deploydir)
         ustart.create()
 
+    def do_report(self):
+        table = Texttable()
+        table.set_cols_align(["l", "l"])
+        table.set_cols_valign(["t", "t"])
+        table.add_rows([["Type", "Name"]])
+
+        output = subprocess.check_output("ls yaml_example/*.yaml", shell=True, cwd=self.deploydir)
+        table.add_row(["Yaml File Sample", output.strip()])
+
+        image_name = "%s-%s" % (self.image_name, self.machine)
+        cmd_format = "ls -gh --time-style=+%%Y %s | awk '{$1=$2=$3=$4=$5=\"\"; print $0}'"
+
+        output = subprocess.check_output("ls {0}.yaml".format(image_name), shell=True, cwd=self.deploydir)
+        table.add_row(["Image Yaml File", output.strip()])
+
+        if any(img_type in self.image_type for img_type in ["ostree-repo", "wic", "ustart", "vmdk", "vdi"]):
+            output = subprocess.check_output("ls -d  ostree_repo", shell=True, cwd=self.deploydir)
+            table.add_row(["Ostree Repo", output.strip()])
+
+            cmd_wic = cmd_format % "{0}.wic".format(image_name)
+            output = subprocess.check_output(cmd_wic, shell=True, cwd=self.deploydir)
+            table.add_row(["WIC Image", output.strip()])
+
+            cmd_wic = cmd_format % "{0}.wic.README.md".format(image_name)
+            output = subprocess.check_output(cmd_wic, shell=True, cwd=self.deploydir)
+            table.add_row(["WIC Image Doc", output.strip()])
+
+            cmd_wic = cmd_format % "{0}.qemuboot.conf".format(image_name)
+            output = subprocess.check_output(cmd_wic, shell=True, cwd=self.deploydir)
+            table.add_row(["WIC Image\nQemu Conf", output.strip()])
+
+        if "vdi" in self.image_type:
+            cmd_wic = cmd_format % "{0}.wic.vdi".format(image_name)
+            output = subprocess.check_output(cmd_wic, shell=True, cwd=self.deploydir)
+            table.add_row(["VDI Image", output.strip()])
+
+        if "vmdk" in self.image_type:
+            cmd_wic = cmd_format % "{0}.wic.vmdk".format(image_name)
+            output = subprocess.check_output(cmd_wic, shell=True, cwd=self.deploydir)
+            table.add_row(["VMDK Image", output.strip()])
+
+        if "ustart" in self.image_type:
+            cmd_wic = cmd_format % "{0}.ustart.img.gz".format(image_name)
+            output = subprocess.check_output(cmd_wic, shell=True, cwd=self.deploydir)
+            table.add_row(["Ustart Image", output.strip()])
+
+            cmd_wic = cmd_format % "{0}.ustart.img.gz.README.md".format(image_name)
+            output = subprocess.check_output(cmd_wic, shell=True, cwd=self.deploydir)
+            table.add_row(["Ustart Image Doc", output.strip()])
+
+        if "container" in self.image_type:
+            cmd_wic = cmd_format % "{0}.container.tar.bz2".format(image_name)
+            output = subprocess.check_output(cmd_wic, shell=True, cwd=self.deploydir)
+            table.add_row(["Container Image", output.strip()])
+
+            cmd_wic = cmd_format % "{0}.container.tar.bz2.README.md".format(image_name)
+            output = subprocess.check_output(cmd_wic, shell=True, cwd=self.deploydir)
+            table.add_row(["Container Image Doc", output.strip()])
+
+        logger.info("Deploy Directory: %s\n%s", self.deploydir, table.draw())
+
 def _main_run_internal(args):
     create = CreateFullImage(args)
     create.do_prepare()
@@ -512,6 +574,7 @@ def _main_run_internal(args):
         create.do_ustart_img()
 
     create.do_post()
+    create.do_report()
 
 def _main_run(args):
     try:
