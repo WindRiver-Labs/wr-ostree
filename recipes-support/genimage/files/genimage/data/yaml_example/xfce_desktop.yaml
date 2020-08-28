@@ -1,4 +1,5 @@
 packages:
+- lxdm
 - packagegroup-xfce-base
 - wr-themes
 - gsettings-desktop-schemas
