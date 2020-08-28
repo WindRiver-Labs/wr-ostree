@@ -270,13 +270,17 @@ build_bootfs() {
 			cp -r inst_ostree_repo $OUTDIR/ostree_repo || \
 				fatal "Could not copy ${LOCAL_REPO_DIR}"
 		elif [ "$LOCAL_REPO_DIR" != "" ] ; then
-			ostree show --repo=${LOCAL_REPO_DIR} $INST_BRANCH >/dev/null || \
-			    fatal "ostree branch $INST_BRANCH does not exist in ostree_repo"
+			if which ostree >/dev/null 2>&1; then
+				ostree show --repo=${LOCAL_REPO_DIR} $INST_BRANCH >/dev/null || \
+				    fatal "ostree branch $INST_BRANCH does not exist in ostree_repo"
+			fi
 			cp -r ${LOCAL_REPO_DIR} $OUTDIR/ostree_repo || \
 				fatal "Could not copy ${LOCAL_REPO_DIR}"
 		else
-			ostree show --repo=${DEPLOY_DIR_IMAGE}/ostree_repo $INST_BRANCH >/dev/null || \
-			    fatal "ostree branch $INST_BRANCH does not exist in ostree_repo"
+			if which ostree >/dev/null 2>&1; then
+				ostree show --repo=${DEPLOY_DIR_IMAGE}/ostree_repo $INST_BRANCH >/dev/null || \
+				    fatal "ostree branch $INST_BRANCH does not exist in ostree_repo"
+			fi
 			cp -r ${DEPLOY_DIR_IMAGE}/ostree_repo $OUTDIR/ostree_repo || \
 				fatal "Could not copy ${DEPLOY_DIR_IMAGE}/ostree_rep"
 		fi
