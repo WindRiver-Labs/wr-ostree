@@ -285,6 +285,11 @@ class CreateFullImage(object):
                                                       self.data["ostree"]['ostree_use_ab'],
                                                       self.data["ostree"]['ostree_remote_url'])
             rootfs.add_rootfs_post_scripts(script_cmd)
+        elif self.machine == "intel-x86-64":
+            os.environ['OSTREE_CONSOLE'] = self.data["ostree"]['OSTREE_CONSOLE']
+            script_cmd = os.path.join(self.data_dir, 'post_rootfs', 'update_grub_cfg.sh')
+            script_cmd = "{0} {1}".format(script_cmd, rootfs.target_rootfs)
+            rootfs.add_rootfs_post_scripts(script_cmd)
 
         if 'sysvinit' not in self.packages:
             script_cmd = os.path.join(self.data_dir, 'post_rootfs', 'set_systemd_default_target.sh')
