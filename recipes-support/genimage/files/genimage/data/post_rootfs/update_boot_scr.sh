@@ -15,7 +15,14 @@ update_boot_scr() {
     fi
     tail -c+73 $rootfs/boot/boot.scr > $rootfs/boot/boot.scr.raw
 
-    sed -i -e "s#console=[^ ]* console=[^ ]*#$OSTREE_CONSOLE#g" $rootfs/boot/boot.scr.raw
+    sed -i -e "/^setenv bootargs/s/console=[^ ]*//g" \
+           -e "s/^\(setenv bootargs .*\)\"$/\1 ${OSTREE_CONSOLE}\"/g" \
+        $rootfs/boot/boot.scr.raw
+
+    sed -i -e "/^setenv instdef/s/console=[^ ]*//g" \
+        -e "s/^\(setenv instdef .*\)\"$/\1 ${OSTREE_CONSOLE}\"/g" \
+        $rootfs/boot/boot.scr.raw
+
     perl -p -i -e "s#^( *setenv BRANCH) .*#\$1 $branch# if (\$_ !~ /oBRANCH/) " $rootfs/boot/boot.scr.raw
     perl -p -i -e "s#^( *setenv URL) .*#\$1 $url# if (\$_ !~ /oURL/) " $rootfs/boot/boot.scr.raw
     perl -p -i -e "s#instab=[^ ]* #instab=$ab #" $rootfs/boot/boot.scr.raw
