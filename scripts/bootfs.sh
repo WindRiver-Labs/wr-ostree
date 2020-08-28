@@ -81,8 +81,19 @@ modify_boot_scr() {
 	if [ $LOCAL_REPO = 1 ] ; then
 		EXTRA_INST_ARGS="$EXTRA_INST_ARGS instl=$INSTL"
 	fi
+	extra_console=""
+	for console in `echo $EXTRA_INST_ARGS | grep -o "console=[^ ]*"`;do
+	    extra_console="$extra_console $console"
+	done
 
-	sed -i -e "s#console=[^ ]* console=[^ ]*#${OSTREE_CONSOLE}#g" $OUTDIR/boot.scr.raw
+	sed -i -e "/^setenv bootargs/s/console=[^ ]*//g" \
+	       -e "s/^\(setenv bootargs .*\)\"$/\1 ${OSTREE_CONSOLE}${extra_console}\"/g" \
+	    $OUTDIR/boot.scr.raw
+
+	sed -i -e "/^setenv instdef/s/console=[^ ]*//g" \
+	       -e "s/^\(setenv instdef .*\)\"$/\1 ${OSTREE_CONSOLE}\"/g" \
+	    $OUTDIR/boot.scr.raw
+
 	sed -i -e "s#^\(setenv exinargs\).*#\1 $EXTRA_INST_ARGS#" $OUTDIR/boot.scr.raw
 
 	perl -p -i -e "s#^( *setenv BRANCH) .*#\$1 $INST_BRANCH# if (\$_ !~ /oBRANCH/) " $OUTDIR/boot.scr.raw
