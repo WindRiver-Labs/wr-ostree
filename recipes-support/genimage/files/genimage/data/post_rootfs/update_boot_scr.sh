@@ -15,11 +15,11 @@ update_boot_scr() {
     fi
     tail -c+73 $rootfs/boot/boot.scr > $rootfs/boot/boot.scr.raw
 
-    sed -i -e "/^setenv bootargs/s/console=[^ ]*//g" \
+    sed -i -e "/^setenv bootargs/s/console=[^ ^\"]*//g" \
            -e "s/^\(setenv bootargs .*\)\"$/\1 ${OSTREE_CONSOLE}\"/g" \
         $rootfs/boot/boot.scr.raw
 
-    sed -i -e "/^setenv instdef/s/console=[^ ]*//g" \
+    sed -i -e "/^setenv instdef/s/console=[^ ^\"]*//g" \
         -e "s/^\(setenv instdef .*\)\"$/\1 ${OSTREE_CONSOLE}\"/g" \
         $rootfs/boot/boot.scr.raw
 

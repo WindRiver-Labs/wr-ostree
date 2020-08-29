@@ -86,11 +86,11 @@ modify_boot_scr() {
 	    extra_console="$extra_console $console"
 	done
 
-	sed -i -e "/^setenv bootargs/s/console=[^ ]*//g" \
+	sed -i -e "/^setenv bootargs/s/console=[^ ^\"]*//g" \
 	       -e "s/^\(setenv bootargs .*\)\"$/\1 ${OSTREE_CONSOLE}${extra_console}\"/g" \
 	    $OUTDIR/boot.scr.raw
 
-	sed -i -e "/^setenv instdef/s/console=[^ ]*//g" \
+	sed -i -e "/^setenv instdef/s/console=[^ ^\"]*//g" \
 	       -e "s/^\(setenv instdef .*\)\"$/\1 ${OSTREE_CONSOLE}\"/g" \
 	    $OUTDIR/boot.scr.raw
 
