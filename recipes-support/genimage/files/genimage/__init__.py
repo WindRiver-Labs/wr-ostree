@@ -26,6 +26,7 @@ import yaml
 from collections import OrderedDict
 import time
 from texttable import Texttable
+import glob
 
 from genimage.utils import set_logger
 from genimage.utils import get_today
@@ -128,7 +129,11 @@ class CreateFullImage(object):
         self.today = get_today()
 
         data = dict()
-        for yaml_file in self.args.input:
+        yaml_files = []
+        for input_glob in self.args.input:
+            yaml_files.extend(glob.glob(input_glob))
+
+        for yaml_file in yaml_files:
             logger.info("Input YAML File: %s" % yaml_file)
             if not os.path.exists(yaml_file):
                 logger.error("Input yaml file '%s' does not exist" % yaml_file)
