@@ -326,7 +326,7 @@ class DnfRpm:
                             % (script))
                     self._postpone_to_first_boot(script_full)
                 else:
-                    raise Exception("The postinstall intercept hook '%s' failed\n%s" % (script, output))
+                    logger.warning("The postinstall intercept hook '%s' failed, ignore it\n%s" % (script, output))
 
     def install_complementary(self, globs=None):
         """
