@@ -107,6 +107,10 @@ Add pre-built qemu bootloader qemu-u-boot-bcm-2xxx-rpi4.bin
 Disable graphical output and redirect serial I/Os to console
 `-nographic`
 
+#### Qemu Graphic (XFCE desktop)
+Enable graphical and redirect serial I/Os to console
+`-device virtio-gpu-pci -serial stdio`
+
 ### On Qemu: Way 2 - Use runqemu in SDK
 Directly boot @IMAGE_NAME@.wic by runqemu which creates a SLiRP user
 network, disable graphical output and redirect serial I/Os to console

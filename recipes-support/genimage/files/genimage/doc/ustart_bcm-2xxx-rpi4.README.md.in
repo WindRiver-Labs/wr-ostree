@@ -107,6 +107,10 @@ Add pre-built qemu bootloader qemu-u-boot-bcm-2xxx-rpi4.bin
 Disable graphical output and redirect serial I/Os to console
 `-nographic`
 
+#### Qemu Graphic (XFCE desktop)
+Enable graphical and redirect serial I/Os to console
+`-device virtio-gpu-pci -serial stdio`
+
 ## License
 The image is provided under the GPL-2.0 license.
 
