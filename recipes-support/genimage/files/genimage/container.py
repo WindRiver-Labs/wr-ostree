@@ -41,10 +41,10 @@ class CreateContainer(Image):
 
         for dst, src in [(container_dst, container_src),
                 (config_dst, config_src)]:
+
             if os.path.exists(src):
                 logger.debug("Creating symlink: %s -> %s" % (dst, src))
-                if os.path.islink(dst):
-                    os.remove(dst)
-                os.symlink(os.path.basename(src), dst)
+                utils.resymlink(os.path.basename(src), dst)
             else:
                 logger.error("Skipping symlink, source does not exist: %s -> %s" % (dst, src))
+

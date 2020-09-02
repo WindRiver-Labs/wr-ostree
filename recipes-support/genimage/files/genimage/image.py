@@ -109,9 +109,7 @@ class CreateInitramfs(Image):
 
         if os.path.exists(src):
             logger.debug("Creating symlink: %s -> %s" % (dst, src))
-            if os.path.islink(dst):
-                os.remove(dst)
-            os.symlink(os.path.basename(src), dst)
+            utils.resymlink(os.path.basename(src), dst)
         else:
             logger.error("Skipping symlink, source does not exist: %s -> %s" % (dst, src))
 
@@ -189,11 +187,10 @@ class CreateWicImage(Image):
             src = os.path.join(self.deploydir, self.image_fullname + suffix_src)
             if os.path.exists(src):
                 logger.debug("Creating symlink: %s -> %s" % (dst, src))
-                if os.path.islink(dst):
-                    os.remove(dst)
-                os.symlink(os.path.basename(src), dst)
+                utils.resymlink(os.path.basename(src), dst)
             else:
                 logger.error("Skipping symlink, source does not exist: %s -> %s" % (dst, src))
+
 
 class CreateVMImage(Image):
     def _set_allow_keys(self):
@@ -216,9 +213,7 @@ class CreateVMImage(Image):
         src = os.path.join(self.deploydir, "{0}.rootfs.wic.{1}".format(self.image_fullname, self.vm_type))
         if os.path.exists(src):
             logger.debug("Creating symlink: %s -> %s" % (dst, src))
-            if os.path.islink(dst):
-                os.remove(dst)
-            os.symlink(os.path.basename(src), dst)
+            utils.resymlink(os.path.basename(src), dst)
         else:
             logger.error("Skipping symlink, source does not exist: %s -> %s" % (dst, src))
 
@@ -333,9 +328,7 @@ class CreateBootfs(Image):
             src = os.path.join(self.deploydir, "{0}.{1}".format(self.image_fullname, suffix))
             if os.path.exists(src):
                 logger.debug("Creating symlink: %s -> %s" % (dst, src))
-                if os.path.islink(dst):
-                    os.remove(dst)
-                os.symlink(os.path.basename(src), dst)
+                utils.resymlink(os.path.basename(src), dst)
             else:
                 logger.error("Skipping symlink, source does not exist: %s -> %s" % (dst, src))
 

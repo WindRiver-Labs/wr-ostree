@@ -190,6 +190,18 @@ def _check_unsafe_delete_path(path):
         return True
     return False
 
+def resymlink(source, destination, rm_old_src=True, rm_old_dst=True):
+    """Create a symbolic link and remove old if available"""
+    try:
+        if rm_old_src:
+            remove(os.path.realpath(destination))
+        if rm_old_dst:
+            remove(destination)
+        os.symlink(source, destination)
+    except OSError as e:
+        if e.errno != errno.EEXIST or os.readlink(destination) != source:
+            raise
+
 def copyfile(src, dest, newmtime = None, sstat = None):
     """
     Copies a file from src to dest, preserving all permissions and
