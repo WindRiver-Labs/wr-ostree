@@ -156,6 +156,15 @@ class AppSDK(object):
                            'features': self.image_features,
                            'packages': self.packages}, tf)
                 logger.warning("Please check %s for default settings." % tf.name)
+        else:
+            with tempfile.NamedTemporaryFile(prefix='appsdk-gensdk-', suffix='.yaml', delete=False, mode='w') as tf:
+                yaml.dump({'name': self.image_name,
+                           'machine': self.machine,
+                           'package_feeds': self.pkg_feeds,
+                           'remote_pkgdatadir': self.remote_pkgdatadir,
+                           'features': self.image_features,
+                           'packages': self.packages}, tf)
+                logger.info("Please check %s for effective settings." % tf.name)
         
         # prepare pseudo environment
         utils.fake_root()
