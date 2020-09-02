@@ -114,10 +114,8 @@ class Rootfs(object):
         self.pm.insert_feeds_uris(self.pkg_feeds, True if 'dnf' in self.packages else False)
         self.pm.update()
         self.pm.install(self.packages)
-
-        self._save_installed()
-
         self.pm.install_complementary(self.pkg_globs)
+        self._save_installed()
 
         self.pm.run_intercepts()
 
