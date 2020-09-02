@@ -162,7 +162,7 @@ class CreateFullImage(object):
 
         self.image_name = data['name'] if 'name' in data else DEFAULT_IMAGE
         self.machine = data['machine'] if 'machine' in data else DEFAULT_MACHINE
-        self.image_type = data['image_type'] if 'image_type' in data else ['all']
+        self.image_type = data['image_type'] if 'image_type' in data else ['ustart', 'ostree-repo']
         self.packages = DEFAULT_PACKAGES[self.machine]
         if 'packages' in data:
             self.packages += data['packages']
