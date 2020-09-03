@@ -573,6 +573,7 @@ eval `grep ^BOOT_ $ENVFILE`
 eval `grep ^STAGING_DIR= $ENVFILE`
 eval `grep ^OSTREE_ $ENVFILE | perl -p -e '($a,$b) = split(/=/,$_,2); $a =~ s/-/_/g; $_ = "$a=$b"'`
 eval `grep ^OSTREE_CONSOLE= $ENVFILE | sed -e 's:\\\\::g' -e "s:\":':g"`
+eval `grep ^DISTRO_FEATURES= $ENVFILE`
 
 grub=$(ls $DEPLOY_DIR_IMAGE/grubx64.efi 2> /dev/null)
 if [ "$grub" = "" ] ; then
