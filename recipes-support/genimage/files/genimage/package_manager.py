@@ -337,6 +337,7 @@ class DnfRpm:
         if globs is None:
             return
 
+        logger.debug("Installing complementary packages (%s) ..." % globs)
         # we need to write the list of installed packages to a file because the
         # oe-pkgdata-util reads it from a file
         with tempfile.NamedTemporaryFile(mode="w+", prefix="installed-pkgs") as installed_pkgs:
@@ -353,11 +354,9 @@ class DnfRpm:
             cmd = [self.oe_pkgdata_util,
                    "-p", self.pkgdatadir, "glob", installed_pkgs.name,
                    globs]
-            res, output = utils.run_cmd(cmd)
-            if res:
-                raise Exception("Could not compute complementary packages list. Command "
-                         "'%s' returned %d:\n%s" %
-                         (' '.join(cmd), res, output))
+            cmd = '%s -p %s glob %s %s' % (self.oe_pkgdata_util, self.pkgdatadir, installed_pkgs.name, globs)
+            logger.debug(cmd)
+            output = subprocess.check_output(cmd, shell=True, stderr=subprocess.STDOUT).decode('utf-8')
 
             complementary_pkgs = set(output.split())
             skip_pkgs = sorted(complementary_pkgs & provided_pkgs)
