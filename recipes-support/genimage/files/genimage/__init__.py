@@ -510,6 +510,7 @@ class CreateFullImage(object):
             output = subprocess.check_output("ls -d  ostree_repo", shell=True, cwd=self.deploydir)
             table.add_row(["Ostree Repo", output.strip()])
 
+        if "wic" in self.image_type:
             cmd_wic = cmd_format % "{0}.wic".format(image_name)
             output = subprocess.check_output(cmd_wic, shell=True, cwd=self.deploydir)
             table.add_row(["WIC Image", output.strip()])
