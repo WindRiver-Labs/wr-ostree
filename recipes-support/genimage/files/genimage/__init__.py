@@ -104,6 +104,9 @@ def set_parser(parser=None):
     parser.add_argument('-p', '--pkg',
         help='Specify extra package to be installed',
         action='append')
+    parser.add_argument('--pkg-external',
+        help='Specify extra external package to be installed',
+        action='append')
     parser.add_argument("--no-clean",
         help = "Do not cleanup generated rootfs in workdir", action="store_true", default=False)
 
@@ -170,6 +173,14 @@ class CreateFullImage(object):
             self.packages.extend(self.args.pkg)
         self.packages = list(set(self.packages))
 
+        if 'external-packages' in data:
+            self.external_packages = data['external-packages']
+        else:
+            self.external_packages = []
+        if self.args.pkg_external:
+            self.external_packages.extend(self.args.pkg_external)
+        self.external_packages = list(set(self.external_packages))
+        
         self.pkg_feeds = data['package_feeds'] if 'package_feeds' in data else DEFAULT_PACKAGE_FEED
 
         self.remote_pkgdatadir = data['remote_pkgdatadir'] if 'remote_pkgdatadir' in data else DEFAULT_REMOTE_PKGDATADIR
@@ -228,6 +239,8 @@ class CreateFullImage(object):
         logger.info("Image Type: %s" % ' '.join(self.image_type))
         logger.info("Pakcages Number: %d" % len(self.packages))
         logger.debug("Pakcages: %s" % self.packages)
+        logger.info("External Packages Number: %d" % len(self.external_packages))
+        logger.debug("External Packages: %s" % self.external_packages)
         logger.info("Pakcage Feeds:\n%s\n" % '\n'.join(self.pkg_feeds))
         logger.debug("Deploy Directory: %s" % self.outdir)
         logger.debug("Work Directory: %s" % self.workdir)
@@ -277,6 +290,7 @@ class CreateFullImage(object):
                         self.machine,
                         self.pkg_feeds,
                         self.packages,
+                        external_packages=self.external_packages,
                         remote_pkgdatadir=self.remote_pkgdatadir,
                         image_linguas=image_linguas,
                         pkg_globs=pkg_globs)
@@ -296,7 +310,7 @@ class CreateFullImage(object):
             script_cmd = "{0} {1}".format(script_cmd, rootfs.target_rootfs)
             rootfs.add_rootfs_post_scripts(script_cmd)
 
-        if 'sysvinit' not in self.packages:
+        if 'systemd' in self.packages or 'systemd' in self.external_packages:
             script_cmd = os.path.join(self.data_dir, 'post_rootfs', 'set_systemd_default_target.sh')
             if 'packagegroup-core-x11-base' in self.packages:
                 script_cmd = "{0} {1} graphical.target".format(script_cmd, rootfs.target_rootfs)

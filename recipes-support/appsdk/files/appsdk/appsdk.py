@@ -139,6 +139,11 @@ class AppSDK(object):
             self.packages = DEFAULT_PACKAGES[self.machine]
             if 'packages' in data:
                 self.packages += data['packages']
+            if 'external-packages' in data:
+                self.external_packages = data['external-packages']
+            else:
+                self.external_packages = []
+
             self.pkg_feeds = data['package_feeds'] if 'package_feeds' in data else DEFAULT_PACKAGE_FEED
             self.remote_pkgdatadir = data['remote_pkgdatadir'] if 'remote_pkgdatadir' in data else DEFAULT_REMOTE_PKGDATADIR
             self.image_features = data['features'] if 'features' in data else DEFAULT_IMAGE_FEATURES
@@ -154,7 +159,8 @@ class AppSDK(object):
                            'package_feeds': self.pkg_feeds,
                            'remote_pkgdatadir': self.remote_pkgdatadir,
                            'features': self.image_features,
-                           'packages': self.packages}, tf)
+                           'packages': self.packages,
+                           'external-packages': self.external_packages}, tf)
                 logger.warning("Please check %s for default settings." % tf.name)
         else:
             with tempfile.NamedTemporaryFile(prefix='appsdk-gensdk-', suffix='.yaml', delete=False, mode='w') as tf:
@@ -163,7 +169,8 @@ class AppSDK(object):
                            'package_feeds': self.pkg_feeds,
                            'remote_pkgdatadir': self.remote_pkgdatadir,
                            'features': self.image_features,
-                           'packages': self.packages}, tf)
+                           'packages': self.packages,
+                           'external-packages': self.external_packages}, tf)
                 logger.info("Please check %s for effective settings." % tf.name)
         
         # prepare pseudo environment
@@ -175,6 +182,7 @@ class AppSDK(object):
                         self.machine,
                         self.pkg_feeds,
                         self.packages,
+                        external_packages=self.external_packages,
                         remote_pkgdatadir=self.remote_pkgdatadir,
                         target_rootfs=target_sysroot_dir,
                         pkg_globs="*-src *-dev *-dbg")

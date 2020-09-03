@@ -17,6 +17,7 @@ class Rootfs(object):
                  machine,
                  pkg_feeds,
                  packages,
+                 external_packages=[],
                  remote_pkgdatadir=None,
                  target_rootfs=None,
                  image_linguas=None,
@@ -27,6 +28,7 @@ class Rootfs(object):
         self.machine = machine
         self.pkg_feeds = pkg_feeds
         self.packages = packages
+        self.external_packages = external_packages
         self.pkg_globs = "" if pkg_globs is None else pkg_globs
         if image_linguas:
             self.pkg_globs += " %s" % self._image_linguas_globs(image_linguas)
@@ -106,7 +108,7 @@ class Rootfs(object):
 
         with open(self.packages_yaml, "w") as f:
             utils.ordered_dump(self.installed_pkgs, f, Dumper=yaml.SafeDumper)
-            logger.debug("Save Installed Packages Yaml FIle to : %s" % (self.packages_yaml))
+            logger.debug("Save Installed Packages Yaml File to : %s" % (self.packages_yaml))
 
     def create(self):
         self._pre_rootfs()
@@ -115,6 +117,19 @@ class Rootfs(object):
         self.pm.update()
         self.pm.install(self.packages)
         self.pm.install_complementary(self.pkg_globs)
+
+        #
+        # We install external packages after packages been installed,
+        # because we don't want complementary package logic apply to it.
+        #
+        duplicate_pkgs = set(self.pm.list_installed().keys()) & set(self.external_packages)
+        explicit_duplicate_pkgs = set(self.packages) & set(self.external_packages)
+        implicit_duplicate_pkgs = duplicate_pkgs - explicit_duplicate_pkgs
+        if explicit_duplicate_pkgs:
+            logger.warning("The following packages are specfied both in external-packages and packages: \n\t%s" % '\n\t'.join(sorted(explicit_duplicate_pkgs)))
+        if implicit_duplicate_pkgs:
+            logger.warning("The following packages are specfied in external-packages, but are brought in by dependencies of packages: \n\t%s" % '\n\t'.join(sorted(implicit_duplicate_pkgs)))
+        self.pm.install(self.external_packages)
         self._save_installed()
 
         self.pm.run_intercepts()
