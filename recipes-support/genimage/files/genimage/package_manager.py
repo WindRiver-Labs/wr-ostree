@@ -328,13 +328,13 @@ class DnfRpm:
                 else:
                     logger.warning("The postinstall intercept hook '%s' failed, ignore it\n%s" % (script, output))
 
-    def install_complementary(self, globs=None):
+    def install_complementary(self, globs=""):
         """
         Install complementary packages based upon the list of currently installed
         packages e.g. *-src, *-dev, *-dbg, etc. This will only attempt to install
         these packages, if they don't exist then no error will occur.
         """
-        if globs is None:
+        if not globs:
             return
 
         logger.debug("Installing complementary packages (%s) ..." % globs)
@@ -351,9 +351,6 @@ class DnfRpm:
             installed_pkgs.write(output)
             installed_pkgs.flush()
 
-            cmd = [self.oe_pkgdata_util,
-                   "-p", self.pkgdatadir, "glob", installed_pkgs.name,
-                   globs]
             cmd = '%s -p %s glob %s %s' % (self.oe_pkgdata_util, self.pkgdatadir, installed_pkgs.name, globs)
             logger.debug(cmd)
             output = subprocess.check_output(cmd, shell=True, stderr=subprocess.STDOUT).decode('utf-8')
