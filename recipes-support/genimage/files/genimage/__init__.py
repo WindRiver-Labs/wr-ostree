@@ -16,7 +16,9 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 
 from genimage.genimage import set_subparser
+from genimage.genyaml import set_subparser_genyaml
 from genimage.genimage import main
+from genimage.genyaml import main_genyaml
 
 __all__ = [
     "set_subparser",

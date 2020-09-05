@@ -39,6 +39,8 @@ SRC_URI = "\
            file://crossscript_wrapper.in \
            file://add_path.sh \
            file://genimage/__init__.py \
+           file://genimage/genimage.py \
+           file://genimage/genyaml.py \
            file://genimage/utils.py \
            file://genimage/constant.py.in \
            file://genimage/package_manager.py \

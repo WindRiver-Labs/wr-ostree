@@ -14,7 +14,10 @@ setuptools.setup(
     url="todo",
     packages=setuptools.find_packages(),
     entry_points = {
-        'console_scripts': ['genimage=genimage:main'],
+        'console_scripts': [
+            'genimage=genimage:main',
+            'genyaml=genimage:main_genyaml'
+        ],
     },
     license="GNU General Public License v2.0",
     classifiers=[
