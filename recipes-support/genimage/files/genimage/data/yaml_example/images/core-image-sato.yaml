@@ -1,0 +1,18 @@
+name: core-image-sato
+packages:
+- ca-certificates
+- dnf
+- glib-networking
+- os-release
+- ostree
+- ostree-upgrade-mgr
+- packagegroup-base-extended
+- packagegroup-busybox-replacement
+- packagegroup-core-boot
+- packagegroup-core-ssh-dropbear
+- packagegroup-core-x11-base
+- packagegroup-core-x11-sato
+- psplash-windriver
+- rpm
+- run-postinsts
+- systemd

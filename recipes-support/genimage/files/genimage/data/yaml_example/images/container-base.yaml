@@ -1,0 +1,12 @@
+name: container-base
+packages:
+- base-files
+- base-passwd
+- ca-certificates
+- dnf
+- openssh
+- os-release
+- packagegroup-busybox-replacement
+- rpm
+- run-postinsts
+- update-alternatives-opkg

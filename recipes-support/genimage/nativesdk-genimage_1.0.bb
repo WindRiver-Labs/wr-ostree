@@ -51,9 +51,16 @@ SRC_URI = "\
            file://genimage/data/post_rootfs/update_boot_scr.sh \
            file://genimage/data/post_rootfs/update_grub_cfg.sh \
            file://genimage/data/post_rootfs/set_systemd_default_target.sh \
-           file://genimage/data/yaml_example/vboxguestdrivers.yaml \
-           file://genimage/data/yaml_example/xfce_desktop.yaml \
-           file://genimage/data/yaml_example/package_management.yaml \
+           file://genimage/data/yaml_example/feature/vboxguestdrivers.yaml \
+           file://genimage/data/yaml_example/feature/xfce_desktop.yaml \
+           file://genimage/data/yaml_example/feature/package_management.yaml \
+           file://genimage/data/yaml_example/images/core-image-minimal.yaml \
+           file://genimage/data/yaml_example/images/core-image-sato.yaml \
+           file://genimage/data/yaml_example/images/wrlinux-image-small.yaml \
+           file://genimage/data/yaml_example/images/container-base.yaml \
+           file://genimage/data/yaml_example/images/initramfs-ostree-image.yaml \
+           file://genimage/data/yaml_example/machine/intel-x86-64.yaml \
+           file://genimage/data/yaml_example/machine/bcm-2xxx-rpi4.yaml \
            file://genimage/data/oci_config/config.json \
            file://genimage/scripts/run.do_image_ostree \
            file://genimage/scripts/run.do_image_otaimg \

@@ -1,0 +1,7 @@
+machine: intel-x86-64
+packages:
+- grub-efi
+- intel-microcode
+- iucode-tool
+- lmsensors
+- rtl8723bs-bt

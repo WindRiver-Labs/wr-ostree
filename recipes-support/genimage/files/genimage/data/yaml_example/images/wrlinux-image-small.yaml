@@ -1,0 +1,14 @@
+image: wrlinux-image-small
+packages:
+- ca-certificates
+- glib-networking
+- kernel-modules
+- os-release
+- ostree
+- ostree-upgrade-mgr
+- packagegroup-busybox-replacement
+- packagegroup-core-boot
+- packagegroup-core-ssh-dropbear
+- packagegroup-wr-bsps
+- run-postinsts
+- systemd
