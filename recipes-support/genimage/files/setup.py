@@ -16,7 +16,8 @@ setuptools.setup(
     entry_points = {
         'console_scripts': [
             'genimage=genimage:main',
-            'genyaml=genimage:main_genyaml'
+            'genyaml=genimage:main_genyaml',
+            'exampleyamls=exampleyamls:main_exampleyamls'
         ],
     },
     license="GNU General Public License v2.0",

@@ -250,11 +250,6 @@ class CreateFullImage(object):
         self.native_sysroot = os.environ['OECORE_NATIVE_SYSROOT']
         self.data_dir = os.path.join(self.native_sysroot, "usr/share/genimage/data")
 
-        dest = os.path.join(self.deploydir, "yaml_example")
-        src = os.path.join(self.data_dir, "yaml_example")
-        cmd = "ln -snf -r {0} {1}".format(src, dest)
-        utils.run_cmd_oneshot(cmd)
-
     def do_prepare(self):
         gpg_data = self.data["gpg"]
         utils.check_gpg_keys(gpg_data)
@@ -511,9 +506,6 @@ class CreateFullImage(object):
         table.set_cols_align(["l", "l"])
         table.set_cols_valign(["t", "t"])
         table.add_rows([["Type", "Name"]])
-
-        output = subprocess.check_output("ls yaml_example/*.yaml", shell=True, cwd=self.deploydir)
-        table.add_row(["Yaml File Sample", output.strip()])
 
         image_name = "%s-%s" % (self.image_name, self.machine)
         cmd_format = "ls -gh --time-style=+%%Y %s | awk '{$1=$2=$3=$4=$5=\"\"; print $0}'"

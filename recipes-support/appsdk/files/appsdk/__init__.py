@@ -77,6 +77,9 @@ def main():
     # Add genyaml to appsdk
     genimage.set_subparser_genyaml(subparsers)
 
+    # Add exampleyamls to appsdk
+    genimage.set_subparser_exampleyamls(subparsers)
+
     if len(sys.argv) == 1:
         parser.print_help()
         parser.exit(1)
