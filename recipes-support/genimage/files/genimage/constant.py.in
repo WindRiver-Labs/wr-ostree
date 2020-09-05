@@ -89,7 +89,7 @@ DEFAULT_OSTREE_DATA = {
   'ostree_use_ab': '${OSTREE_USE_AB}',
   'ostree_osname': '${OSTREE_OSNAME}',
   'ostree_skip_boot_diff': '${OSTREE_SKIP_BOOT_DIFF}',
-  'ostree_remote_url': '${OSTREE_REMOTE_URL}',
+  'ostree_remote_url': '',
   'OSTREE_GRUB_USER': '${OSTREE_GRUB_USER}',
   'OSTREE_GRUB_PW_FILE': '$OECORE_NATIVE_SYSROOT/usr/share/bootfs/boot_keys/ostree_grub_pw',
   'OSTREE_FDISK_BLM': '${OSTREE_FDISK_BLM}',
