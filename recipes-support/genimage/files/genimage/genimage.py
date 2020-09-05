@@ -169,7 +169,7 @@ class CreateFullImage(object):
         self.image_type = data['image_type'] if 'image_type' in data else ['ustart', 'ostree-repo']
         self.packages = DEFAULT_PACKAGES[self.machine]
         if 'packages' in data:
-            self.packages += data['packages']
+            self.packages = data['packages']
         if self.args.pkg:
             self.packages.extend(self.args.pkg)
         self.packages = list(set(self.packages))
