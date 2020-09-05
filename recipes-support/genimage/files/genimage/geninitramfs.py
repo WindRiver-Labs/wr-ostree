@@ -20,7 +20,6 @@ import sys
 import subprocess
 import argparse
 import logging
-import shutil
 import atexit
 import yaml
 from collections import OrderedDict
@@ -34,25 +33,18 @@ from genimage.utils import show_task_info
 import genimage.constant as constant
 from genimage.constant import DEFAULT_PACKAGE_FEED
 from genimage.constant import DEFAULT_REMOTE_PKGDATADIR
-from genimage.constant import DEFAULT_PACKAGES
 from genimage.constant import DEFAULT_MACHINE
-from genimage.constant import DEFAULT_IMAGE
+from genimage.constant import DEFAULT_INITRD_NAME
 from genimage.constant import DEFAULT_IMAGE_FEATURES
 from genimage.constant import OSTREE_INITRD_PACKAGES
 from genimage.rootfs import Rootfs
-from genimage.container import CreateContainer
-from genimage.image import CreateWicImage
-from genimage.image import CreateVMImage
-from genimage.image import CreateOstreeRepo
 from genimage.image import CreateInitramfs
-from genimage.image import CreateOstreeOTA
-from genimage.image import CreateBootfs
 
 import genimage.utils as utils
 
 logger = logging.getLogger('appsdk')
 
-def set_parser(parser=None):
+def set_parser_geninitramfs(parser=None):
     if parser is None:
         parser = argparse.ArgumentParser(
             description='Generate images from package feeds for specified machines',
@@ -71,13 +63,7 @@ def set_parser(parser=None):
             action='store')
 
     supported_types = [
-        'wic',
-        'vmdk',
-        'vdi',
-        'ostree-repo',
-        'container',
-        'ustart',
-        'all',
+        'initramfs',
     ]
 
     parser.add_argument('-o', '--outdir',
@@ -119,12 +105,9 @@ def set_parser(parser=None):
     return parser
 
 
-class CreateFullImage(object):
+class GenInitramfs(object):
     """
-    * Create the following images in order:
-        - ostree repository
-        - wic image
-        - container image
+    Generate Initramfs
     """
 
     def __init__(self, args):
@@ -164,15 +147,15 @@ class CreateFullImage(object):
             logger.info("No Input YAML File, use default setting")
         logger.debug("Yaml File Content: %s" % data)
 
-        self.image_name = data['name'] if 'name' in data else DEFAULT_IMAGE
+        self.image_name = data['name'] if 'name' in data else DEFAULT_INITRD_NAME
         self.machine = data['machine'] if 'machine' in data else DEFAULT_MACHINE
-        self.image_type = data['image_type'] if 'image_type' in data else ['ustart', 'ostree-repo']
-        self.packages = DEFAULT_PACKAGES[self.machine]
+        self.image_type = data['image_type'] if 'image_type' in data else ['initramfs']
+        self.packages = OSTREE_INITRD_PACKAGES
         if 'packages' in data:
-            self.packages += data['packages']
+            self.packages = data['packages']
         if self.args.pkg:
             self.packages.extend(self.args.pkg)
-        self.packages = list(set(self.packages))
+        self.packages = list(sorted(set(self.packages)))
 
         if 'external-packages' in data:
             self.external_packages = data['external-packages']
@@ -180,7 +163,7 @@ class CreateFullImage(object):
             self.external_packages = []
         if self.args.pkg_external:
             self.external_packages.extend(self.args.pkg_external)
-        self.external_packages = list(set(self.external_packages))
+        self.external_packages = list(sorted(set(self.external_packages)))
 
         self.pkg_feeds = data['package_feeds'] if 'package_feeds' in data else DEFAULT_PACKAGE_FEED
 
@@ -219,11 +202,11 @@ class CreateFullImage(object):
         if self.args.name:
             self.image_name = self.args.name
 
+        if self.image_name == DEFAULT_INITRD_NAME:
+            logger.info("Replace eixsted %s as initrd for appsdk genimage", DEFAULT_INITRD_NAME)
+
         if self.args.type:
             self.image_type = self.args.type
-
-        if 'all' in self.image_type:
-            self.image_type = ['ostree-repo', 'wic', 'container', 'ustart', 'vmdk', 'vdi']
 
         # Cleanup all generated rootfs dir by default
         if not self.args.no_clean:
@@ -291,34 +274,15 @@ class CreateFullImage(object):
                         image_linguas=image_linguas,
                         pkg_globs=pkg_globs)
 
-        if self.machine == "bcm-2xxx-rpi4":
-            os.environ['OSTREE_CONSOLE'] = self.data["ostree"]['OSTREE_CONSOLE']
-            script_cmd = os.path.join(self.data_dir, 'post_rootfs', 'update_boot_scr.sh')
-            script_cmd = "{0} {1} {2} {3} {4}".format(script_cmd,
-                                                      rootfs.target_rootfs,
-                                                      self.image_name,
-                                                      self.data["ostree"]['ostree_use_ab'],
-                                                      self.data["ostree"]['ostree_remote_url'])
-            rootfs.add_rootfs_post_scripts(script_cmd)
-        elif self.machine == "intel-x86-64":
-            os.environ['OSTREE_CONSOLE'] = self.data["ostree"]['OSTREE_CONSOLE']
-            script_cmd = os.path.join(self.data_dir, 'post_rootfs', 'update_grub_cfg.sh')
-            script_cmd = "{0} {1}".format(script_cmd, rootfs.target_rootfs)
-            rootfs.add_rootfs_post_scripts(script_cmd)
-
-        if 'systemd' in self.packages or 'systemd' in self.external_packages:
-            script_cmd = os.path.join(self.data_dir, 'post_rootfs', 'set_systemd_default_target.sh')
-            if 'packagegroup-core-x11-base' in self.packages:
-                script_cmd = "{0} {1} graphical.target".format(script_cmd, rootfs.target_rootfs)
-            else:
-                script_cmd = "{0} {1} multi-user.target".format(script_cmd, rootfs.target_rootfs)
-            rootfs.add_rootfs_post_scripts(script_cmd)
+        script_cmd = os.path.join(self.data_dir, 'post_rootfs', 'add_gpg_key.sh')
+        script_cmd = "{0} {1} {2}".format(script_cmd, rootfs.target_rootfs, self.data['gpg']['gpg_path'])
+        rootfs.add_rootfs_post_scripts(script_cmd)
 
         rootfs.create()
 
         installed_dict = rootfs.image_list_installed_packages()
 
-        self._save_output_yaml(installed_dict, rootfs.get_kernel_ver())
+        self._save_output_yaml()
 
         # Generate image manifest
         manifest_name = "{0}/{1}-{2}.manifest".format(self.deploydir, self.image_name, self.machine)
@@ -327,45 +291,25 @@ class CreateFullImage(object):
 
         self.target_rootfs = rootfs.target_rootfs
 
-        # Copy kernel image, boot files, device tree files to deploy dir
-        if self.machine == "intel-x86-64":
-            for files in ["boot/bzImage*", "boot/efi/EFI/BOOT/*"]:
-                cmd = "cp -rf {0}/{1} {2}".format(self.target_rootfs, files, self.deploydir)
-                utils.run_cmd_oneshot(cmd)
-
-                cmd = "ln -snf -r {0} {1}".format(os.path.join(self.deploydir, "bootx64.efi"),
-                                                  os.path.join(self.deploydir, "grub-efi-bootx64.efi"))
-                utils.run_cmd_oneshot(cmd)
-
-        else:
-            cmd = "cp -rf {0}/boot/* {1}".format(self.target_rootfs, self.deploydir)
-            utils.run_cmd_oneshot(cmd)
-
     @show_task_info("Create Initramfs")
     def do_ostree_initramfs(self):
         # If the Initramfs exists, reuse it
-        image_name = "{0}-{1}.cpio.gz".format(self.ostree_initramfs_name, self.machine)
+        image_name = "{0}-{1}.cpio.gz".format(self.image_name, self.machine)
         if self.machine == "bcm-2xxx-rpi4":
             image_name += ".u-boot"
 
-        image = os.path.join(self.deploydir, image_name)
-        if os.path.exists(os.path.realpath(image)):
-            logger.info("Reuse existed Initramfs")
-            return
 
-        image_back = os.path.join(self.native_sysroot, "usr/share/genimage/data/initramfs", image_name)
-        if not os.path.exists(image_back):
-            logger.error("The initramfs does not exist, please call `appsdk geninitramfs' to build it")
-            sys.exit(1)
+        workdir = os.path.join(self.workdir, self.image_name)
 
-        logger.info("Reuse existed Initramfs of SDK")
-        cmd = "cp -f {0} {1}".format(image_back, self.deploydir)
-        utils.run_cmd_oneshot(cmd)
+        initrd = CreateInitramfs(
+                        image_name = self.image_name,
+                        workdir = workdir,
+                        machine = self.machine,
+                        target_rootfs = self.target_rootfs,
+                        deploydir = self.deploydir)
+        initrd.create()
 
-    def _save_output_yaml(self, installed_dict, kernel_ver=None):
-        if kernel_ver is None:
-            kernel_ver = '5.4.57-yocto-standard'
-
+    def _save_output_yaml(self):
         data = self.data
         data['name'] = self.image_name
         data['machine'] = self.machine
@@ -373,173 +317,30 @@ class CreateFullImage(object):
         data['features'] = self.features
         data['package_feeds'] = self.pkg_feeds
         data['remote_pkgdatadir'] = self.remote_pkgdatadir
-
-        # Remove kernel version suffix from package name
-        # such as kernel-5.4.57-yocto-standard -> kernel
-        data['packages'] = [p.replace('-{0}'.format(kernel_ver), '') for p in installed_dict.keys()]
-        data['packages'] = sorted(list(set(data['packages'])))
+        data['packages'] = self.packages
+        data['external-packages'] = self.external_packages
 
         with open(self.output_yaml, "w") as f:
             utils.ordered_dump(data, f, Dumper=yaml.SafeDumper)
             logger.debug("Save Yaml FIle to : %s" % (self.output_yaml))
 
-    @show_task_info("Create Wic Image")
-    def do_image_wic(self):
-        workdir = os.path.join(self.workdir, self.image_name)
-        ostree_use_ab = self.data["ostree"].get("ostree_use_ab", '1')
-        wks_file = utils.get_ostree_wks(ostree_use_ab, self.machine)
-        logger.debug("WKS %s", wks_file)
-        image_wic = CreateWicImage(
-                        image_name = self.image_name,
-                        workdir = workdir,
-                        machine = self.machine,
-                        target_rootfs = self.target_rootfs,
-                        deploydir = self.deploydir,
-                        wks_file = wks_file)
-
-        env = self.data['wic'].copy()
-        env['WORKDIR'] = workdir
-        if self.machine == "bcm-2xxx-rpi4":
-            env.update({'OSTREE_SD_BOOT_ALIGN':'4',
-                        'OSTREE_SD_UBOOT_WIC1':'',
-                        'OSTREE_SD_UBOOT_WIC2':'',
-                        'OSTREE_SD_UBOOT_WIC3':'',
-                        'OSTREE_SD_UBOOT_WIC4':''})
-        image_wic.set_wks_in_environ(**env)
-
-        image_wic.create()
-
-    @show_task_info("Create Vmdk Image")
-    def do_image_vmdk(self):
-        vmdk = CreateVMImage(image_name=self.image_name,
-                             machine=self.machine,
-                             deploydir=self.deploydir,
-                             vm_type="vmdk")
-        vmdk.create()
-
-    @show_task_info("Create Vdi Image")
-    def do_image_vdi(self):
-        vdi = CreateVMImage(image_name=self.image_name,
-                            machine=self.machine,
-                            deploydir=self.deploydir,
-                            vm_type="vdi")
-        vdi.create()
-
-    @show_task_info("Create Docker Container")
-    def do_image_container(self):
-        workdir = os.path.join(self.workdir, self.image_name)
-        container = CreateContainer(
-                        image_name=self.image_name,
-                        workdir=workdir,
-                        machine=self.machine,
-                        target_rootfs=self.target_rootfs,
-                        deploydir=self.deploydir)
-        container.create()
-
-    @show_task_info("Create Ostree Repo")
-    def do_ostree_repo(self):
-        workdir = os.path.join(self.workdir, self.image_name)
-        ostree_repo = CreateOstreeRepo(
-                        image_name=self.image_name,
-                        workdir=workdir,
-                        machine=self.machine,
-                        target_rootfs=self.target_rootfs,
-                        deploydir=self.deploydir,
-                        gpg_path=self.data['gpg']['gpg_path'],
-                        gpgid=self.data['gpg']['ostree']['gpgid'],
-                        gpg_password=self.data['gpg']['ostree']['gpg_password'])
-
-        ostree_repo.create()
-
-        ostree_repo.gen_env(self.data)
-
-    @show_task_info("Create Ostree OTA")
-    def do_ostree_ota(self):
-        workdir = os.path.join(self.workdir, self.image_name)
-        ostree_ota = CreateOstreeOTA(
-                        image_name=self.image_name,
-                        workdir=workdir,
-                        machine=self.machine,
-                        deploydir=self.deploydir,
-                        ostree_use_ab=self.data["ostree"]['ostree_use_ab'],
-                        ostree_osname=self.data["ostree"]['ostree_osname'],
-                        ostree_skip_boot_diff=self.data["ostree"]['ostree_skip_boot_diff'],
-                        ostree_remote_url=self.data["ostree"]['ostree_remote_url'],
-                        gpgid=self.data["gpg"]['ostree']['gpgid'])
-
-        ostree_ota.create()
-
-    @show_task_info("Create Ustart Image")
-    def do_ustart_img(self):
-        workdir = os.path.join(self.workdir, self.image_name)
-        ustart = CreateBootfs(
-                        image_name=self.image_name,
-                        workdir=workdir,
-                        machine=self.machine,
-                        deploydir=self.deploydir)
-        ustart.create()
-
     def do_report(self):
         table = Texttable()
         table.set_cols_align(["l", "l"])
         table.set_cols_valign(["t", "t"])
-        table.add_rows([["Type", "Name"]])
 
         image_name = "%s-%s" % (self.image_name, self.machine)
         cmd_format = "ls -gh --time-style=+%%Y %s | awk '{$1=$2=$3=$4=$5=\"\"; print $0}'"
-
-        output = subprocess.check_output("ls {0}.yaml".format(image_name), shell=True, cwd=self.deploydir)
-        table.add_row(["Image Yaml File", output.strip()])
-
-        if any(img_type in self.image_type for img_type in ["ostree-repo", "wic", "ustart", "vmdk", "vdi"]):
-            output = subprocess.check_output("ls -d  ostree_repo", shell=True, cwd=self.deploydir)
-            table.add_row(["Ostree Repo", output.strip()])
-
-        if "wic" in self.image_type:
-            cmd_wic = cmd_format % "{0}.wic".format(image_name)
-            output = subprocess.check_output(cmd_wic, shell=True, cwd=self.deploydir)
-            table.add_row(["WIC Image", output.strip()])
-
-            cmd_wic = cmd_format % "{0}.wic.README.md".format(image_name)
-            output = subprocess.check_output(cmd_wic, shell=True, cwd=self.deploydir)
-            table.add_row(["WIC Image Doc", output.strip()])
-
-            cmd_wic = cmd_format % "{0}.qemuboot.conf".format(image_name)
-            output = subprocess.check_output(cmd_wic, shell=True, cwd=self.deploydir)
-            table.add_row(["WIC Image\nQemu Conf", output.strip()])
-
-        if "vdi" in self.image_type:
-            cmd_wic = cmd_format % "{0}.wic.vdi".format(image_name)
-            output = subprocess.check_output(cmd_wic, shell=True, cwd=self.deploydir)
-            table.add_row(["VDI Image", output.strip()])
-
-        if "vmdk" in self.image_type:
-            cmd_wic = cmd_format % "{0}.wic.vmdk".format(image_name)
-            output = subprocess.check_output(cmd_wic, shell=True, cwd=self.deploydir)
-            table.add_row(["VMDK Image", output.strip()])
-
-        if "ustart" in self.image_type:
-            cmd_wic = cmd_format % "{0}.ustart.img.gz".format(image_name)
-            output = subprocess.check_output(cmd_wic, shell=True, cwd=self.deploydir)
-            table.add_row(["Ustart Image", output.strip()])
-
-            cmd_wic = cmd_format % "{0}.ustart.img.gz.README.md".format(image_name)
-            output = subprocess.check_output(cmd_wic, shell=True, cwd=self.deploydir)
-            table.add_row(["Ustart Image Doc", output.strip()])
-
-        if "container" in self.image_type:
-            cmd_wic = cmd_format % "{0}.container.tar.bz2".format(image_name)
-            output = subprocess.check_output(cmd_wic, shell=True, cwd=self.deploydir)
-            table.add_row(["Container Image", output.strip()])
-
-            cmd_wic = cmd_format % "{0}.container.tar.bz2.README.md".format(image_name)
-            output = subprocess.check_output(cmd_wic, shell=True, cwd=self.deploydir)
-            table.add_row(["Container Image Doc", output.strip()])
+        cmd = cmd_format % "{0}.cpio.gz".format(image_name)
+        if self.machine == "bcm-2xxx-rpi4":
+            cmd += ".u-boot"
+        output = subprocess.check_output(cmd, shell=True, cwd=self.deploydir)
+        table.add_row(["Image", output.strip()])
 
         logger.info("Deploy Directory: %s\n%s", self.deploydir, table.draw())
 
 def _main_run_internal(args):
-    create = CreateFullImage(args)
+    create = GenInitramfs(args)
     create.do_prepare()
     create.do_rootfs()
     if create.target_rootfs is None:
@@ -549,25 +350,6 @@ def _main_run_internal(args):
         logger.debug("Create Target Rootfs: %s" % create.target_rootfs)
 
     create.do_ostree_initramfs()
-
-    # WIC image requires ostress repo
-    if any(img_type in create.image_type for img_type in ["ostree-repo", "wic", "ustart", "vmdk", "vdi"]):
-        create.do_ostree_repo()
-
-    if "wic" in create.image_type or "vmdk" in create.image_type or "vdi" in create.image_type:
-        create.do_ostree_ota()
-        create.do_image_wic()
-        if "vmdk" in create.image_type:
-            create.do_image_vmdk()
-
-        if "vdi" in create.image_type:
-            create.do_image_vdi()
-
-    if "container" in create.image_type:
-        create.do_image_container()
-
-    if "ustart" in create.image_type:
-        create.do_ustart_img()
 
     create.do_post()
     create.do_report()
@@ -579,18 +361,18 @@ def _main_run(args):
             logger.error(e)
             raise
 
-def main():
-    parser = set_parser()
+def main_geninitramfs():
+    parser = set_parser_geninitramfs()
     parser.set_defaults(func=_main_run)
     args = parser.parse_args()
     set_logger(logger, level=args.loglevel, log_path=args.logdir)
     args.func(args)
 
-def set_subparser(subparsers=None):
+def set_subparser_geninitramfs(subparsers=None):
     if subparsers is None:
         sys.exit(1)
-    parser_genimage = subparsers.add_parser('genimage', help='Generate images from package feeds for specified machines')
-    parser_genimage = set_parser(parser_genimage)
+    parser_genimage = subparsers.add_parser('geninitramfs', help='Generate Initramfs from package feeds for specified machines')
+    parser_genimage = set_parser_geninitramfs(parser_genimage)
     parser_genimage.set_defaults(func=_main_run)
 
 if __name__ == "__main__":

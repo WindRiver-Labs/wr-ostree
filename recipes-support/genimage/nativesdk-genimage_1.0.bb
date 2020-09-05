@@ -42,6 +42,7 @@ SRC_URI = "\
            file://genimage/genimage.py \
            file://genimage/genyaml.py \
            file://genimage/exampleyamls.py \
+           file://genimage/geninitramfs.py \
            file://genimage/utils.py \
            file://genimage/constant.py.in \
            file://genimage/package_manager.py \
