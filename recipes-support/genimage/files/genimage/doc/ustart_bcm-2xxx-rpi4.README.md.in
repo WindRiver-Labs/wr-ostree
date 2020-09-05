@@ -71,7 +71,7 @@ Create a 14G disk image
 Burn the image onto 14G disk image:
     $ zcat @IMAGE_NAME@.ustart.img.gz | dd of=boot-image-qemu.hddimg conv=notrunc
 
-For qemu aarch64:
+For Qemu No Graphic:
 
     $ qemu-system-aarch64 -machine virt -cpu cortex-a57 \
         -device virtio-net-device,netdev=net0 -netdev user,id=net0 \
@@ -79,6 +79,17 @@ For qemu aarch64:
         -bios qemu-u-boot-bcm-2xxx-rpi4.bin \
         -nographic \
         -drive id=disk0,file=boot-image-qemu.hddimg,if=none,format=raw -device virtio-blk-device,drive=disk0
+
+Or Qemu Graphic (XFCE desktop):
+
+    $ qemu-system-aarch64 -machine virt -cpu cortex-a57 \
+        -device virtio-net-device,netdev=net0 -netdev user,id=net0 \
+        -m 512 \
+        -bios qemu-u-boot-bcm-2xxx-rpi4.bin \
+        -device virtio-gpu-pci -serial stdio \
+        -device qemu-xhci -device usb-tablet -device usb-kbd \
+        -drive id=disk0,file=boot-image-qemu.hddimg,if=none,format=raw -device virtio-blk-device,drive=disk0
+
 
 #### Qemu Simulator
 qemu-system-aarch64
