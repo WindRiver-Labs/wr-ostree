@@ -182,6 +182,9 @@ class CreateFullImage(object):
             self.external_packages.extend(self.args.pkg_external)
         self.external_packages = list(set(self.external_packages))
 
+        if 'exclude-packages' not in data:
+            data['exclude-packages'] = []
+
         self.pkg_feeds = data['package_feeds'] if 'package_feeds' in data else DEFAULT_PACKAGE_FEED
 
         self.remote_pkgdatadir = data['remote_pkgdatadir'] if 'remote_pkgdatadir' in data else DEFAULT_REMOTE_PKGDATADIR
@@ -242,6 +245,8 @@ class CreateFullImage(object):
         logger.debug("Pakcages: %s" % self.packages)
         logger.info("External Packages Number: %d" % len(self.external_packages))
         logger.debug("External Packages: %s" % self.external_packages)
+        logger.info("Exclude Packages Number: %s" % len(self.data['exclude-packages']))
+        logger.debug("Exclude Packages: %s" % self.data['exclude-packages'])
         logger.info("Pakcage Feeds:\n%s\n" % '\n'.join(self.pkg_feeds))
         logger.debug("Deploy Directory: %s" % self.outdir)
         logger.debug("Work Directory: %s" % self.workdir)
@@ -268,6 +273,8 @@ class CreateFullImage(object):
                 if wic_param not in self.data["wic"]:
                     self.data["wic"][wic_param] = constant.DEFAULT_WIC_DATA[wic_param]
 
+        os.environ['NO_RECOMMENDATIONS'] = self.data.get('NO_RECOMMENDATIONS', '0')
+
     def do_post(self):
         for f in ["qemu-u-boot-bcm-2xxx-rpi4.bin", "ovmf.qcow2"]:
             qemu_data = os.path.join(self.native_sysroot, "usr/share/qemu_data", f)
@@ -287,6 +294,7 @@ class CreateFullImage(object):
                         self.pkg_feeds,
                         self.packages,
                         external_packages=self.external_packages,
+                        exclude_packages=self.data['exclude-packages'],
                         remote_pkgdatadir=self.remote_pkgdatadir,
                         image_linguas=image_linguas,
                         pkg_globs=pkg_globs)

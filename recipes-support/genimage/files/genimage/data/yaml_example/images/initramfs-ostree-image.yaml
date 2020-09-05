@@ -8,6 +8,7 @@ packages:
 - ca-certificates
 - curl
 - dosfstools
+- e2fsprogs-e2fsck
 - e2fsprogs-resize2fs
 - e2fsprogs-tune2fs
 - findutils
@@ -20,6 +21,7 @@ packages:
 - kbd
 - kmod
 - mdadm
+- mttyexec
 - ostree
 - ostree-switchroot
 - pv
@@ -35,3 +37,6 @@ packages:
 - util-linux-lsblk
 - util-linux-mount
 - util-linux-setsid
+exclude-packages:
+- busybox-syslog
+NO_RECOMMENDATIONS: '1'

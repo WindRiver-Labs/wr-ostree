@@ -29,6 +29,7 @@ DEFAULT_PACKAGES_COMMON = '''
     ostree-upgrade-mgr
     os-release
     run-postinsts
+    systemd
 '''.split()
 
 DEFAULT_PACKAGES_bcm_2xxx_rpi4 = '''
@@ -60,6 +61,8 @@ DEFAULT_PACKAGES = {
 OSTREE_INITRD_PACKAGES = '''
     glib-networking
     ca-certificates
+    e2fsprogs-e2fsck
+    mttyexec
     ostree ostree-switchroot
     initramfs-ostree bash
     kmod bzip2 gnupg kbd

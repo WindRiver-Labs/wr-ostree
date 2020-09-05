@@ -7,6 +7,7 @@ import collections
 import hashlib
 import re
 import tempfile
+import configparser
 
 from genimage.utils import set_logger
 from genimage.constant import FEED_ARCHS_DICT
@@ -79,7 +80,8 @@ class DnfRpm:
         distro_codename = None
         open(confdir + "releasever", 'w').write(distro_codename if distro_codename is not None else '')
 
-        open(os.path.join(self.target_rootfs, "etc/dnf/dnf.conf"), 'w').write("")
+        if not os.path.exists(os.path.join(self.target_rootfs, "etc/dnf/dnf.conf")):
+            open(os.path.join(self.target_rootfs, "etc/dnf/dnf.conf"), 'w').write("")
 
 
     def _configure_rpm(self):
@@ -162,6 +164,31 @@ class DnfRpm:
 
         return output
 
+    def set_exclude(self, package_exclude = None):
+        if not package_exclude:
+            return
+
+        self.package_exclude.extend(package_exclude)
+        self.package_exclude = list(set(self.package_exclude))
+        logger.debug("Set Exclude Packages: %s", self.package_exclude)
+
+    def set_dnf_conf(self):
+        dnf_conf = os.path.join(self.target_rootfs, "etc/dnf/dnf.conf")
+
+        config = configparser.ConfigParser()
+        config.read(dnf_conf)
+
+        exclude = config.get('main', 'exclude', fallback='')
+        if exclude:
+            exclude += ' {0}'.format(' '.join(self.package_exclude))
+        else:
+            exclude = ' '.join(self.package_exclude)
+
+        config.set('main', 'exclude', exclude)
+
+        with open(dnf_conf, 'w') as f:
+            config.write(f, space_around_delimiters=False)
+
     def install(self, pkgs, attempt_only = False):
         logger.debug("dnf install: %s, attemplt %s" % (pkgs, attempt_only))
         if len(pkgs) == 0:
@@ -169,11 +196,11 @@ class DnfRpm:
         self._prepare_pkg_transaction()
 
         exclude_pkgs = (self.bad_recommendations.split() if self.bad_recommendations else [])
-        exclude_pkgs += (self.package_exclude.split() if self.package_exclude else [])
+        exclude_pkgs += (self.package_exclude if self.package_exclude else [])
 
         output = self._invoke_dnf((["--skip-broken"] if attempt_only else []) +
                          (["-x", ",".join(exclude_pkgs)] if len(exclude_pkgs) > 0 else []) +
-                         (["--setopt=install_weak_deps=False"] if self.bad_recommendations else []) +
+                         (["--setopt=install_weak_deps=False"] if os.environ.get('NO_RECOMMENDATIONS', '0') == '1' else []) +
                          (["--nogpgcheck"] if not self.package_seed_sign else ["--setopt=gpgcheck=True"]) +
                          ["install"] +
                          pkgs)

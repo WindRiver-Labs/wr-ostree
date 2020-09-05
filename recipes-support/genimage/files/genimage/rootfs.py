@@ -18,6 +18,7 @@ class Rootfs(object):
                  pkg_feeds,
                  packages,
                  external_packages=[],
+                 exclude_packages=[],
                  remote_pkgdatadir=None,
                  target_rootfs=None,
                  image_linguas=None,
@@ -29,6 +30,8 @@ class Rootfs(object):
         self.pkg_feeds = pkg_feeds
         self.packages = packages
         self.external_packages = external_packages
+        self.exclude_packages = exclude_packages
+
         self.pkg_globs = "" if pkg_globs is None else pkg_globs
         if image_linguas:
             self.pkg_globs += " %s" % self._image_linguas_globs(image_linguas)
@@ -115,6 +118,7 @@ class Rootfs(object):
 
         self.pm.insert_feeds_uris(self.pkg_feeds, True if 'dnf' in self.packages else False)
         self.pm.update()
+        self.pm.set_exclude(self.exclude_packages)
         self.pm.install(self.packages)
         self.pm.install_complementary(self.pkg_globs)
 
@@ -133,6 +137,7 @@ class Rootfs(object):
         self._save_installed()
 
         self.pm.run_intercepts()
+        self.pm.set_dnf_conf()
 
         self._post_rootfs()
 
@@ -164,7 +169,7 @@ class Rootfs(object):
         modules_dir = os.path.join(self.target_rootfs, 'lib', 'modules')
         # if we don't have any modules don't bother to do the depmod
         if not self._check_for_kernel_modules(modules_dir):
-            logger.warn("No Kernel Modules found, not running depmod")
+            logger.info("No Kernel Modules found, not running depmod")
             return
 
         kernel_ver = self.get_kernel_ver()
