@@ -34,29 +34,13 @@ from genimage.constant import DEFAULT_MACHINE
 from genimage.constant import DEFAULT_IMAGE
 from genimage.constant import DEFAULT_IMAGE_FEATURES
 from genimage.genXXX import GenXXX
+from genimage.genXXX import set_parser
 
 import genimage.utils as utils
 
 logger = logging.getLogger('appsdk')
 
 def set_parser_genyaml(parser=None):
-    if parser is None:
-        parser = argparse.ArgumentParser(
-            description='Generate Yaml file from Input Yamls',
-            epilog='Use %(prog)s --help to get help')
-        parser.add_argument('-d', '--debug',
-            help = "Enable debug output",
-            action='store_const', const=logging.DEBUG, dest='loglevel', default=logging.INFO)
-        parser.add_argument('-q', '--quiet',
-            help = 'Hide all output except error messages',
-            action='store_const', const=logging.ERROR, dest='loglevel')
-
-        parser.add_argument('--log-dir',
-            default=None,
-            dest='logdir',
-            help='Specify dir to save debug messages as log.appsdk regardless of the logging level',
-            action='store')
-
     supported_types = [
         'wic',
         'vmdk',
@@ -68,38 +52,7 @@ def set_parser_genyaml(parser=None):
         'all',
     ]
 
-    parser.add_argument('-o', '--outdir',
-        default=os.getcwd(),
-        help='Specify output dir, default is current working directory',
-        action='store')
-    parser.add_argument('-g', '--gpgpath',
-        default=None,
-        help='Specify gpg homedir, it overrides \'gpg_path\' in Yaml, default is /tmp/.cbas_gnupg',
-        action='store')
-    parser.add_argument('-t', '--type',
-        choices=supported_types,
-        help='Specify image type, it overrides \'image_type\' in Yaml, default is all',
-        action='append')
-    parser.add_argument('-n', '--name',
-        help='Specify image name, it overrides \'name\' in Yaml',
-        action='store')
-    parser.add_argument('-u', '--url',
-        help='Specify extra urls of rpm package feeds',
-        action='append')
-    parser.add_argument('-p', '--pkg',
-        help='Specify extra package to be installed',
-        action='append')
-    parser.add_argument('--pkg-external',
-        help='Specify extra external package to be installed',
-        action='append')
-
-    parser.add_argument('input',
-        help='Input yaml files',
-        action='store',
-        nargs='*')
-
-    return parser
-
+    return set_parser(parser, supported_types)
 
 class GenYaml(GenXXX):
     """

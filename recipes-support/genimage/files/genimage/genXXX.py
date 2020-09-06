@@ -22,6 +22,7 @@ import yaml
 from collections import OrderedDict
 import glob
 from abc import ABCMeta, abstractmethod
+import argparse
 
 from genimage.utils import get_today
 import genimage.constant as constant
@@ -37,6 +38,72 @@ import genimage.utils as utils
 
 logger = logging.getLogger('appsdk')
 
+def set_parser(parser=None, supported_types=None):
+    if parser is None:
+        parser = argparse.ArgumentParser(
+            description='Generate images from package feeds for specified machines',
+            epilog='Use %(prog)s --help to get help')
+        parser.add_argument('-d', '--debug',
+            help = "Enable debug output",
+            action='store_const', const=logging.DEBUG, dest='loglevel', default=logging.INFO)
+        parser.add_argument('-q', '--quiet',
+            help = 'Hide all output except error messages',
+            action='store_const', const=logging.ERROR, dest='loglevel')
+
+        parser.add_argument('--log-dir',
+            default=None,
+            dest='logdir',
+            help='Specify dir to save debug messages as log.appsdk regardless of the logging level',
+            action='store')
+
+    if supported_types is None:
+        supported_types = [
+            'wic',
+            'vmdk',
+            'vdi',
+            'ostree-repo',
+            'container',
+            'ustart',
+            'all',
+        ]
+
+    parser.add_argument('-o', '--outdir',
+        default=os.getcwd(),
+        help='Specify output dir, default is current working directory',
+        action='store')
+    parser.add_argument('-g', '--gpgpath',
+        default=None,
+        help='Specify gpg homedir, it overrides \'gpg_path\' in Yaml, default is /tmp/.cbas_gnupg',
+        action='store')
+    parser.add_argument('-w', '--workdir',
+        default=os.getcwd(),
+        help='Specify work dir, default is current working directory',
+        action='store')
+    parser.add_argument('-t', '--type',
+        choices=supported_types,
+        help='Specify image type, it overrides \'image_type\' in Yaml, default is all',
+        action='append')
+    parser.add_argument('-n', '--name',
+        help='Specify image name, it overrides \'name\' in Yaml',
+        action='store')
+    parser.add_argument('-u', '--url',
+        help='Specify extra urls of rpm package feeds',
+        action='append')
+    parser.add_argument('-p', '--pkg',
+        help='Specify extra package to be installed',
+        action='append')
+    parser.add_argument('--pkg-external',
+        help='Specify extra external package to be installed',
+        action='append')
+    parser.add_argument("--no-clean",
+        help = "Do not cleanup generated rootfs in workdir", action="store_true", default=False)
+
+    parser.add_argument('input',
+        help='Input yaml files that the tool can be run against a package feed to generate an image',
+        action='store',
+        nargs='*')
+
+    return parser
 class GenXXX(object, metaclass=ABCMeta):
     """
     This is an abstract class. Do not instantiate this directly.
