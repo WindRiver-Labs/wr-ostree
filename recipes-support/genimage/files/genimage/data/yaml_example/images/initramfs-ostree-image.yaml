@@ -40,4 +40,5 @@ packages:
 exclude-packages:
 - busybox-syslog
 environments:
+- KERNEL_PARAMS="key=value"
 - NO_RECOMMENDATIONS="1"

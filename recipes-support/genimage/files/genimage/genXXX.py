@@ -183,7 +183,7 @@ class GenXXX(object, metaclass=ABCMeta):
         self.data['exclude-packages'] = []
         self.data['rootfs-pre-scripts'] = ['echo "run script before do_rootfs in $IMAGE_ROOTFS"']
         self.data['rootfs-post-scripts'] = ['echo "run script after do_rootfs in $IMAGE_ROOTFS"']
-        self.data['environments'] = ['NO_RECOMMENDATIONS="0"']
+        self.data['environments'] = ['NO_RECOMMENDATIONS="0"', 'KERNEL_PARAMS="key=value"']
 
     def _parse_inputyamls(self):
         if not self.args.input:

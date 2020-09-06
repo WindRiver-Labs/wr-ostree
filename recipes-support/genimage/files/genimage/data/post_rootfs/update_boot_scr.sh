@@ -3,6 +3,7 @@ set -x
 
 ## Require environments
 # OSTREE_CONSOLE
+# KERNEL_PARAMS
 
 # Modify the boot.scr
 update_boot_scr() {
@@ -16,7 +17,7 @@ update_boot_scr() {
     tail -c+73 $rootfs/boot/boot.scr > $rootfs/boot/boot.scr.raw
 
     sed -i -e "/^setenv bootargs/s/console=[^ ^\"]*//g" \
-           -e "s/^\(setenv bootargs .*\)\"$/\1 ${OSTREE_CONSOLE}\"/g" \
+           -e "s/^\(setenv bootargs .*\)\"$/\1 ${OSTREE_CONSOLE} ${KERNEL_PARAMS}\"/g" \
         $rootfs/boot/boot.scr.raw
 
     sed -i -e "/^setenv instdef/s/console=[^ ^\"]*//g" \
