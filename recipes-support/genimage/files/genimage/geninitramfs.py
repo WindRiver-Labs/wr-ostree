@@ -18,19 +18,17 @@
 import os
 import sys
 import subprocess
-import argparse
 import logging
-import time
 from texttable import Texttable
 
 from genimage.utils import set_logger
 from genimage.utils import show_task_info
-from genimage.genimage import GenImage
 from genimage.constant import DEFAULT_INITRD_NAME
 from genimage.constant import OSTREE_INITRD_PACKAGES
-from genimage.rootfs import Rootfs
 from genimage.image import CreateInitramfs
 from genimage.genXXX import set_parser
+from genimage.genXXX import GenXXX
+
 import genimage.utils as utils
 
 logger = logging.getLogger('appsdk')
@@ -43,7 +41,7 @@ def set_parser_geninitramfs(parser=None):
     return set_parser(parser, supported_types)
 
 
-class GenInitramfs(GenImage):
+class GenInitramfs(GenXXX):
     """
     Generate Initramfs
     """
@@ -54,8 +52,8 @@ class GenInitramfs(GenImage):
         if self.image_name == DEFAULT_INITRD_NAME:
             logger.info("Replace eixsted %s as initrd for appsdk genimage", DEFAULT_INITRD_NAME)
 
-    def _set_default(self):
-        super(GenInitramfs, self)._set_default()
+    def _parse_default(self):
+        super(GenInitramfs, self)._parse_default()
 
         self.data['name'] = DEFAULT_INITRD_NAME
         self.data['image_type'] = ['initramfs']
@@ -63,41 +61,15 @@ class GenInitramfs(GenImage):
         self.data['exclude-packages'] = ['busybox-syslog']
         self.data['NO_RECOMMENDATIONS'] = '1'
 
-    def do_post(self):
-        pass
+    def _do_rootfs_pre(self, rootfs=None):
+        if rootfs is None:
+            return
 
-    @show_task_info("Create Rootfs")
-    def do_rootfs(self):
-        workdir = os.path.join(self.workdir, self.image_name)
-        pkg_globs = self.features.get("pkg_globs", None)
-        image_linguas = self.features.get("image_linguas", None)
-        rootfs = Rootfs(workdir,
-                        self.data_dir,
-                        self.machine,
-                        self.pkg_feeds,
-                        self.packages,
-                        external_packages=self.external_packages,
-                        exclude_packages=self.exclude_packages,
-                        remote_pkgdatadir=self.remote_pkgdatadir,
-                        image_linguas=image_linguas,
-                        pkg_globs=pkg_globs)
+        super(GenInitramfs, self)._do_rootfs_pre(rootfs)
 
         script_cmd = os.path.join(self.data_dir, 'post_rootfs', 'add_gpg_key.sh')
         script_cmd = "{0} {1} {2}".format(script_cmd, rootfs.target_rootfs, self.data['gpg']['gpg_path'])
         rootfs.add_rootfs_post_scripts(script_cmd)
-
-        rootfs.create()
-
-        installed_dict = rootfs.image_list_installed_packages()
-
-        self._save_output_yaml()
-
-        # Generate image manifest
-        manifest_name = "{0}/{1}-{2}.manifest".format(self.deploydir, self.image_name, self.machine)
-        with open(manifest_name, 'w+') as image_manifest:
-            image_manifest.write(utils.format_pkg_list(installed_dict, "ver"))
-
-        self.target_rootfs = rootfs.target_rootfs
 
     @show_task_info("Create Initramfs")
     def do_ostree_initramfs(self):

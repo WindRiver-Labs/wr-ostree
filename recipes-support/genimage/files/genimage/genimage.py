@@ -18,33 +18,15 @@
 import os
 import sys
 import subprocess
-import argparse
 import logging
-import shutil
-import atexit
-import yaml
-from collections import OrderedDict
-import time
 from texttable import Texttable
-import glob
 
 from genimage.utils import set_logger
-from genimage.utils import get_today
 from genimage.utils import show_task_info
-import genimage.constant as constant
-from genimage.constant import DEFAULT_PACKAGE_FEED
-from genimage.constant import DEFAULT_REMOTE_PKGDATADIR
-from genimage.constant import DEFAULT_PACKAGES
-from genimage.constant import DEFAULT_MACHINE
-from genimage.constant import DEFAULT_IMAGE
-from genimage.constant import DEFAULT_IMAGE_FEATURES
-from genimage.constant import OSTREE_INITRD_PACKAGES
-from genimage.rootfs import Rootfs
 from genimage.container import CreateContainer
 from genimage.image import CreateWicImage
 from genimage.image import CreateVMImage
 from genimage.image import CreateOstreeRepo
-from genimage.image import CreateInitramfs
 from genimage.image import CreateOstreeOTA
 from genimage.image import CreateBootfs
 from genimage.genXXX import GenXXX
@@ -65,50 +47,11 @@ class GenImage(GenXXX):
     def __init__(self, args):
         super(GenImage, self).__init__(args)
 
-        self.workdir = os.path.realpath(os.path.join(self.args.workdir, "workdir"))
-        utils.fake_root(workdir=self.workdir)
-        utils.mkdirhier(self.workdir)
+    def _do_rootfs_pre(self, rootfs=None):
+        if rootfs is None:
+            return
 
-        self.target_rootfs = None
-        self.native_sysroot = os.environ['OECORE_NATIVE_SYSROOT']
-        self.data_dir = os.path.join(self.native_sysroot, "usr/share/genimage/data")
-
-        os.environ['NO_RECOMMENDATIONS'] = self.data.get('NO_RECOMMENDATIONS', '0')
-
-        # Cleanup all generated rootfs dir by default
-        if not self.args.no_clean:
-            cmd = "rm -rf {0}/*/rootfs*".format(self.workdir)
-            atexit.register(utils.run_cmd_oneshot, cmd=cmd)
-
-        logger.debug("Work Directory: %s" % self.workdir)
-
-    def do_prepare(self):
-        gpg_data = self.data["gpg"]
-        utils.check_gpg_keys(gpg_data)
-
-    def do_post(self):
-        for f in ["qemu-u-boot-bcm-2xxx-rpi4.bin", "ovmf.qcow2"]:
-            qemu_data = os.path.join(self.native_sysroot, "usr/share/qemu_data", f)
-            if os.path.exists(qemu_data):
-                logger.debug("Deploy %s", f)
-                cmd = "cp -f {0} {1}".format(qemu_data, self.deploydir)
-                utils.run_cmd_oneshot(cmd)
-
-    @show_task_info("Create Rootfs")
-    def do_rootfs(self):
-        workdir = os.path.join(self.workdir, self.image_name)
-        pkg_globs = self.features.get("pkg_globs", None)
-        image_linguas = self.features.get("image_linguas", None)
-        rootfs = Rootfs(workdir,
-                        self.data_dir,
-                        self.machine,
-                        self.pkg_feeds,
-                        self.packages,
-                        external_packages=self.external_packages,
-                        exclude_packages=self.exclude_packages,
-                        remote_pkgdatadir=self.remote_pkgdatadir,
-                        image_linguas=image_linguas,
-                        pkg_globs=pkg_globs)
+        super(GenImage, self)._do_rootfs_pre(rootfs)
 
         if self.machine == "bcm-2xxx-rpi4":
             os.environ['OSTREE_CONSOLE'] = self.data["ostree"]['OSTREE_CONSOLE']
@@ -133,18 +76,11 @@ class GenImage(GenXXX):
                 script_cmd = "{0} {1} multi-user.target".format(script_cmd, rootfs.target_rootfs)
             rootfs.add_rootfs_post_scripts(script_cmd)
 
-        rootfs.create()
+    def _do_rootfs_post(self, rootfs=None):
+        if rootfs is None:
+            return
 
-        installed_dict = rootfs.image_list_installed_packages()
-
-        self._save_output_yaml()
-
-        # Generate image manifest
-        manifest_name = "{0}/{1}-{2}.manifest".format(self.deploydir, self.image_name, self.machine)
-        with open(manifest_name, 'w+') as image_manifest:
-            image_manifest.write(utils.format_pkg_list(installed_dict, "ver"))
-
-        self.target_rootfs = rootfs.target_rootfs
+        super(GenImage, self)._do_rootfs_post(rootfs)
 
         # Copy kernel image, boot files, device tree files to deploy dir
         if self.machine == "intel-x86-64":
@@ -159,6 +95,14 @@ class GenImage(GenXXX):
         else:
             cmd = "cp -rf {0}/boot/* {1}".format(self.target_rootfs, self.deploydir)
             utils.run_cmd_oneshot(cmd)
+
+    def do_post(self):
+        for f in ["qemu-u-boot-bcm-2xxx-rpi4.bin", "ovmf.qcow2"]:
+            qemu_data = os.path.join(self.native_sysroot, "usr/share/qemu_data", f)
+            if os.path.exists(qemu_data):
+                logger.debug("Deploy %s", f)
+                cmd = "cp -f {0} {1}".format(qemu_data, self.deploydir)
+                utils.run_cmd_oneshot(cmd)
 
     @show_task_info("Create Initramfs")
     def do_ostree_initramfs(self):

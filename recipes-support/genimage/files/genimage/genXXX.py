@@ -23,8 +23,10 @@ from collections import OrderedDict
 import glob
 from abc import ABCMeta, abstractmethod
 import argparse
+import atexit
 
 from genimage.utils import get_today
+from genimage.utils import show_task_info
 import genimage.constant as constant
 from genimage.constant import DEFAULT_PACKAGE_FEED
 from genimage.constant import DEFAULT_REMOTE_PKGDATADIR
@@ -32,7 +34,7 @@ from genimage.constant import DEFAULT_PACKAGES
 from genimage.constant import DEFAULT_MACHINE
 from genimage.constant import DEFAULT_IMAGE
 from genimage.constant import DEFAULT_IMAGE_FEATURES
-from genimage.constant import OSTREE_INITRD_PACKAGES
+from genimage.rootfs import Rootfs
 
 import genimage.utils as utils
 
@@ -81,7 +83,7 @@ def set_parser(parser=None, supported_types=None):
         action='store')
     parser.add_argument('-t', '--type',
         choices=supported_types,
-        help='Specify image type, it overrides \'image_type\' in Yaml, default is all',
+        help='Specify image type, it overrides \'image_type\' in Yaml',
         action='append')
     parser.add_argument('-n', '--name',
         help='Specify image name, it overrides \'name\' in Yaml',
@@ -94,6 +96,15 @@ def set_parser(parser=None, supported_types=None):
         action='append')
     parser.add_argument('--pkg-external',
         help='Specify extra external package to be installed',
+        action='append')
+    parser.add_argument('--rootfs-post-script',
+        help='Specify extra script to run after do_rootfs',
+        action='append')
+    parser.add_argument('--rootfs-pre-script',
+        help='Specify extra script to run before do_rootfs',
+        action='append')
+    parser.add_argument('--env',
+        help='Specify extra environment to export before do_rootfs: --env NAME=VALUE',
         action='append')
     parser.add_argument("--no-clean",
         help = "Do not cleanup generated rootfs in workdir", action="store_true", default=False)
@@ -113,10 +124,10 @@ class GenXXX(object, metaclass=ABCMeta):
         self.today = get_today()
         self.data = OrderedDict()
 
-        self._set_default()
+        self._parse_default()
         self._parse_inputyamls()
         self._parse_options()
-        self._fill_missing()
+        self._parse_amend()
 
         self.image_name = self.data['name']
         self.machine = self.data['machine']
@@ -128,10 +139,21 @@ class GenXXX(object, metaclass=ABCMeta):
         self.remote_pkgdatadir = self.data['remote_pkgdatadir']
         self.features = self.data['features']
 
+        self.rootfs_post_scripts = self.data['rootfs-post-scripts']
+        self.rootfs_pre_scripts = self.data['rootfs-pre-scripts']
+        self.environments = self.data['environments']
+
         self.outdir = os.path.realpath(self.args.outdir)
         self.deploydir = os.path.join(self.outdir, "deploy")
         self.output_yaml = os.path.join(self.deploydir, "%s-%s.yaml" % (self.image_name, self.machine))
         utils.mkdirhier(self.deploydir)
+        self.workdir = os.path.realpath(os.path.join(self.args.workdir, "workdir"))
+
+        self.target_rootfs = None
+        self.native_sysroot = os.environ['OECORE_NATIVE_SYSROOT']
+        self.data_dir = os.path.join(self.native_sysroot, "usr/share/genimage/data")
+
+        os.environ['NO_RECOMMENDATIONS'] = self.data['NO_RECOMMENDATIONS']
 
         logger.info("Machine: %s" % self.machine)
         logger.info("Image Name: %s" % self.image_name)
@@ -146,8 +168,9 @@ class GenXXX(object, metaclass=ABCMeta):
         logger.info("Pakcage Feeds:\n%s\n" % '\n'.join(self.pkg_feeds))
         logger.debug("Deploy Directory: %s" % self.outdir)
         logger.debug("GPG Path: %s" % self.data["gpg"]["gpg_path"])
+        logger.debug("Work Directory: %s" % self.workdir)
 
-    def _set_default(self):
+    def _parse_default(self):
         self.data['name'] = DEFAULT_IMAGE
         self.data['machine'] = DEFAULT_MACHINE
         self.data['image_type'] = ['ustart', 'ostree-repo']
@@ -161,6 +184,9 @@ class GenXXX(object, metaclass=ABCMeta):
         self.data['external-packages'] = []
         self.data['exclude-packages'] = []
         self.data['NO_RECOMMENDATIONS'] = '0'
+        self.data['rootfs-pre-scripts'] = ['echo "run script before do_rootfs in $IMAGE_ROOTFS $ENV_EXAMPLE1"']
+        self.data['rootfs-post-scripts'] = ['echo "run script after do_rootfs in $IMAGE_ROOTFS $ENV_EXAMPLE2"']
+        self.data['environments'] = ['ENV_EXAMPLE1="hello"', 'ENV_EXAMPLE2="world"']
 
     def _parse_inputyamls(self):
         if not self.args.input:
@@ -218,7 +244,16 @@ class GenXXX(object, metaclass=ABCMeta):
         if self.args.gpgpath:
             self.data["gpg"]["gpg_path"] = self.args.gpgpath
 
-    def _fill_missing(self):
+        if self.args.rootfs_post_script:
+            self.data['rootfs-post-scripts'].extend(self.args.rootfs_post_script)
+
+        if self.args.rootfs_pre_script:
+            self.data['rootfs-pre-scripts'].extend(self.args.rootfs_pre_script)
+
+        if self.args.env:
+            self.data['environments'].extend(self.args.env)
+
+    def _parse_amend(self):
         # Use default to fill missing params of "ostree" section
         for ostree_param in constant.DEFAULT_OSTREE_DATA:
             if ostree_param not in self.data["ostree"]:
@@ -240,14 +275,83 @@ class GenXXX(object, metaclass=ABCMeta):
         if 'all' in self.data['image_type']:
             self.data['image_type'] = ['ostree-repo', 'wic', 'container', 'ustart', 'vmdk', 'vdi']
 
-        self.data['packages'] = list(sorted(set(self.data['packages'])))
-        self.data['external-packages'] = list(sorted(set(self.data['external-packages'])))
-        self.data['exclude-packages'] = list(sorted(set(self.data['exclude-packages'])))
-        self.data['package_feeds'] = list(sorted(set(self.data['package_feeds'])))
+        # Sort and remove duplicated in list
+        for k,v in self.data.items():
+            if isinstance(v, list):
+                self.data[k] = list(sorted(set(v)))
 
     def _save_output_yaml(self):
         with open(self.output_yaml, "w") as f:
             utils.ordered_dump(self.data, f, Dumper=yaml.SafeDumper)
             logger.debug("Save Yaml FIle to : %s" % (self.output_yaml))
+
+    def do_prepare(self):
+        utils.fake_root(workdir=self.workdir)
+        utils.mkdirhier(self.workdir)
+
+        # Cleanup all generated rootfs dir by default
+        if not self.args.no_clean:
+            cmd = "rm -rf {0}/*/rootfs*".format(self.workdir)
+            atexit.register(utils.run_cmd_oneshot, cmd=cmd)
+
+        gpg_data = self.data["gpg"]
+        utils.check_gpg_keys(gpg_data)
+
+    def do_post(self):
+        pass
+
+    def _do_rootfs_pre(self, rootfs=None):
+        if rootfs is None:
+            return
+
+        for script_cmd in self.rootfs_post_scripts:
+            logger.debug("Add rootfs post script: %s", script_cmd)
+            rootfs.add_rootfs_post_scripts(script_cmd)
+
+        for script_cmd in self.rootfs_pre_scripts:
+            logger.debug("Add rootfs pre script: %s", script_cmd)
+            rootfs.add_rootfs_pre_scripts(script_cmd)
+
+        for env in self.environments:
+            k,v = env.split('=', 1)
+            logger.debug("Environment %s=%s", k, v)
+            os.environ[k] = v
+
+    def _do_rootfs_post(self, rootfs=None):
+        if rootfs is None:
+            return
+
+        installed_dict = rootfs.image_list_installed_packages()
+
+        self._save_output_yaml()
+
+        # Generate image manifest
+        manifest_name = "{0}/{1}-{2}.manifest".format(self.deploydir, self.image_name, self.machine)
+        with open(manifest_name, 'w+') as image_manifest:
+            image_manifest.write(utils.format_pkg_list(installed_dict, "ver"))
+
+        self.target_rootfs = rootfs.target_rootfs
+
+    @show_task_info("Create Rootfs")
+    def do_rootfs(self):
+        workdir = os.path.join(self.workdir, self.image_name)
+        pkg_globs = self.features.get("pkg_globs", None)
+        image_linguas = self.features.get("image_linguas", None)
+        rootfs = Rootfs(workdir,
+                        self.data_dir,
+                        self.machine,
+                        self.pkg_feeds,
+                        self.packages,
+                        external_packages=self.external_packages,
+                        exclude_packages=self.exclude_packages,
+                        remote_pkgdatadir=self.remote_pkgdatadir,
+                        image_linguas=image_linguas,
+                        pkg_globs=pkg_globs)
+
+        self._do_rootfs_pre(rootfs)
+
+        rootfs.create()
+
+        self._do_rootfs_post(rootfs)
 
 

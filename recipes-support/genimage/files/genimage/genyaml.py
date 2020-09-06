@@ -17,22 +17,9 @@
 
 import os
 import sys
-import subprocess
-import argparse
 import logging
-import yaml
-from collections import OrderedDict
-import glob
 
 from genimage.utils import set_logger
-from genimage.utils import get_today
-import genimage.constant as constant
-from genimage.constant import DEFAULT_PACKAGE_FEED
-from genimage.constant import DEFAULT_REMOTE_PKGDATADIR
-from genimage.constant import DEFAULT_PACKAGES
-from genimage.constant import DEFAULT_MACHINE
-from genimage.constant import DEFAULT_IMAGE
-from genimage.constant import DEFAULT_IMAGE_FEATURES
 from genimage.genXXX import GenXXX
 from genimage.genXXX import set_parser
 
@@ -64,18 +51,8 @@ class GenYaml(GenXXX):
         self.output_yaml = os.path.join(self.outdir, "%s-%s.yaml" % (self.data['name'], self.data['machine']))
 
     def do_generate(self):
-        logger.info("Machine: %s" % self.data['machine'])
-        logger.info("Image Name: %s" % self.data['name'])
-        logger.info("Image Type: %s" % ' '.join(self.data['image_type']))
-        logger.info("Pakcages Number: %d" % len(self.data['packages']))
-        logger.debug("Pakcages: %s" % self.data['packages'])
-        logger.info("External Packages Number: %d" % len(self.data['external-packages']))
-        logger.debug("External Packages: %s" % self.data['external-packages'])
-        logger.info("Pakcage Feeds:\n%s\n" % '\n'.join(self.data['package_feeds']))
-        logger.debug("GPG Path: %s" % self.data["gpg"]["gpg_path"])
-
         self._save_output_yaml()
-
+        logger.info("Save Yaml FIle to : %s" % (self.output_yaml))
 
 def _main_run_internal(args):
     yaml = GenYaml(args)
