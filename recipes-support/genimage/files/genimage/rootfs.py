@@ -137,7 +137,9 @@ class Rootfs(object):
         self._save_installed()
 
         self.pm.run_intercepts()
-        self.pm.set_dnf_conf()
+
+        if 'dnf' in self.packages:
+            self.pm.set_dnf_conf()
 
         self._post_rootfs()
 

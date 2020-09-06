@@ -1,4 +1,4 @@
-image: wrlinux-image-small
+name: wrlinux-image-small
 packages:
 - ca-certificates
 - glib-networking

@@ -17,7 +17,8 @@ setuptools.setup(
         'console_scripts': [
             'genimage=genimage:main',
             'genyaml=genimage:main_genyaml',
-            'exampleyamls=exampleyamls:main_exampleyamls'
+            'exampleyamls=genimage:main_exampleyamls',
+            'geninitramfs=genimage:main_geninitramfs'
         ],
     },
     license="GNU General Public License v2.0",
