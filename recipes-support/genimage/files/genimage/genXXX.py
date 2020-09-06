@@ -153,8 +153,6 @@ class GenXXX(object, metaclass=ABCMeta):
         self.native_sysroot = os.environ['OECORE_NATIVE_SYSROOT']
         self.data_dir = os.path.join(self.native_sysroot, "usr/share/genimage/data")
 
-        os.environ['NO_RECOMMENDATIONS'] = self.data['NO_RECOMMENDATIONS']
-
         logger.info("Machine: %s" % self.machine)
         logger.info("Image Name: %s" % self.image_name)
         logger.info("Image Type: %s" % ' '.join(self.image_type))
@@ -164,8 +162,8 @@ class GenXXX(object, metaclass=ABCMeta):
         logger.debug("External Packages: %s" % self.external_packages)
         logger.info("Exclude Packages Number: %s" % len(self.exclude_packages))
         logger.debug("Exclude Packages: %s" % self.exclude_packages)
-        logger.info("NO_RECOMMENDATIONS: %s", self.data['NO_RECOMMENDATIONS'])
         logger.info("Pakcage Feeds:\n%s\n" % '\n'.join(self.pkg_feeds))
+        logger.info("enviroments: %s", self.environments)
         logger.debug("Deploy Directory: %s" % self.outdir)
         logger.debug("GPG Path: %s" % self.data["gpg"]["gpg_path"])
         logger.debug("Work Directory: %s" % self.workdir)
@@ -183,10 +181,9 @@ class GenXXX(object, metaclass=ABCMeta):
         self.data['packages'] = DEFAULT_PACKAGES[DEFAULT_MACHINE]
         self.data['external-packages'] = []
         self.data['exclude-packages'] = []
-        self.data['NO_RECOMMENDATIONS'] = '0'
-        self.data['rootfs-pre-scripts'] = ['echo "run script before do_rootfs in $IMAGE_ROOTFS $ENV_EXAMPLE1"']
-        self.data['rootfs-post-scripts'] = ['echo "run script after do_rootfs in $IMAGE_ROOTFS $ENV_EXAMPLE2"']
-        self.data['environments'] = ['ENV_EXAMPLE1="hello"', 'ENV_EXAMPLE2="world"']
+        self.data['rootfs-pre-scripts'] = ['echo "run script before do_rootfs in $IMAGE_ROOTFS"']
+        self.data['rootfs-post-scripts'] = ['echo "run script after do_rootfs in $IMAGE_ROOTFS"']
+        self.data['environments'] = ['NO_RECOMMENDATIONS="0"']
 
     def _parse_inputyamls(self):
         if not self.args.input:
@@ -314,6 +311,7 @@ class GenXXX(object, metaclass=ABCMeta):
 
         for env in self.environments:
             k,v = env.split('=', 1)
+            v = v.strip('"\'')
             logger.debug("Environment %s=%s", k, v)
             os.environ[k] = v
 

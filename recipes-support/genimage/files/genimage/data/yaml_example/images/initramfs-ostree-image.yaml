@@ -39,4 +39,5 @@ packages:
 - util-linux-setsid
 exclude-packages:
 - busybox-syslog
-NO_RECOMMENDATIONS: '1'
+environments:
+- NO_RECOMMENDATIONS="1"

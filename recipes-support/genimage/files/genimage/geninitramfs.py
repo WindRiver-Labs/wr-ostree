@@ -59,7 +59,7 @@ class GenInitramfs(GenXXX):
         self.data['image_type'] = ['initramfs']
         self.data['packages'] = OSTREE_INITRD_PACKAGES
         self.data['exclude-packages'] = ['busybox-syslog']
-        self.data['NO_RECOMMENDATIONS'] = '1'
+        self.data['environments'] = ['NO_RECOMMENDATIONS="1"']
 
     def _do_rootfs_pre(self, rootfs=None):
         if rootfs is None:

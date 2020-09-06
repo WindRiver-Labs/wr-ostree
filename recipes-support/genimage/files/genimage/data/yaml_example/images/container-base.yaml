@@ -12,4 +12,3 @@ packages:
 - update-alternatives-opkg
 exclude-packages:
 - systemd*
-NO_RECOMMENDATIONS: '1'
