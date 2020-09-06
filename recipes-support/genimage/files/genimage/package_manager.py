@@ -173,7 +173,12 @@ class DnfRpm:
         logger.debug("Set Exclude Packages: %s", self.package_exclude)
 
     def set_dnf_conf(self):
+        if not self.package_exclude:
+            return
+
         dnf_conf = os.path.join(self.target_rootfs, "etc/dnf/dnf.conf")
+        if not os.path.exists(dnf_conf):
+            return
 
         config = configparser.ConfigParser()
         config.read(dnf_conf)

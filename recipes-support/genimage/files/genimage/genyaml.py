@@ -33,6 +33,7 @@ from genimage.constant import DEFAULT_PACKAGES
 from genimage.constant import DEFAULT_MACHINE
 from genimage.constant import DEFAULT_IMAGE
 from genimage.constant import DEFAULT_IMAGE_FEATURES
+from genimage.genXXX import GenXXX
 
 import genimage.utils as utils
 
@@ -100,119 +101,16 @@ def set_parser_genyaml(parser=None):
     return parser
 
 
-class GenYaml(object):
+class GenYaml(GenXXX):
     """
     * Use Input Yaml and command option to customize and generate new Yaml file:
     """
-
     def __init__(self, args):
-        self.args = args
+        super(GenYaml, self).__init__(args)
 
-        self.today = get_today()
-
-        self.data = OrderedDict()
-
-    def do_parse_options(self):
-        if self.args.name:
-            self.data['name'] = self.args.name
-
-        if self.args.type:
-            self.data['image_type'] = self.args.type
-
-        if self.args.url:
-            self.data['package_feeds'].extend(self.args.url)
-
-        if self.args.pkg:
-            self.data['packages'].extend(self.args.pkg)
-
-        if self.args.pkg_external:
-            self.data['external-packages'].extend(self.args.pkg_external)
-
-        if self.args.gpgpath:
-            self.data["gpg"]["gpg_path"] = self.args.gpgpath
-
-    def do_parse_inputyamls(self):
-        if not self.args.input:
-            logger.info("No Input YAML File, use default setting")
-            return
-
-        data = dict()
-        yaml_files = []
-        for input_glob in self.args.input:
-            yaml_files.extend(glob.glob(input_glob))
-
-        for yaml_file in yaml_files:
-            logger.info("Input YAML File: %s" % yaml_file)
-            if not os.path.exists(yaml_file):
-                logger.error("Input yaml file '%s' does not exist" % yaml_file)
-                sys.exit(1)
-
-            with open(yaml_file) as f:
-                d = yaml.load(f, Loader=yaml.FullLoader) or dict()
-
-            for key in d:
-                if key not in data:
-                    data[key] = d[key]
-                    continue
-
-                # Collect packages from all Yaml file as many as possible
-                if key == 'packages':
-                    data[key].extend(d[key])
-
-                # Except packages, the duplicated param is not allowed
-                elif key in data:
-                    logger.error("There is duplicated '%s' in Yaml File %s", key, yaml_file)
-                    sys.exit(1)
-
-        logger.debug("Input Yaml File Content: %s" % data)
-        for key in data:
-            self.data[key] = data[key]
-
-    def do_set_default(self):
-        self.data['name'] = DEFAULT_IMAGE
-        self.data['machine'] = DEFAULT_MACHINE
-        self.data['image_type'] = ['ustart', 'ostree-repo']
-        self.data['package_feeds'] = DEFAULT_PACKAGE_FEED
-        self.data["ostree"] = constant.DEFAULT_OSTREE_DATA
-        self.data["wic"] = constant.DEFAULT_WIC_DATA
-        self.data['remote_pkgdatadir'] = DEFAULT_REMOTE_PKGDATADIR
-        self.data['features'] =  DEFAULT_IMAGE_FEATURES
-        self.data["gpg"] = constant.DEFAULT_GPG_DATA
-        self.data['packages'] = DEFAULT_PACKAGES[DEFAULT_MACHINE]
-        self.data['external-packages'] = []
-
-    def do_fill_missing(self):
-        # Use default to fill missing params of "ostree" section
-        for ostree_param in constant.DEFAULT_OSTREE_DATA:
-            if ostree_param not in self.data["ostree"]:
-                self.data["ostree"][ostree_param] = constant.DEFAULT_OSTREE_DATA[ostree_param]
-
-        # Use default to fill missing params of "wic" section
-        for wic_param in constant.DEFAULT_WIC_DATA:
-            if wic_param not in self.data["wic"]:
-                self.data["wic"][wic_param] = constant.DEFAULT_WIC_DATA[wic_param]
-
+        self.output_yaml = os.path.join(self.outdir, "%s-%s.yaml" % (self.data['name'], self.data['machine']))
 
     def do_generate(self):
-        if self.data['machine'] != DEFAULT_MACHINE:
-            logger.error("MACHINE %s is invalid, SDK is working for %s only" % (self.data['machine'], DEFAULT_MACHINE))
-            sys.exit(1)
-
-        if not self.data['package_feeds']:
-            logger.error("The package feeds does not exist, please set it")
-            sys.exit(1)
-
-        if 'all' in self.data['image_type']:
-            self.data['image_type'] = ['ostree-repo', 'wic', 'container', 'ustart', 'vmdk', 'vdi']
-
-        self.data['packages'] = list(sorted(set(self.data['packages'])))
-        self.data['external-packages'] = list(sorted(set(self.data['external-packages'])))
-        self.data['package_feeds'] = list(sorted(set(self.data['package_feeds'])))
-
-        outdir = os.path.realpath(self.args.outdir)
-        utils.mkdirhier(outdir)
-        output_yaml = os.path.join(outdir, "%s-%s.yaml" % (self.data['name'], self.data['machine']))
-
         logger.info("Machine: %s" % self.data['machine'])
         logger.info("Image Name: %s" % self.data['name'])
         logger.info("Image Type: %s" % ' '.join(self.data['image_type']))
@@ -223,17 +121,11 @@ class GenYaml(object):
         logger.info("Pakcage Feeds:\n%s\n" % '\n'.join(self.data['package_feeds']))
         logger.debug("GPG Path: %s" % self.data["gpg"]["gpg_path"])
 
-        with open(output_yaml, "w") as f:
-            utils.ordered_dump(self.data, f, Dumper=yaml.SafeDumper)
-            logger.info("Save Yaml FIle to : %s" % (output_yaml))
+        self._save_output_yaml()
 
 
 def _main_run_internal(args):
     yaml = GenYaml(args)
-    yaml.do_set_default()
-    yaml.do_parse_inputyamls()
-    yaml.do_parse_options()
-    yaml.do_fill_missing()
     yaml.do_generate()
 
 def _main_run(args):

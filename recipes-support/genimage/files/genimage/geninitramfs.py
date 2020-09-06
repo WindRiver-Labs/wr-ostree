@@ -20,26 +20,16 @@ import sys
 import subprocess
 import argparse
 import logging
-import atexit
-import yaml
-from collections import OrderedDict
 import time
 from texttable import Texttable
-import glob
 
 from genimage.utils import set_logger
-from genimage.utils import get_today
 from genimage.utils import show_task_info
-import genimage.constant as constant
-from genimage.constant import DEFAULT_PACKAGE_FEED
-from genimage.constant import DEFAULT_REMOTE_PKGDATADIR
-from genimage.constant import DEFAULT_MACHINE
+from genimage.genimage import GenImage
 from genimage.constant import DEFAULT_INITRD_NAME
-from genimage.constant import DEFAULT_IMAGE_FEATURES
 from genimage.constant import OSTREE_INITRD_PACKAGES
 from genimage.rootfs import Rootfs
 from genimage.image import CreateInitramfs
-
 import genimage.utils as utils
 
 logger = logging.getLogger('appsdk')
@@ -105,166 +95,28 @@ def set_parser_geninitramfs(parser=None):
     return parser
 
 
-class GenInitramfs(object):
+class GenInitramfs(GenImage):
     """
     Generate Initramfs
     """
 
     def __init__(self, args):
-        self.args = args
-
-        self.today = get_today()
-
-        data = dict()
-        yaml_files = []
-        for input_glob in self.args.input:
-            yaml_files.extend(glob.glob(input_glob))
-
-        for yaml_file in yaml_files:
-            logger.info("Input YAML File: %s" % yaml_file)
-            if not os.path.exists(yaml_file):
-                logger.error("Input yaml file '%s' does not exist" % yaml_file)
-                sys.exit(1)
-
-            with open(yaml_file) as f:
-                d = yaml.load(f, Loader=yaml.FullLoader) or dict()
-
-            for key in d:
-                if key not in data:
-                    data[key] = d[key]
-                    continue
-
-                # Collect packages from all Yaml file as many as possible
-                if key == 'packages':
-                    data[key].extend(d[key])
-
-                # Except packages, the duplicated param is not allowed
-                elif key in data:
-                    logger.error("There is duplicated '%s' in Yaml File %s", key, yaml_file)
-                    sys.exit(1)
-
-        if not self.args.input:
-            logger.info("No Input YAML File, use default setting")
-        logger.debug("Yaml File Content: %s" % data)
-
-        self.image_name = data['name'] if 'name' in data else DEFAULT_INITRD_NAME
-        self.machine = data['machine'] if 'machine' in data else DEFAULT_MACHINE
-        self.image_type = data['image_type'] if 'image_type' in data else ['initramfs']
-        self.packages = OSTREE_INITRD_PACKAGES
-        if 'packages' in data:
-            self.packages = data['packages']
-        if self.args.pkg:
-            self.packages.extend(self.args.pkg)
-        self.packages = list(sorted(set(self.packages)))
-
-        if 'external-packages' in data:
-            self.external_packages = data['external-packages']
-        else:
-            self.external_packages = []
-        if self.args.pkg_external:
-            self.external_packages.extend(self.args.pkg_external)
-        self.external_packages = list(sorted(set(self.external_packages)))
-
-        if 'exclude-packages' not in data:
-            data['exclude-packages'] = ['busybox-syslog']
-
-        self.pkg_feeds = data['package_feeds'] if 'package_feeds' in data else DEFAULT_PACKAGE_FEED
-
-        self.remote_pkgdatadir = data['remote_pkgdatadir'] if 'remote_pkgdatadir' in data else DEFAULT_REMOTE_PKGDATADIR
-
-        if self.args.url:
-            self.pkg_feeds.extend(self.args.url)
-        self.pkg_feeds = list(set(self.pkg_feeds))
-
-        self.features = data['features'] if 'features' in data else DEFAULT_IMAGE_FEATURES
-
-        self.data = data
-
-        self.outdir = os.path.realpath(self.args.outdir)
-        self.workdir = os.path.realpath(os.path.join(self.args.workdir, "workdir"))
-
-        utils.fake_root(workdir=self.workdir)
-        self.deploydir = os.path.join(self.outdir, "deploy")
-        self.output_yaml = os.path.join(self.deploydir, "%s-%s.yaml" % (self.image_name, self.machine))
-
-        for d in [self.workdir, self.deploydir]:
-            utils.mkdirhier(d)
-
-        self.target_rootfs = None
-
-        self.ostree_initramfs_name = "initramfs-ostree-image"
-
-        if self.machine != DEFAULT_MACHINE:
-            logger.error("MACHINE %s is invalid, SDK is working for %s only" % (self.machine, DEFAULT_MACHINE))
-            sys.exit(1)
-
-        if not self.pkg_feeds:
-            logger.error("The package feeds does not exist, please set it")
-            sys.exit(1)
-
-        if self.args.name:
-            self.image_name = self.args.name
+        super(GenInitramfs, self).__init__(args)
 
         if self.image_name == DEFAULT_INITRD_NAME:
             logger.info("Replace eixsted %s as initrd for appsdk genimage", DEFAULT_INITRD_NAME)
 
-        if self.args.type:
-            self.image_type = self.args.type
+    def _set_default(self):
+        super(GenInitramfs, self)._set_default()
 
-        # Cleanup all generated rootfs dir by default
-        if not self.args.no_clean:
-            cmd = "rm -rf {0}/*/rootfs*".format(self.workdir)
-            atexit.register(utils.run_cmd_oneshot, cmd=cmd)
-
-        if "gpg" not in self.data:
-            self.data["gpg"] = constant.DEFAULT_GPG_DATA
-        if self.args.gpgpath:
-            self.data["gpg"]["gpg_path"] = self.args.gpgpath
-
-        logger.info("Machine: %s" % self.machine)
-        logger.info("Image Name: %s" % self.image_name)
-        logger.info("Image Type: %s" % ' '.join(self.image_type))
-        logger.info("Pakcages Number: %d" % len(self.packages))
-        logger.debug("Pakcages: %s" % self.packages)
-        logger.info("External Packages Number: %d" % len(self.external_packages))
-        logger.debug("External Packages: %s" % self.external_packages)
-        logger.info("Exclude Packages Number: %s" % len(self.data['exclude-packages']))
-        logger.debug("Exclude Packages: %s" % self.data['exclude-packages'])
-        logger.info("Pakcage Feeds:\n%s\n" % '\n'.join(self.pkg_feeds))
-        logger.debug("Deploy Directory: %s" % self.outdir)
-        logger.debug("Work Directory: %s" % self.workdir)
-        logger.debug("GPG Path: %s" % self.data["gpg"]["gpg_path"])
-
-        self.native_sysroot = os.environ['OECORE_NATIVE_SYSROOT']
-        self.data_dir = os.path.join(self.native_sysroot, "usr/share/genimage/data")
-
-    def do_prepare(self):
-        gpg_data = self.data["gpg"]
-        utils.check_gpg_keys(gpg_data)
-
-        if not self.data.get("ostree", None):
-            self.data["ostree"] = constant.DEFAULT_OSTREE_DATA
-        else:
-            for ostree_param in constant.DEFAULT_OSTREE_DATA:
-                if ostree_param not in self.data["ostree"]:
-                    self.data["ostree"][ostree_param] = constant.DEFAULT_OSTREE_DATA[ostree_param]
-
-        if not self.data.get("wic", None):
-            self.data["wic"] = constant.DEFAULT_WIC_DATA
-        else:
-            for wic_param in constant.DEFAULT_WIC_DATA:
-                if wic_param not in self.data["wic"]:
-                    self.data["wic"][wic_param] = constant.DEFAULT_WIC_DATA[wic_param]
-
-        os.environ['NO_RECOMMENDATIONS'] = self.data.get('NO_RECOMMENDATIONS', '1')
+        self.data['name'] = DEFAULT_INITRD_NAME
+        self.data['image_type'] = ['initramfs']
+        self.data['packages'] = OSTREE_INITRD_PACKAGES
+        self.data['exclude-packages'] = ['busybox-syslog']
+        self.data['NO_RECOMMENDATIONS'] = '1'
 
     def do_post(self):
-        for f in ["qemu-u-boot-bcm-2xxx-rpi4.bin", "ovmf.qcow2"]:
-            qemu_data = os.path.join(self.native_sysroot, "usr/share/qemu_data", f)
-            if os.path.exists(qemu_data):
-                logger.debug("Deploy %s", f)
-                cmd = "cp -f {0} {1}".format(qemu_data, self.deploydir)
-                utils.run_cmd_oneshot(cmd)
+        pass
 
     @show_task_info("Create Rootfs")
     def do_rootfs(self):
@@ -277,7 +129,7 @@ class GenInitramfs(object):
                         self.pkg_feeds,
                         self.packages,
                         external_packages=self.external_packages,
-                        exclude_packages=self.data['exclude-packages'],
+                        exclude_packages=self.exclude_packages,
                         remote_pkgdatadir=self.remote_pkgdatadir,
                         image_linguas=image_linguas,
                         pkg_globs=pkg_globs)
@@ -316,21 +168,6 @@ class GenInitramfs(object):
                         target_rootfs = self.target_rootfs,
                         deploydir = self.deploydir)
         initrd.create()
-
-    def _save_output_yaml(self):
-        data = self.data
-        data['name'] = self.image_name
-        data['machine'] = self.machine
-        data['image_type'] = self.image_type
-        data['features'] = self.features
-        data['package_feeds'] = self.pkg_feeds
-        data['remote_pkgdatadir'] = self.remote_pkgdatadir
-        data['packages'] = self.packages
-        data['external-packages'] = self.external_packages
-
-        with open(self.output_yaml, "w") as f:
-            utils.ordered_dump(data, f, Dumper=yaml.SafeDumper)
-            logger.debug("Save Yaml FIle to : %s" % (self.output_yaml))
 
     def do_report(self):
         table = Texttable()

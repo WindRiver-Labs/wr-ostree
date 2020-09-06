@@ -47,6 +47,7 @@ from genimage.image import CreateOstreeRepo
 from genimage.image import CreateInitramfs
 from genimage.image import CreateOstreeOTA
 from genimage.image import CreateBootfs
+from genimage.genXXX import GenXXX
 
 import genimage.utils as utils
 
@@ -119,7 +120,7 @@ def set_parser(parser=None):
     return parser
 
 
-class CreateFullImage(object):
+class GenImage(GenXXX):
     """
     * Create the following images in order:
         - ostree repository
@@ -128,152 +129,28 @@ class CreateFullImage(object):
     """
 
     def __init__(self, args):
-        self.args = args
+        super(GenImage, self).__init__(args)
 
-        self.today = get_today()
-
-        data = dict()
-        yaml_files = []
-        for input_glob in self.args.input:
-            yaml_files.extend(glob.glob(input_glob))
-
-        for yaml_file in yaml_files:
-            logger.info("Input YAML File: %s" % yaml_file)
-            if not os.path.exists(yaml_file):
-                logger.error("Input yaml file '%s' does not exist" % yaml_file)
-                sys.exit(1)
-
-            with open(yaml_file) as f:
-                d = yaml.load(f, Loader=yaml.FullLoader) or dict()
-
-            for key in d:
-                if key not in data:
-                    data[key] = d[key]
-                    continue
-
-                # Collect packages from all Yaml file as many as possible
-                if key == 'packages':
-                    data[key].extend(d[key])
-
-                # Except packages, the duplicated param is not allowed
-                elif key in data:
-                    logger.error("There is duplicated '%s' in Yaml File %s", key, yaml_file)
-                    sys.exit(1)
-
-        if not self.args.input:
-            logger.info("No Input YAML File, use default setting")
-        logger.debug("Yaml File Content: %s" % data)
-
-        self.image_name = data['name'] if 'name' in data else DEFAULT_IMAGE
-        self.machine = data['machine'] if 'machine' in data else DEFAULT_MACHINE
-        self.image_type = data['image_type'] if 'image_type' in data else ['ustart', 'ostree-repo']
-        self.packages = DEFAULT_PACKAGES[self.machine]
-        if 'packages' in data:
-            self.packages = data['packages']
-        if self.args.pkg:
-            self.packages.extend(self.args.pkg)
-        self.packages = list(set(self.packages))
-
-        if 'external-packages' in data:
-            self.external_packages = data['external-packages']
-        else:
-            self.external_packages = []
-        if self.args.pkg_external:
-            self.external_packages.extend(self.args.pkg_external)
-        self.external_packages = list(set(self.external_packages))
-
-        if 'exclude-packages' not in data:
-            data['exclude-packages'] = []
-
-        self.pkg_feeds = data['package_feeds'] if 'package_feeds' in data else DEFAULT_PACKAGE_FEED
-
-        self.remote_pkgdatadir = data['remote_pkgdatadir'] if 'remote_pkgdatadir' in data else DEFAULT_REMOTE_PKGDATADIR
-
-        if self.args.url:
-            self.pkg_feeds.extend(self.args.url)
-        self.pkg_feeds = list(set(self.pkg_feeds))
-
-        self.features = data['features'] if 'features' in data else DEFAULT_IMAGE_FEATURES
-
-        self.data = data
-
-        self.outdir = os.path.realpath(self.args.outdir)
         self.workdir = os.path.realpath(os.path.join(self.args.workdir, "workdir"))
-
         utils.fake_root(workdir=self.workdir)
-        self.deploydir = os.path.join(self.outdir, "deploy")
-        self.output_yaml = os.path.join(self.deploydir, "%s-%s.yaml" % (self.image_name, self.machine))
-
-        for d in [self.workdir, self.deploydir]:
-            utils.mkdirhier(d)
+        utils.mkdirhier(self.workdir)
 
         self.target_rootfs = None
+        self.native_sysroot = os.environ['OECORE_NATIVE_SYSROOT']
+        self.data_dir = os.path.join(self.native_sysroot, "usr/share/genimage/data")
 
-        self.ostree_initramfs_name = "initramfs-ostree-image"
-
-        if self.machine != DEFAULT_MACHINE:
-            logger.error("MACHINE %s is invalid, SDK is working for %s only" % (self.machine, DEFAULT_MACHINE))
-            sys.exit(1)
-
-        if not self.pkg_feeds:
-            logger.error("The package feeds does not exist, please set it")
-            sys.exit(1)
-
-        if self.args.name:
-            self.image_name = self.args.name
-
-        if self.args.type:
-            self.image_type = self.args.type
-
-        if 'all' in self.image_type:
-            self.image_type = ['ostree-repo', 'wic', 'container', 'ustart', 'vmdk', 'vdi']
+        os.environ['NO_RECOMMENDATIONS'] = self.data.get('NO_RECOMMENDATIONS', '0')
 
         # Cleanup all generated rootfs dir by default
         if not self.args.no_clean:
             cmd = "rm -rf {0}/*/rootfs*".format(self.workdir)
             atexit.register(utils.run_cmd_oneshot, cmd=cmd)
 
-        if "gpg" not in self.data:
-            self.data["gpg"] = constant.DEFAULT_GPG_DATA
-        if self.args.gpgpath:
-            self.data["gpg"]["gpg_path"] = self.args.gpgpath
-
-        logger.info("Machine: %s" % self.machine)
-        logger.info("Image Name: %s" % self.image_name)
-        logger.info("Image Type: %s" % ' '.join(self.image_type))
-        logger.info("Pakcages Number: %d" % len(self.packages))
-        logger.debug("Pakcages: %s" % self.packages)
-        logger.info("External Packages Number: %d" % len(self.external_packages))
-        logger.debug("External Packages: %s" % self.external_packages)
-        logger.info("Exclude Packages Number: %s" % len(self.data['exclude-packages']))
-        logger.debug("Exclude Packages: %s" % self.data['exclude-packages'])
-        logger.info("Pakcage Feeds:\n%s\n" % '\n'.join(self.pkg_feeds))
-        logger.debug("Deploy Directory: %s" % self.outdir)
         logger.debug("Work Directory: %s" % self.workdir)
-        logger.debug("GPG Path: %s" % self.data["gpg"]["gpg_path"])
-
-        self.native_sysroot = os.environ['OECORE_NATIVE_SYSROOT']
-        self.data_dir = os.path.join(self.native_sysroot, "usr/share/genimage/data")
 
     def do_prepare(self):
         gpg_data = self.data["gpg"]
         utils.check_gpg_keys(gpg_data)
-
-        if not self.data.get("ostree", None):
-            self.data["ostree"] = constant.DEFAULT_OSTREE_DATA
-        else:
-            for ostree_param in constant.DEFAULT_OSTREE_DATA:
-                if ostree_param not in self.data["ostree"]:
-                    self.data["ostree"][ostree_param] = constant.DEFAULT_OSTREE_DATA[ostree_param]
-
-        if not self.data.get("wic", None):
-            self.data["wic"] = constant.DEFAULT_WIC_DATA
-        else:
-            for wic_param in constant.DEFAULT_WIC_DATA:
-                if wic_param not in self.data["wic"]:
-                    self.data["wic"][wic_param] = constant.DEFAULT_WIC_DATA[wic_param]
-
-        os.environ['NO_RECOMMENDATIONS'] = self.data.get('NO_RECOMMENDATIONS', '0')
 
     def do_post(self):
         for f in ["qemu-u-boot-bcm-2xxx-rpi4.bin", "ovmf.qcow2"]:
@@ -294,7 +171,7 @@ class CreateFullImage(object):
                         self.pkg_feeds,
                         self.packages,
                         external_packages=self.external_packages,
-                        exclude_packages=self.data['exclude-packages'],
+                        exclude_packages=self.exclude_packages,
                         remote_pkgdatadir=self.remote_pkgdatadir,
                         image_linguas=image_linguas,
                         pkg_globs=pkg_globs)
@@ -326,7 +203,7 @@ class CreateFullImage(object):
 
         installed_dict = rootfs.image_list_installed_packages()
 
-        self._save_output_yaml(installed_dict, rootfs.get_kernel_ver())
+        self._save_output_yaml()
 
         # Generate image manifest
         manifest_name = "{0}/{1}-{2}.manifest".format(self.deploydir, self.image_name, self.machine)
@@ -352,7 +229,7 @@ class CreateFullImage(object):
     @show_task_info("Create Initramfs")
     def do_ostree_initramfs(self):
         # If the Initramfs exists, reuse it
-        image_name = "{0}-{1}.cpio.gz".format(self.ostree_initramfs_name, self.machine)
+        image_name = "initramfs-ostree-image-{0}.cpio.gz".format(self.machine)
         if self.machine == "bcm-2xxx-rpi4":
             image_name += ".u-boot"
 
@@ -369,27 +246,6 @@ class CreateFullImage(object):
         logger.info("Reuse existed Initramfs of SDK")
         cmd = "cp -f {0} {1}".format(image_back, self.deploydir)
         utils.run_cmd_oneshot(cmd)
-
-    def _save_output_yaml(self, installed_dict, kernel_ver=None):
-        if kernel_ver is None:
-            kernel_ver = '5.4.57-yocto-standard'
-
-        data = self.data
-        data['name'] = self.image_name
-        data['machine'] = self.machine
-        data['image_type'] = self.image_type
-        data['features'] = self.features
-        data['package_feeds'] = self.pkg_feeds
-        data['remote_pkgdatadir'] = self.remote_pkgdatadir
-
-        # Remove kernel version suffix from package name
-        # such as kernel-5.4.57-yocto-standard -> kernel
-        data['packages'] = [p.replace('-{0}'.format(kernel_ver), '') for p in installed_dict.keys()]
-        data['packages'] = sorted(list(set(data['packages'])))
-
-        with open(self.output_yaml, "w") as f:
-            utils.ordered_dump(data, f, Dumper=yaml.SafeDumper)
-            logger.debug("Save Yaml FIle to : %s" % (self.output_yaml))
 
     @show_task_info("Create Wic Image")
     def do_image_wic(self):
@@ -547,7 +403,7 @@ class CreateFullImage(object):
         logger.info("Deploy Directory: %s\n%s", self.deploydir, table.draw())
 
 def _main_run_internal(args):
-    create = CreateFullImage(args)
+    create = GenImage(args)
     create.do_prepare()
     create.do_rootfs()
     if create.target_rootfs is None:
