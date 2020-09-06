@@ -409,6 +409,7 @@ LCURL=${LCURL=""}
 LCURLARG=${LCURLARG=""}
 CONSOLES=""
 OSTREE_CONSOLE=""
+KERNEL_PARAMS=""
 IP=""
 MAX_TIMEOUT_FOR_WAITING_LOWSPEED_DEVICE=60
 OSTREE_KERNEL_ARGS=${OSTREE_KERNEL_ARGS=%OSTREE_KERNEL_ARGS%}
@@ -425,6 +426,9 @@ read_args() {
 			console=*)
 				CONSOLES="$CONSOLES ${optarg%,*}"
 				OSTREE_CONSOLE="$OSTREE_CONSOLE $arg"
+				;;
+			kernelparams=*)
+				KERNEL_PARAMS="$optarg"
 				;;
 			bl=*)
 				BL=$optarg ;;
@@ -1028,6 +1032,7 @@ if [ -e ${PHYS_SYSROOT}/boot/0/boot/efi/EFI ] ; then
 	fi
 	printf "boot_tried_count=0\n" >> ${PHYS_SYSROOT}/boot/efi/EFI/BOOT/boot.env
 	printf "ostree_console=$OSTREE_CONSOLE\n" >> ${PHYS_SYSROOT}/boot/efi/EFI/BOOT/boot.env
+	printf "kernel_params=$KERNEL_PARAMS\n" >> ${PHYS_SYSROOT}/boot/efi/EFI/BOOT/boot.env
 	echo -n "###############################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################" >> ${PHYS_SYSROOT}/boot/efi/EFI/BOOT/boot.env
 fi
 if [ -e ${PHYS_SYSROOT}/boot/loader/uEnv.txt ] ; then

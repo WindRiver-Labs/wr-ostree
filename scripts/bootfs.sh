@@ -23,6 +23,7 @@ COMPRESS="${COMPRESS=1}"
 DO_BUILD_BOOTFS=1
 MODIFY_BOOT_SCR=1
 EXTRA_INST_ARGS=""
+EXTRA_KERNEL_ARGS=""
 INST_FLUX=1
 INST_URL=""
 INST_BRANCH=""
@@ -53,6 +54,7 @@ Network Install options:
  -u <url>     url to use for net install insturl=
  -d <device>  device to use for net install instdev=
  -a <args>    Additional kernel boot argument for the install
+ -k <args>    Additional kernel boot argument to installed image
 
 Image Creation Options:
  -B         Skip build of the bootfs directory and use what ever is in there
@@ -87,7 +89,7 @@ modify_boot_scr() {
 	done
 
 	sed -i -e "/^setenv bootargs/s/console=[^ ^\"]*//g" \
-	       -e "s/^\(setenv bootargs .*\)\"$/\1 ${OSTREE_CONSOLE}${extra_console}\"/g" \
+	       -e "s/^\(setenv bootargs .*\)\"$/\1 ${OSTREE_CONSOLE}${extra_console} ${EXTRA_KERNEL_ARGS}\"/g" \
 	    $OUTDIR/boot.scr.raw
 
 	sed -i -e "/^setenv instdef/s/console=[^ ^\"]*//g" \
@@ -166,7 +168,7 @@ create_grub_cfg() {
 	if [ "$INST_URL" != "" ] ; then
 		iurl="$INST_URL"
 	fi
-	bootargs="${OSTREE_CONSOLE} rdinit=/install instdev=$idev instname=wrlinux instbr=$INST_BRANCH insturl=$iurl instab=$OSTREE_USE_AB instsf=1 $EXTRA_INST_ARGS"
+	bootargs="${OSTREE_CONSOLE} rdinit=/install instdev=$idev instname=wrlinux instbr=$INST_BRANCH insturl=$iurl instab=$OSTREE_USE_AB instsf=1 $EXTRA_INST_ARGS kernelparams=$EXTRA_KERNEL_ARGS"
 	if [ "$OSTREE_FLUX_PART" = "luksfluxdata" -a "$EXTRA_INST_ARGS" = "${EXTRA_INST_ARGS/LUKS/}" ] ; then
 		bootargs="$bootargs LUKS=1"
 	fi
@@ -465,7 +467,7 @@ print_part_layout() {
 	echo -e "================================================="
 }
 
-while getopts "a:Bb:d:e:hLl:Nns:u:w" opt; do
+while getopts "a:Bb:d:e:hk:Ll:Nns:u:w" opt; do
 	case ${opt} in
 		a)
 			EXTRA_INST_ARGS=$OPTARG
@@ -488,6 +490,9 @@ while getopts "a:Bb:d:e:hLl:Nns:u:w" opt; do
 			;;
 		L)
 			LOCAL_REPO=1
+			;;
+		k)
+			EXTRA_KERNEL_ARGS=$OPTARG
 			;;
 		s)
 			PARTSIZE=$OPTARG
