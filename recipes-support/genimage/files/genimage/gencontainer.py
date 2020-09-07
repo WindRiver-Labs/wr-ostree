@@ -48,6 +48,7 @@ class GenContainer(GenXXX):
 
     def __init__(self, args):
         super(GenContainer, self).__init__(args)
+        self.exclude_packages = ['systemd*']
 
     def _parse_default(self):
         super(GenContainer, self)._parse_default()
@@ -55,7 +56,6 @@ class GenContainer(GenXXX):
         self.data['name'] = DEFAULT_CONTAINER_NAME
         self.data['image_type'] = ['container']
         self.data['packages'] = DEFAULT_CONTAINER_PACKAGES
-        self.data['exclude-packages'] = ['systemd*']
         self.data['environments'] = ['NO_RECOMMENDATIONS="1"']
 
     @show_task_info("Create Docker Container")

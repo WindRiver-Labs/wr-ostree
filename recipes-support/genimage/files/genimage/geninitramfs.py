@@ -52,14 +52,15 @@ class GenInitramfs(GenXXX):
         if self.image_name == DEFAULT_INITRD_NAME:
             logger.info("Replace eixsted %s as initrd for appsdk genimage", DEFAULT_INITRD_NAME)
 
+        self.exclude_packages = ['busybox-syslog']
+
     def _parse_default(self):
         super(GenInitramfs, self)._parse_default()
 
         self.data['name'] = DEFAULT_INITRD_NAME
         self.data['image_type'] = ['initramfs']
         self.data['packages'] = OSTREE_INITRD_PACKAGES
-        self.data['exclude-packages'] = ['busybox-syslog']
-        self.data['environments'] = ['NO_RECOMMENDATIONS="1"', 'KERNEL_PARAMS="key=value"']
+        self.data['environments'] = ['NO_RECOMMENDATIONS="1"']
 
     def _do_rootfs_pre(self, rootfs=None):
         if rootfs is None:

@@ -133,7 +133,7 @@ class GenXXX(object, metaclass=ABCMeta):
         self.image_type = self.data['image_type']
         self.packages = self.data['packages']
         self.external_packages = self.data['external-packages']
-        self.exclude_packages = self.data['exclude-packages']
+        self.exclude_packages = []
         self.pkg_feeds = self.data['package_feeds']
         self.remote_pkgdatadir = self.data['remote_pkgdatadir']
         self.features = self.data['features']
@@ -159,8 +159,6 @@ class GenXXX(object, metaclass=ABCMeta):
         logger.debug("Pakcages: %s" % self.packages)
         logger.info("External Packages Number: %d" % len(self.external_packages))
         logger.debug("External Packages: %s" % self.external_packages)
-        logger.info("Exclude Packages Number: %s" % len(self.exclude_packages))
-        logger.debug("Exclude Packages: %s" % self.exclude_packages)
         logger.info("Pakcage Feeds:\n%s\n" % '\n'.join(self.pkg_feeds))
         logger.info("enviroments: %s", self.environments)
         logger.debug("Deploy Directory: %s" % self.outdir)
@@ -179,7 +177,6 @@ class GenXXX(object, metaclass=ABCMeta):
         self.data["gpg"] = constant.DEFAULT_GPG_DATA
         self.data['packages'] = DEFAULT_PACKAGES[DEFAULT_MACHINE]
         self.data['external-packages'] = []
-        self.data['exclude-packages'] = []
         self.data['include-default-packages'] = "0"
         self.data['rootfs-pre-scripts'] = ['echo "run script before do_rootfs in $IMAGE_ROOTFS"']
         self.data['rootfs-post-scripts'] = ['echo "run script after do_rootfs in $IMAGE_ROOTFS"']
