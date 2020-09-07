@@ -244,7 +244,7 @@ class GenXXX(object, metaclass=ABCMeta):
             self.data['external-packages'].extend(self.args.pkg_external)
 
         if self.args.gpgpath:
-            self.data["gpg"]["gpg_path"] = self.args.gpgpath
+            self.data["gpg"]["gpg_path"] = os.path.realpath(self.args.gpgpath)
 
         if self.args.rootfs_post_script:
             self.data['rootfs-post-scripts'].extend(self.args.rootfs_post_script)
