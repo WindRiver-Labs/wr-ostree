@@ -181,6 +181,7 @@ class GenXXX(object, metaclass=ABCMeta):
         self.data['packages'] = DEFAULT_PACKAGES[DEFAULT_MACHINE]
         self.data['external-packages'] = []
         self.data['exclude-packages'] = []
+        self.data['include-default-packages'] = "0"
         self.data['rootfs-pre-scripts'] = ['echo "run script before do_rootfs in $IMAGE_ROOTFS"']
         self.data['rootfs-post-scripts'] = ['echo "run script after do_rootfs in $IMAGE_ROOTFS"']
         self.data['environments'] = ['NO_RECOMMENDATIONS="0"', 'KERNEL_PARAMS="key=value"']
@@ -218,8 +219,16 @@ class GenXXX(object, metaclass=ABCMeta):
                     logger.error("There is duplicated '%s' in Yaml File %s", key, yaml_file)
                     sys.exit(1)
 
+        include_default_package = self.data['include-default-packages']
+        if 'include-default-packages' in data:
+            include_default_package = data['include-default-packages']
+        logger.info("Include Default Packages: %s" % include_default_package)
+
         logger.debug("Input Yaml File Content: %s" % data)
         for key in data:
+            if include_default_package != "0" and 'packages' == key:
+                self.data[key] += data[key]
+                continue
             self.data[key] = data[key]
 
     def _parse_options(self):
