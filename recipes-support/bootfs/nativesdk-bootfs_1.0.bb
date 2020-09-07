@@ -14,15 +14,17 @@ RDEPENDS_${PN} += " \
 "
 
 SRC_URI = "file://COPYING \
+           file://bootfs.sh \
            file://bootfs_wrapper.sh \
           "
+FILESEXTRAPATHS_prepend := "${LAYER_PATH_ostree-layer}/scripts:"
 
 FILES_${PN} += "${datadir}/bootfs \
 	"
 
 do_install() {
     install -d ${D}${datadir}/bootfs/scripts/
-    install -m 0755 ${LAYER_PATH_ostree-layer}/scripts/bootfs.sh ${D}${datadir}/bootfs/scripts/
+    install -m 0755 ${S}/bootfs.sh ${D}${datadir}/bootfs/scripts/
 
     install -d ${D}${datadir}/bootfs/boot_keys
     install -m 0644 ${OSTREE_GRUB_PW_FILE} ${D}${datadir}/bootfs/boot_keys/ostree_grub_pw
