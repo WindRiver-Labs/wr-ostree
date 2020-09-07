@@ -64,7 +64,6 @@ def set_parser(parser=None, supported_types=None):
             'vmdk',
             'vdi',
             'ostree-repo',
-            'container',
             'ustart',
             'all',
         ]
@@ -279,7 +278,7 @@ class GenXXX(object, metaclass=ABCMeta):
             sys.exit(1)
 
         if 'all' in self.data['image_type']:
-            self.data['image_type'] = ['ostree-repo', 'wic', 'container', 'ustart', 'vmdk', 'vdi']
+            self.data['image_type'] = ['ostree-repo', 'wic', 'ustart', 'vmdk', 'vdi']
 
         # Sort and remove duplicated in list
         for k,v in self.data.items():

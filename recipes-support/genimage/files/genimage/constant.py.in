@@ -8,6 +8,8 @@ DEFAULT_IMAGE = "wrlinux-image-small"
 
 DEFAULT_INITRD_NAME = "initramfs-ostree-image"
 
+DEFAULT_CONTAINER_NAME = "container-base"
+
 DEFAULT_IMAGE_FEATURES = {
     'pkg_globs': None,
     'image_linguas': '${IMAGE_LINGUAS}',
@@ -74,6 +76,19 @@ OSTREE_INITRD_PACKAGES = '''
     base-passwd rng-tools e2fsprogs-tune2fs
     e2fsprogs-resize2fs pv gzip findutils
     tar grep sed gawk busybox busybox-udhcpc
+'''.split()
+
+DEFAULT_CONTAINER_PACKAGES = '''
+    base-files
+    base-passwd
+    ca-certificates
+    dnf
+    openssh
+    os-release
+    packagegroup-busybox-replacement
+    rpm
+    run-postinsts
+    update-alternatives-opkg
 '''.split()
 
 DEFAULT_GPG_DATA = {

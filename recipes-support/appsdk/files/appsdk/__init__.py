@@ -77,6 +77,9 @@ def main():
     # Add geninitramfs to appsdk
     genimage.set_subparser_geninitramfs(subparsers)
 
+    # Add gencontainer to appsdk
+    genimage.set_subparser_gencontainer(subparsers)
+
     # Add genyaml to appsdk
     genimage.set_subparser_genyaml(subparsers)
 

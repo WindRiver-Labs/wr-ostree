@@ -23,7 +23,6 @@ from texttable import Texttable
 
 from genimage.utils import set_logger
 from genimage.utils import show_task_info
-from genimage.container import CreateContainer
 from genimage.image import CreateWicImage
 from genimage.image import CreateVMImage
 from genimage.image import CreateOstreeRepo
@@ -41,7 +40,6 @@ class GenImage(GenXXX):
     * Create the following images in order:
         - ostree repository
         - wic image
-        - container image
     """
 
     def __init__(self, args):
@@ -167,17 +165,6 @@ class GenImage(GenXXX):
                             vm_type="vdi")
         vdi.create()
 
-    @show_task_info("Create Docker Container")
-    def do_image_container(self):
-        workdir = os.path.join(self.workdir, self.image_name)
-        container = CreateContainer(
-                        image_name=self.image_name,
-                        workdir=workdir,
-                        machine=self.machine,
-                        target_rootfs=self.target_rootfs,
-                        deploydir=self.deploydir)
-        container.create()
-
     @show_task_info("Create Ostree Repo")
     def do_ostree_repo(self):
         workdir = os.path.join(self.workdir, self.image_name)
@@ -269,15 +256,6 @@ class GenImage(GenXXX):
             output = subprocess.check_output(cmd_wic, shell=True, cwd=self.deploydir)
             table.add_row(["Ustart Image Doc", output.strip()])
 
-        if "container" in self.image_type:
-            cmd_wic = cmd_format % "{0}.container.tar.bz2".format(image_name)
-            output = subprocess.check_output(cmd_wic, shell=True, cwd=self.deploydir)
-            table.add_row(["Container Image", output.strip()])
-
-            cmd_wic = cmd_format % "{0}.container.tar.bz2.README.md".format(image_name)
-            output = subprocess.check_output(cmd_wic, shell=True, cwd=self.deploydir)
-            table.add_row(["Container Image Doc", output.strip()])
-
         logger.info("Deploy Directory: %s\n%s", self.deploydir, table.draw())
 
 def _main_run_internal(args):
@@ -304,9 +282,6 @@ def _main_run_internal(args):
 
         if "vdi" in create.image_type:
             create.do_image_vdi()
-
-    if "container" in create.image_type:
-        create.do_image_container()
 
     if "ustart" in create.image_type:
         create.do_ustart_img()

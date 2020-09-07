@@ -19,21 +19,25 @@ from genimage.genimage import set_subparser
 from genimage.genyaml import set_subparser_genyaml
 from genimage.exampleyamls import set_subparser_exampleyamls
 from genimage.geninitramfs import set_subparser_geninitramfs
+from genimage.gencontainer import set_subparser_gencontainer
 
 from genimage.genimage import main
 from genimage.genyaml import main_genyaml
 from genimage.exampleyamls import main_exampleyamls
 from genimage.geninitramfs import main_geninitramfs
+from genimage.gencontainer import main_gencontainer
 
 __all__ = [
     "set_subparser",
     "set_subparser_exampleyamls",
     "set_subparser_genyaml",
     "set_subparser_geninitramfs",
+    "set_subparser_gencontainer",
     "main",
     "main_exampleyamls",
     "main_genyaml",
     "main_geninitramfs",
+    "main_gencontainer",
 ]
 
 

@@ -18,7 +18,8 @@ setuptools.setup(
             'genimage=genimage:main',
             'genyaml=genimage:main_genyaml',
             'exampleyamls=genimage:main_exampleyamls',
-            'geninitramfs=genimage:main_geninitramfs'
+            'geninitramfs=genimage:main_geninitramfs',
+            'gencontainer=genimage:main_gencontainer'
         ],
     },
     license="GNU General Public License v2.0",
