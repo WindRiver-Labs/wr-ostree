@@ -97,9 +97,10 @@ class GenInitramfs(GenXXX):
 
         image_name = "%s-%s" % (self.image_name, self.machine)
         cmd_format = "ls -gh --time-style=+%%Y %s | awk '{$1=$2=$3=$4=$5=\"\"; print $0}'"
-        cmd = cmd_format % "{0}.cpio.gz".format(image_name)
         if self.machine == "bcm-2xxx-rpi4":
-            cmd += ".u-boot"
+            cmd = cmd_format % "{0}.cpio.gz.u-boot".format(image_name)
+        else:
+            cmd = cmd_format % "{0}.cpio.gz".format(image_name)
         output = subprocess.check_output(cmd, shell=True, cwd=self.deploydir)
         table.add_row(["Image", output.strip()])
 
