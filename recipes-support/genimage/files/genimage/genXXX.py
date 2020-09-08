@@ -190,6 +190,9 @@ class GenXXX(object, metaclass=ABCMeta):
         data = dict()
         yaml_files = []
         for input_glob in self.args.input:
+            if not glob.glob(input_glob):
+                logger.warning("Input yaml file '%s' does not exist" % input_glob)
+                continue
             yaml_files.extend(glob.glob(input_glob))
 
         for yaml_file in yaml_files:
