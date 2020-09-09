@@ -10,7 +10,6 @@ packages:
 - kernel-module-bnep
 - kernel-module-brcmfmac
 - kernel-module-btbcm
-- kernel-module-fixed
 - kernel-module-hci-uart
 - kernel-module-i2c-bcm2835
 - kernel-module-snd-bcm2835
