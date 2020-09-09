@@ -12,5 +12,6 @@ packages:
 - update-alternatives-opkg
 exclude-packages:
 - systemd*
+include-default-packages: '0'
 environments:
 - NO_RECOMMENDATIONS="1"

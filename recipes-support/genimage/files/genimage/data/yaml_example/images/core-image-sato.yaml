@@ -16,3 +16,4 @@ packages:
 - rpm
 - run-postinsts
 - systemd
+include-default-packages: '0'

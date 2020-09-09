@@ -9,3 +9,4 @@ packages:
 - packagegroup-core-boot
 - run-postinsts
 - systemd
+include-default-packages: '0'
