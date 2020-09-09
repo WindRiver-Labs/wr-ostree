@@ -177,7 +177,7 @@ class GenXXX(object, metaclass=ABCMeta):
         self.data["gpg"] = constant.DEFAULT_GPG_DATA
         self.data['packages'] = DEFAULT_PACKAGES[DEFAULT_MACHINE]
         self.data['external-packages'] = []
-        self.data['include-default-packages'] = "0"
+        self.data['include-default-packages'] = "1"
         self.data['rootfs-pre-scripts'] = ['echo "run script before do_rootfs in $IMAGE_ROOTFS"']
         self.data['rootfs-post-scripts'] = ['echo "run script after do_rootfs in $IMAGE_ROOTFS"']
         self.data['environments'] = ['NO_RECOMMENDATIONS="0"', 'KERNEL_PARAMS="key=value"']
