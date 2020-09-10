@@ -56,7 +56,7 @@ def set_parser_exampleyamls(parser=None):
     return parser
 
 def _main_run_internal(args):
-    outdir = os.path.join(args.outdir, 'deploy/exampleyamls')
+    outdir = os.path.join(args.outdir, 'exampleyamls')
 
     native_sysroot = os.environ['OECORE_NATIVE_SYSROOT']
     yamlexample_dir = os.path.join(native_sysroot, 'usr/share/genimage/data/yaml_example')
