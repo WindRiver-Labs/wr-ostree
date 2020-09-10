@@ -50,6 +50,8 @@ class GenYaml(GenXXX):
 
         self.output_yaml = os.path.join(self.outdir, "%s-%s.yaml" % (self.data['name'], self.data['machine']))
 
+        utils.remove(self.deploydir, recurse=True)
+
     def do_generate(self):
         self._save_output_yaml()
         logger.info("Save Yaml FIle to : %s" % (self.output_yaml))
