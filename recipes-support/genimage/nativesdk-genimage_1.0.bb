@@ -62,7 +62,7 @@ SRC_URI = "\
            file://genimage/data/yaml_example/feature/vboxguestdrivers.yaml \
            file://genimage/data/yaml_example/feature/xfce_desktop.yaml \
            file://genimage/data/yaml_example/feature/package_management.yaml \
-           file://genimage/data/yaml_example/feature/debug-tweaks.yamls \
+           file://genimage/data/yaml_example/feature/debug-tweaks.yaml \
            file://genimage/data/yaml_example/images/core-image-minimal.yaml \
            file://genimage/data/yaml_example/images/core-image-sato.yaml \
            file://genimage/data/yaml_example/images/wrlinux-image-small.yaml \
