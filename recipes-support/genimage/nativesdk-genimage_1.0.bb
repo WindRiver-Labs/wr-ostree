@@ -57,9 +57,12 @@ SRC_URI = "\
            file://genimage/data/post_rootfs/update_boot_scr.sh \
            file://genimage/data/post_rootfs/update_grub_cfg.sh \
            file://genimage/data/post_rootfs/set_systemd_default_target.sh \
+           file://genimage/data/post_rootfs/run.ssh_allow_empty_password \
+           file://genimage/data/post_rootfs/run.ssh_allow_root_login \
            file://genimage/data/yaml_example/feature/vboxguestdrivers.yaml \
            file://genimage/data/yaml_example/feature/xfce_desktop.yaml \
            file://genimage/data/yaml_example/feature/package_management.yaml \
+           file://genimage/data/yaml_example/feature/debug-tweaks.yamls \
            file://genimage/data/yaml_example/images/core-image-minimal.yaml \
            file://genimage/data/yaml_example/images/core-image-sato.yaml \
            file://genimage/data/yaml_example/images/wrlinux-image-small.yaml \

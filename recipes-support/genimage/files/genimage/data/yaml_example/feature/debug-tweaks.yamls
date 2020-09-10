@@ -1,0 +1,3 @@
+rootfs-post-scripts:
+- $OECORE_NATIVE_SYSROOT/usr/share/genimage/data/post_rootfs/run.ssh_allow_empty_password
+- $OECORE_NATIVE_SYSROOT/usr/share/genimage/data/post_rootfs/run.ssh_allow_root_login
