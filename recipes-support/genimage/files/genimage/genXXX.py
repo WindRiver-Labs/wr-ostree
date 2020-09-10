@@ -209,8 +209,12 @@ class GenXXX(object, metaclass=ABCMeta):
                     data[key] = d[key]
                     continue
 
-                # Collect packages from all Yaml file as many as possible
-                if key == 'packages':
+                # Collect them from all Yaml file as many as possible
+                if key in ['packages',
+                           'external-packages',
+                           'environments',
+                           'rootfs-pre-scripts',
+                           'rootfs-post-scripts']:
                     data[key].extend(d[key])
 
                 # Except packages, the duplicated param is not allowed
@@ -280,9 +284,10 @@ class GenXXX(object, metaclass=ABCMeta):
         if 'all' in self.data['image_type']:
             self.data['image_type'] = ['ostree-repo', 'wic', 'ustart', 'vmdk', 'vdi']
 
-        # Sort and remove duplicated in list
+        # Sort and remove duplicated list except the section of environments,
+        # rootfs-pre-scripts and rootfs-post-scripts
         for k,v in self.data.items():
-            if isinstance(v, list):
+            if isinstance(v, list) and k not in ['environments', 'rootfs-pre-scripts', 'rootfs-post-scripts']:
                 self.data[k] = list(sorted(set(v)))
 
     def _save_output_yaml(self):
