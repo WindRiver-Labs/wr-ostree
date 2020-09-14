@@ -25,6 +25,7 @@ RDEPENDS_${PN} = "nativesdk-dnf \
                   nativesdk-glib-networking \
                   nativesdk-kmod \
                   nativesdk-wget \
+                  nativesdk-sloci-image \
                   nativesdk-python3-texttable \
 "
 
@@ -75,6 +76,7 @@ SRC_URI = "\
            file://genimage/scripts/run.do_image_ostree \
            file://genimage/scripts/run.do_image_otaimg \
            file://genimage/scripts/run.do_image_wic \
+           file://genimage/scripts/run.do_image_oci \
            file://genimage/doc/wic_bcm-2xxx-rpi4.README.md.in \
            file://genimage/doc/ustart_bcm-2xxx-rpi4.README.md.in \
            file://genimage/doc/wic_intel-x86-64.README.md.in \
@@ -88,6 +90,8 @@ SRC_URI = "\
 S = "${WORKDIR}/sources"
 
 inherit nativesdk setuptools3
+
+inherit image-oci
 
 do_unpack[vardeps] += "MACHINE PACKAGE_FEED_BASE_PATHS PACKAGE_FEED_ARCHS PACKAGE_FEED_URIS"
 do_unpack_append() {

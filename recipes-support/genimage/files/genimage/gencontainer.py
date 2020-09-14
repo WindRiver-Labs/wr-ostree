@@ -25,6 +25,8 @@ from genimage.utils import set_logger
 from genimage.utils import show_task_info
 from genimage.constant import DEFAULT_CONTAINER_NAME
 from genimage.constant import DEFAULT_CONTAINER_PACKAGES
+from genimage.constant import DEFAULT_OCI_CONTAINER_DATA
+from genimage.constant import DEFAULT_MACHINE
 from genimage.container import CreateContainer
 from genimage.genXXX import set_parser
 from genimage.genXXX import GenXXX
@@ -57,6 +59,11 @@ class GenContainer(GenXXX):
         self.data['image_type'] = ['container']
         self.data['packages'] = DEFAULT_CONTAINER_PACKAGES
         self.data['environments'] = ['NO_RECOMMENDATIONS="1"']
+        self.data['container_oci'] = DEFAULT_OCI_CONTAINER_DATA
+        if DEFAULT_MACHINE == 'intel-x86-64':
+            self.data['container_oci']['OCI_IMAGE_ARCH'] = 'x86-64'
+        elif DEFAULT_MACHINE == 'bcm-2xxx-rpi4':
+            self.data['container_oci']['OCI_IMAGE_ARCH'] = 'aarch64'
 
     @show_task_info("Create Docker Container")
     def do_image_container(self):
@@ -66,8 +73,20 @@ class GenContainer(GenXXX):
                         workdir=workdir,
                         machine=self.machine,
                         target_rootfs=self.target_rootfs,
-                        deploydir=self.deploydir)
+                        deploydir=self.deploydir,
+                        container_oci=self.data['container_oci'])
         container.create()
+
+    def do_upload(self):
+        unpack_dir = "{0}-{1}.container.rootfs-oci".format(self.image_name, self.machine)
+        utils.remove(unpack_dir, recurse=True)
+
+        tgz = "{0}-{1}.container.rootfs-oci-{2}-{3}-linux.oci-image.tar".format(self.image_name,
+                                                                                self.machine,
+                                                                                self.data['container_oci']['OCI_IMAGE_TAG'],
+                                                                                self.data['container_oci']['OCI_IMAGE_ARCH'])
+        cmd = "tar -xvf {0}".format(tgz)
+        utils.run_cmd_oneshot(cmd, cwd=self.deploydir)
 
     def do_report(self):
         table = Texttable()
@@ -80,6 +99,10 @@ class GenContainer(GenXXX):
         cmd = cmd_format % "{0}.container.tar.bz2".format(image_name)
         output = subprocess.check_output(cmd, shell=True, cwd=self.deploydir)
         table.add_row(["Container Image", output.strip()])
+
+        cmd = "ls {0}.container.rootfs-oci-*-linux.oci-image.tar".format(image_name)
+        output = subprocess.check_output(cmd, shell=True, cwd=self.deploydir)
+        table.add_row(["OCI Container Image", output.strip()])
 
         cmd = cmd_format % "{0}.container.tar.bz2.README.md".format(image_name)
         output = subprocess.check_output(cmd, shell=True, cwd=self.deploydir)
@@ -98,7 +121,7 @@ def _main_run_internal(args):
         logger.debug("Create Target Rootfs: %s" % create.target_rootfs)
 
     create.do_image_container()
-
+    create.do_upload()
     create.do_post()
     create.do_report()
 
