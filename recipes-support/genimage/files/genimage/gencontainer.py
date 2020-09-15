@@ -51,6 +51,13 @@ class GenContainer(GenXXX):
     def __init__(self, args):
         super(GenContainer, self).__init__(args)
         self.exclude_packages = ['systemd*']
+        self.oci_rootfs_dir = "{0}/{1}-{2}.container.rootfs-oci".format(self.deploydir, self.image_name, self.machine)
+        utils.remove(self.oci_rootfs_dir, recurse=True)
+        if not self.data['container_upload_cmd'] or self.data['container_upload_cmd'].startswith('#'):
+            skopeo_opt = "--dest-tls-verify=false"
+            src_image = "oci:%s" % os.path.relpath(self.oci_rootfs_dir)
+            dest_image = "docker://pek-lpdfs01:5000/{0}-{1}".format(self.image_name, self.machine)
+            self.data['container_upload_cmd'] = "#skopeo copy {0} {1} {2}".format(skopeo_opt, src_image, dest_image)
 
     def _parse_default(self):
         super(GenContainer, self)._parse_default()
@@ -64,6 +71,8 @@ class GenContainer(GenXXX):
             self.data['container_oci']['OCI_IMAGE_ARCH'] = 'x86-64'
         elif DEFAULT_MACHINE == 'bcm-2xxx-rpi4':
             self.data['container_oci']['OCI_IMAGE_ARCH'] = 'aarch64'
+        self.data['container_upload_cmd'] = ""
+
 
     @show_task_info("Create Docker Container")
     def do_image_container(self):
@@ -78,15 +87,21 @@ class GenContainer(GenXXX):
         container.create()
 
     def do_upload(self):
-        unpack_dir = "{0}-{1}.container.rootfs-oci".format(self.image_name, self.machine)
-        utils.remove(unpack_dir, recurse=True)
-
         tgz = "{0}-{1}.container.rootfs-oci-{2}-{3}-linux.oci-image.tar".format(self.image_name,
                                                                                 self.machine,
                                                                                 self.data['container_oci']['OCI_IMAGE_TAG'],
                                                                                 self.data['container_oci']['OCI_IMAGE_ARCH'])
         cmd = "tar -xvf {0}".format(tgz)
         utils.run_cmd_oneshot(cmd, cwd=self.deploydir)
+
+        if self.data['container_upload_cmd'] and not self.data['container_upload_cmd'].startswith('#'):
+            cmd = self.data['container_upload_cmd']
+            logger.info("Run the following command to upload container image:\n   %s", cmd)
+            output = subprocess.check_output(cmd, shell=True)
+            logger.info("Result: %s", output.decode())
+        else:
+            logger.info("You could run the following command to upload container image manually:\n   %s", self.data['container_upload_cmd'].replace("#", ""))
+
 
     def do_report(self):
         table = Texttable()

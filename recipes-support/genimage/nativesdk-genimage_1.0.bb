@@ -26,6 +26,7 @@ RDEPENDS_${PN} = "nativesdk-dnf \
                   nativesdk-kmod \
                   nativesdk-wget \
                   nativesdk-sloci-image \
+                  nativesdk-skopeo \
                   nativesdk-python3-texttable \
 "
 
