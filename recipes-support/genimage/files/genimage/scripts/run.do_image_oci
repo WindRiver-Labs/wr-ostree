@@ -32,7 +32,7 @@ else
     OCI_IMAGE_ARCH="${OCI_IMAGE_ARCH:-aarch64}"
 fi
 
-OCI_IMAGE_ENTRYPOINT="${OCI_IMAGE_ENTRYPOINT:-sh}"
+OCI_IMAGE_ENTRYPOINT="${OCI_IMAGE_ENTRYPOINT:-}"
 OCI_IMAGE_ENTRYPOINT_ARGS="${OCI_IMAGE_ENTRYPOINT_ARGS:-}"
 OCI_IMAGE_WORKINGDIR="${OCI_IMAGE_WORKINGDIR:-}"
 
@@ -77,7 +77,7 @@ do_image_oci() {
             oci_image_label_options="${oci_image_label_options} --label ${l}"
         done
     fi
-    oci_image_env_options=""
+    oci_image_env_options="--env PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
     if [ -n "${OCI_IMAGE_ENV_VARS}" ]; then
         for l in ${OCI_IMAGE_ENV_VARS}; do
             oci_image_env_options="${oci_image_env_options} --env ${l}"
@@ -107,7 +107,7 @@ do_image_oci() {
     sloci-image $sloci_options \
         --arch ${OCI_IMAGE_ARCH} \
         --arch-variant "${OCI_IMAGE_SUBARCH}" \
-        --entrypoint ${OCI_IMAGE_ENTRYPOINT} \
+        --entrypoint "${OCI_IMAGE_ENTRYPOINT}" \
         --cmd "${OCI_IMAGE_ENTRYPOINT_ARGS}" \
         --author "${OCI_IMAGE_AUTHOR} <${OCI_IMAGE_AUTHOR_EMAIL}>" \
         ${oci_image_user_options} \
