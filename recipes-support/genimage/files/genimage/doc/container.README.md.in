@@ -44,6 +44,22 @@ An example to run an instance of wrlinux container with runc:
 
 Where CONTAINER-ID is the name for the instance of the container
 
+## How to upload OCI image to docker registry
+Run skopeo copy to upload container image:
+   skopeo copy <option> oci:DEPLOYDIR/@IMAGE_NAME@.container.rootfs-oci:latest docker://docker-reference
+
+docker://docker-reference
+ An image in a registry implementing the "Docker Registry HTTP API V2".
+ By default, uses the authorization state in either $XDG_RUNTIME_DIR/
+ containers/auth.json, which is set using (skopeo login). If the authorization
+ state is not found there, $HOME/.docker/config.json is checked, which is
+ set using (docker login). If Docker Registry is insecure registry, add
+ --dest-tls-verify=false to <option>
+
+oci:path:tag
+ An image tag in a directory compliant with "Open Container Image
+ Layout Specification" at path.
+
 ## Known issues
 - ecryptfs-utils
 ecryptfs-utils includes a systemd service ecryptfs.service and a kernel module

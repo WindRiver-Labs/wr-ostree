@@ -42,7 +42,7 @@ class Image(object, metaclass=ABCMeta):
 
     def _write_readme(self, image_type=None):
         image_type_suffix = {
-            "container": "container.tar.bz2",
+            "container": "container",
             "ustart": "ustart.img.gz",
             "wic": "wic"
         }

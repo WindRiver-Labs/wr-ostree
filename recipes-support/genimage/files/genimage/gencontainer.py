@@ -117,9 +117,13 @@ class GenContainer(GenXXX):
 
         cmd = "ls {0}.container.rootfs-oci-*-linux.oci-image.tar".format(image_name)
         output = subprocess.check_output(cmd, shell=True, cwd=self.deploydir)
-        table.add_row(["OCI Container Image", output.strip()])
+        table.add_row(["OCI Image Tarball", output.strip()])
 
-        cmd = cmd_format % "{0}.container.tar.bz2.README.md".format(image_name)
+        cmd = "ls -d {0}.container.rootfs-oci".format(image_name)
+        output = subprocess.check_output(cmd, shell=True, cwd=self.deploydir)
+        table.add_row(["OCI Image Extract Dir", output.strip()])
+
+        cmd = cmd_format % "{0}.container.README.md".format(image_name)
         output = subprocess.check_output(cmd, shell=True, cwd=self.deploydir)
         table.add_row(["Container Image Doc", output.strip()])
 
