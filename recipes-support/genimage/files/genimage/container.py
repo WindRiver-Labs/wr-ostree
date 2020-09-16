@@ -47,10 +47,6 @@ class CreateContainer(Image):
         cmd = "rm -f {0}/{1}.container.rootfs.tar".format(self.deploydir, self.image_fullname)
         utils.run_cmd_oneshot(cmd)
 
-        config_json = os.path.expandvars("$OECORE_NATIVE_SYSROOT/usr/share/genimage/data/oci_config/config.json")
-        cmd = "cp -f {0} {1}/{2}.container.config.json".format(config_json, self.deploydir, self.image_fullname)
-        utils.run_cmd_oneshot(cmd)
-
         self._create_oci()
 
         self._create_symlinks()
@@ -58,11 +54,8 @@ class CreateContainer(Image):
     def _create_symlinks(self):
         container_dst = os.path.join(self.deploydir, self.image_linkname + ".container.tar.bz2")
         container_src = os.path.join(self.deploydir, self.image_fullname + ".container.rootfs.tar.bz2")
-        config_dst = os.path.join(self.deploydir, "config.json")
-        config_src = os.path.join(self.deploydir, self.image_fullname + ".container.config.json")
 
-        for dst, src in [(container_dst, container_src),
-                (config_dst, config_src)]:
+        for dst, src in [(container_dst, container_src)]:
 
             if os.path.exists(src):
                 logger.debug("Creating symlink: %s -> %s" % (dst, src))

@@ -34,25 +34,15 @@ to get more information.
 
 Use runc command to create an instance of a container for a bundle.
 A standard container bundle contains all the information needed to load
-and run a container. This includes the following artifacts:
-
-- config.json:
-  contains configuration data. This required file must reside
-  in the root of the bundle directory and must be named config.json.
-- container's root filesystem:
-  the directory referenced by root.path, if that property is set in
-  config.json.
+and run a container. Use a tool umoci to convert an OCI Image to
+a Bundle for runc to run
 
 An example to run an instance of wrlinux container with runc:
-
-        $ mkdir container-bundle
+        $ umoci unpack --rootless --image DEPLOYDIR/@IMAGE_NAME@.container.rootfs-oci:latest container-bundle
         $ cd container-bundle
-        $ cp DEPLOYDIR/config.json .
-        $ mkdir rootfs
-        $ tar -C rootfs -xjf DEPLOYDIR/@IMAGE_NAME@.container.tar.bz2
-        $ sudo runc run CONTAINER-ID
+        $ runc run CONTAINER-ID
 
-Where CONTAINER-ID is the name for the instance of the container.
+Where CONTAINER-ID is the name for the instance of the container
 
 ## Known issues
 - ecryptfs-utils

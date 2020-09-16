@@ -26,6 +26,7 @@ RDEPENDS_${PN} = "nativesdk-dnf \
                   nativesdk-kmod \
                   nativesdk-wget \
                   nativesdk-sloci-image \
+                  nativesdk-umoci \
                   nativesdk-skopeo \
                   nativesdk-python3-texttable \
 "
@@ -73,7 +74,6 @@ SRC_URI = "\
            file://genimage/data/yaml_example/images/initramfs-ostree-image.yaml \
            file://genimage/data/yaml_example/machine/intel-x86-64.yaml \
            file://genimage/data/yaml_example/machine/bcm-2xxx-rpi4.yaml \
-           file://genimage/data/oci_config/config.json \
            file://genimage/scripts/run.do_image_ostree \
            file://genimage/scripts/run.do_image_otaimg \
            file://genimage/scripts/run.do_image_wic \
