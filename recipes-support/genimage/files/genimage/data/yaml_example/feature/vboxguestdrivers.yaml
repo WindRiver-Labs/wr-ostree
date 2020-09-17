@@ -1,6 +1,7 @@
 machine: intel-x86-64
 image_type:
-- ostree-repo
+- vdi
+- vmdk
 packages:
 - vboxguestdrivers
 - kernel-module-vboxsf

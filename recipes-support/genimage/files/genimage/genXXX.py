@@ -212,6 +212,7 @@ class GenXXX(object, metaclass=ABCMeta):
                 # Collect them from all Yaml file as many as possible
                 if key in ['packages',
                            'external-packages',
+                           'image_type',
                            'environments',
                            'rootfs-pre-scripts',
                            'rootfs-post-scripts']:
