@@ -163,6 +163,7 @@ python do_write_py_template () {
 CROSS_CMDS ?= " \
     /usr/bin/shlibsign \
     /usr/bin/glib-compile-schemas \
+    /usr/bin/gconftool-2 \
 "
 python do_create_cross_cmd_wrapper () {
     # cmd_wrapper.in -> shlibsign or ...
