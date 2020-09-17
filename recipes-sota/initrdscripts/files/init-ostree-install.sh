@@ -37,7 +37,7 @@ REQUIRED:
 OPTIONAL:
  bl=booloader                  - grub, ufsd(u-boot fdisk sd)
  instab=0			- Do not use the AB layout, only use A
- instnet=0			- Do not invoke udhcpc or dhclient
+ instnet=0			- Do not invoke udhcpc or dhcpcd
    If the above is 0, use the kernel arg:
     ip=<client-ip>::<gw-ip>:<netmask>:<hostname>:<device>:off:<dns0-ip>:<dns1-ip>
    Example:
@@ -62,7 +62,7 @@ OPTIONAL:
  instpt=1			- Set to 0 to skip disk partitioning
  instgpg=0			- Turn off OSTree GnuPG signing checks
  instdate=datespec	        - Argument to "date -u -s" like @1577836800
- dhcpargs=DHCP_ARGS		- Args to "udhcpc -i" or "dhclient" like wlan0
+ dhcpargs=DHCP_ARGS		- Args to "udhcpc -i" or "dhcpcd" like wlan0
 				  ask = Ask which interface to use
  wifi=ssid=YOUR_SSID;psk=your_key - Setup via wpa_cli for authentication
  wifi=ssid=YOUR_SSID;psk=ask    - Ask for password at run time
@@ -315,7 +315,7 @@ do_dhcp() {
 			/sbin/udhcpc
 		fi
 	else
-		dhclient ${DHCPARGS}
+		dhcpcd ${DHCPARGS}
 	fi
 }
 
