@@ -199,6 +199,12 @@ class GenXXX(object, metaclass=ABCMeta):
                 d = yaml.load(f, Loader=yaml.FullLoader) or dict()
 
             for key in d:
+                if key == 'machine':
+                    if d[key] != DEFAULT_MACHINE:
+                        logger.error("Load %s failed\nThe machine: %s is not supported", yaml_file, d[key])
+                        sys.exit(1)
+                    continue
+
                 if key not in data:
                     data[key] = d[key]
                     continue

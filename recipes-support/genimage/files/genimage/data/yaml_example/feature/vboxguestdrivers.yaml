@@ -1,3 +1,6 @@
+machine: intel-x86-64
+image_type:
+- ostree-repo
 packages:
 - vboxguestdrivers
 - kernel-module-vboxsf
