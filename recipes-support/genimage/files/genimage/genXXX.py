@@ -58,15 +58,9 @@ def set_parser(parser=None, supported_types=None):
             help='Specify dir to save debug messages as log.appsdk regardless of the logging level',
             action='store')
 
-    if supported_types is None:
-        supported_types = [
-            'wic',
-            'vmdk',
-            'vdi',
-            'ostree-repo',
-            'ustart',
-            'all',
-        ]
+    if not supported_types:
+        logger.error("Supported Types is not set")
+        sys.exit(1)
 
     parser.add_argument('-o', '--outdir',
         default=os.getcwd(),
@@ -281,14 +275,20 @@ class GenXXX(object, metaclass=ABCMeta):
             logger.error("The package feeds does not exist, please set it")
             sys.exit(1)
 
-        if 'all' in self.data['image_type']:
-            self.data['image_type'] = ['ostree-repo', 'wic', 'ustart', 'vmdk', 'vdi']
-
         # Sort and remove duplicated list except the section of environments,
         # rootfs-pre-scripts and rootfs-post-scripts
         for k,v in self.data.items():
             if isinstance(v, list) and k not in ['environments', 'rootfs-pre-scripts', 'rootfs-post-scripts']:
                 self.data[k] = list(sorted(set(v)))
+
+        if 'initramfs' in self.data['image_type'] and len(self.data['image_type']) > 1:
+            self.data['image_type'].remove('initramfs')
+            logger.error("The 'initramfs' image_type can't be together with %s", self.data['image_type'])
+            sys.exit(1)
+        elif 'container' in self.data['image_type'] and len(self.data['image_type']) > 1:
+            self.data['image_type'].remove('container')
+            logger.error("The 'container' image_type can't be together with %s", self.data['image_type'])
+            sys.exit(1)
 
     def _save_output_yaml(self):
         with open(self.output_yaml, "w") as f:

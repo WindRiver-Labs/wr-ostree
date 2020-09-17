@@ -73,6 +73,11 @@ class GenContainer(GenXXX):
             self.data['container_oci']['OCI_IMAGE_ARCH'] = 'aarch64'
         self.data['container_upload_cmd'] = ""
 
+    def _parse_amend(self):
+        super(GenContainer, self)._parse_amend()
+        if len(self.data['image_type']) != 1 or 'container' not in self.data['image_type']:
+            logger.error("Only 'container' image_type is supported\nIncorrect setting: %s", self.data['image_type'])
+            sys.exit(1)
 
     @show_task_info("Create Docker Container")
     def do_image_container(self):

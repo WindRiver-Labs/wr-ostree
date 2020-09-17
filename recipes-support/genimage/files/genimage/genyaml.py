@@ -23,6 +23,15 @@ from genimage.utils import set_logger
 from genimage.genXXX import GenXXX
 from genimage.genXXX import set_parser
 
+from genimage.constant import DEFAULT_MACHINE
+from genimage.constant import DEFAULT_PACKAGES
+from genimage.constant import OSTREE_INITRD_PACKAGES
+from genimage.constant import DEFAULT_CONTAINER_PACKAGES
+from genimage.constant import DEFAULT_IMAGE
+from genimage.constant import DEFAULT_INITRD_NAME
+from genimage.constant import DEFAULT_CONTAINER_NAME
+from genimage.constant import DEFAULT_OCI_CONTAINER_DATA
+
 import genimage.utils as utils
 
 logger = logging.getLogger('appsdk')
@@ -36,7 +45,6 @@ def set_parser_genyaml(parser=None):
         'container',
         'initramfs',
         'ustart',
-        'all',
     ]
 
     return set_parser(parser, supported_types)
@@ -48,9 +56,32 @@ class GenYaml(GenXXX):
     def __init__(self, args):
         super(GenYaml, self).__init__(args)
 
+        self.data['include-default-packages'] = "0"
+
         self.output_yaml = os.path.join(self.outdir, "%s-%s.yaml" % (self.data['name'], self.data['machine']))
 
         utils.remove(self.deploydir, recurse=True)
+
+    def _parse_default(self):
+        super(GenYaml, self)._parse_default()
+
+        if not self.args.type:
+            pass
+        elif 'container' in self.args.type:
+            self.data['name'] = DEFAULT_CONTAINER_NAME
+            self.data['packages'] = DEFAULT_CONTAINER_PACKAGES
+            self.data['environments'] = ['NO_RECOMMENDATIONS="1"']
+            self.data['container_oci'] = DEFAULT_OCI_CONTAINER_DATA
+            if DEFAULT_MACHINE == 'intel-x86-64':
+                self.data['container_oci']['OCI_IMAGE_ARCH'] = 'x86-64'
+            elif DEFAULT_MACHINE == 'bcm-2xxx-rpi4':
+                self.data['container_oci']['OCI_IMAGE_ARCH'] = 'aarch64'
+            self.data['container_upload_cmd'] = ""
+        elif 'initramfs' in self.args.type:
+            self.data['name'] = DEFAULT_INITRD_NAME
+            self.data['packages'] = OSTREE_INITRD_PACKAGES
+            self.data['environments'] = ['NO_RECOMMENDATIONS="1"']
+
 
     def do_generate(self):
         self._save_output_yaml()

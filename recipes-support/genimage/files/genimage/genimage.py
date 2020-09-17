@@ -35,6 +35,18 @@ import genimage.utils as utils
 
 logger = logging.getLogger('appsdk')
 
+def set_parser_genimage(parser=None):
+    supported_types = [
+        'wic',
+        'vmdk',
+        'vdi',
+        'ostree-repo',
+        'ustart',
+        'all',
+    ]
+
+    return set_parser(parser, supported_types)
+
 class GenImage(GenXXX):
     """
     * Create the following images in order:
@@ -44,6 +56,20 @@ class GenImage(GenXXX):
 
     def __init__(self, args):
         super(GenImage, self).__init__(args)
+
+    def _parse_amend(self):
+        super(GenImage, self)._parse_amend()
+
+        if 'all' in self.data['image_type']:
+            self.data['image_type'] = ['ostree-repo', 'wic', 'ustart', 'vmdk', 'vdi']
+
+        if 'initramfs' in self.data['image_type']:
+            logger.error("The 'initramfs' image_type is not supported")
+            sys.exit(1)
+
+        if 'container' in self.data['image_type']:
+            logger.error("The 'container' image_type is not supported")
+            sys.exit(1)
 
     def _do_rootfs_pre(self, rootfs=None):
         if rootfs is None:
@@ -297,7 +323,7 @@ def _main_run(args):
             raise
 
 def main():
-    parser = set_parser()
+    parser = set_parser_genimage()
     parser.set_defaults(func=_main_run)
     args = parser.parse_args()
     set_logger(logger, level=args.loglevel, log_path=args.logdir)
@@ -307,7 +333,7 @@ def set_subparser(subparsers=None):
     if subparsers is None:
         sys.exit(1)
     parser_genimage = subparsers.add_parser('genimage', help='Generate images from package feeds for specified machines')
-    parser_genimage = set_parser(parser_genimage)
+    parser_genimage = set_parser_genimage(parser_genimage)
     parser_genimage.set_defaults(func=_main_run)
 
 if __name__ == "__main__":
