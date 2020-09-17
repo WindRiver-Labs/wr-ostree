@@ -94,7 +94,7 @@ class GenImage(GenXXX):
 
         if 'systemd' in self.packages or 'systemd' in self.external_packages:
             script_cmd = os.path.join(self.data_dir, 'post_rootfs', 'set_systemd_default_target.sh')
-            if 'packagegroup-core-x11-base' in self.packages:
+            if 'packagegroup-core-x11-xserver' in self.packages:
                 script_cmd = "{0} {1} graphical.target".format(script_cmd, rootfs.target_rootfs)
             else:
                 script_cmd = "{0} {1} multi-user.target".format(script_cmd, rootfs.target_rootfs)

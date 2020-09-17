@@ -1,6 +1,10 @@
+image_type:
+- ostree-repo
+- ustart
 packages:
 - lxdm
 - packagegroup-xfce-base
 - wr-themes
 - gsettings-desktop-schemas
 - packagegroup-core-x11-base
+- packagegroup-core-x11-xserver
