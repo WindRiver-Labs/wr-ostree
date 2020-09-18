@@ -150,6 +150,7 @@ check_repo_url() {
 	local branch
 	local remote
 	local url
+	local local_url
 
 	# Check and copy any repo information for the upgrade
 	branch=`ostree config --repo=/sysroot/ostree/repo get upgrade.branch 2> /dev/null`
@@ -170,6 +171,15 @@ check_repo_url() {
 	if [ -z "${url}" ] ; then
 		echo "No remote repository url configured, please configure it via:"
 		fatal " ostree remote add ${remote} <url>"
+	fi
+
+	local_url="${url##file://}"
+	if [ "${local_url}" != "${url}" ]; then
+		if [ ! -e "${local_url}" ]; then
+			ostree remote delete ${remote}
+			echo "No valid remote repository url is available, please configure it via:"
+			fatal " ostree remote add ${remote} <url>"
+		fi
 	fi
 
 	# Copy the existing configuration to the upgrade partition
