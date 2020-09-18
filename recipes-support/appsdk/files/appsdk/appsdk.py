@@ -815,7 +815,7 @@ class PackageConfig(object):
                 dirpath = os.path.join(root, d)
                 dirpath = dirpath.replace(buildroot, '')
                 if dirpath in yaml_dirs:
-                    logger.debug("% is already specified by user in yaml file" % dirpath)
+                    logger.debug("%s is already specified by user in yaml file" % dirpath)
                 else:
                     if dirpath in default_layout:
                         logger.debug("adding %s as %s" % (dirpath, default_layout[dirpath]))
