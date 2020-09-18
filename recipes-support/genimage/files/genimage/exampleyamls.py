@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# PYTHON_ARGCOMPLETE_OK
 #
 # Copyright (C) 2020 Wind River Systems, Inc.
 #
@@ -18,6 +19,7 @@
 import os
 import sys
 import argparse
+import argcomplete
 import logging
 import glob
 import subprocess
@@ -101,6 +103,7 @@ def _main_run(args):
 def main_exampleyamls():
     parser = set_parser_exampleyamls()
     parser.set_defaults(func=_main_run)
+    argcomplete.autocomplete(parser)
     args = parser.parse_args()
     set_logger(logger, level=args.loglevel, log_path=args.logdir)
     args.func(args)

@@ -29,6 +29,7 @@ RDEPENDS_${PN} = "nativesdk-dnf \
                   nativesdk-umoci \
                   nativesdk-skopeo \
                   nativesdk-python3-texttable \
+                  nativesdk-python3-argcomplete \
 "
 
 # Required by do_rootfs's intercept_scripts in sdk
@@ -41,6 +42,7 @@ SRC_URI = "\
            file://crossscripts/depmodwrapper \
            file://crossscript_wrapper.in \
            file://add_path.sh \
+           file://bash_tab_completion.sh \
            file://genimage/__init__.py \
            file://genimage/genimage.py \
            file://genimage/genyaml.py \
@@ -188,6 +190,7 @@ do_install_append() {
 	cp -rf ${WORKDIR}/genimage/doc ${D}${datadir}/genimage/
 	mkdir -p ${D}${SDKPATHNATIVE}/environment-setup.d
 	install -m 0755 ${WORKDIR}/add_path.sh ${D}${SDKPATHNATIVE}/environment-setup.d
+	install -m 0755 ${WORKDIR}/bash_tab_completion.sh ${D}${SDKPATHNATIVE}/environment-setup.d
 	install -d ${D}${datadir}/genimage/rpm_keys/
 	cp ${OSTREE_GPGDIR}/RPM-GPG-PRIVKEY-${OSTREE_GPGID} ${D}${datadir}/genimage/rpm_keys/
 

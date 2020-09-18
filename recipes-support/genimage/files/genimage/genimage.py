@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# PYTHON_ARGCOMPLETE_OK
 #
 # Copyright (C) 2020 Wind River Systems, Inc.
 #
@@ -19,6 +20,7 @@ import os
 import sys
 import subprocess
 import logging
+import argcomplete
 from texttable import Texttable
 
 from genimage.utils import set_logger
@@ -325,6 +327,7 @@ def _main_run(args):
 def main():
     parser = set_parser_genimage()
     parser.set_defaults(func=_main_run)
+    argcomplete.autocomplete(parser)
     args = parser.parse_args()
     set_logger(logger, level=args.loglevel, log_path=args.logdir)
     args.func(args)

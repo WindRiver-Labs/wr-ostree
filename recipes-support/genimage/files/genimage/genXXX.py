@@ -98,7 +98,7 @@ def set_parser(parser=None, supported_types=None):
         action='append')
     parser.add_argument('--env',
         help='Specify extra environment to export before do_rootfs: --env NAME=VALUE',
-        action='append')
+        action='append').completer = complete_env
     parser.add_argument("--no-clean",
         help = "Do not cleanup generated rootfs in workdir", action="store_true", default=False)
 
@@ -108,6 +108,10 @@ def set_parser(parser=None, supported_types=None):
         nargs='*')
 
     return parser
+
+def complete_env(**kwargs):
+    return ['NAME=VALUE']
+
 class GenXXX(object, metaclass=ABCMeta):
     """
     This is an abstract class. Do not instantiate this directly.

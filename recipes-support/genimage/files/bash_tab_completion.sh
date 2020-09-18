@@ -1,0 +1,6 @@
+eval "$(register-python-argcomplete3 appsdk)"
+eval "$(register-python-argcomplete3 geninitramfs)"
+eval "$(register-python-argcomplete3 genimage)"
+eval "$(register-python-argcomplete3 genyaml)"
+eval "$(register-python-argcomplete3 exampleyamls)"
+eval "$(register-python-argcomplete3 gencontainer)"

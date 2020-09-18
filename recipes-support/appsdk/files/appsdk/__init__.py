@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
+# PYTHON_ARGCOMPLETE_OK
 
 import sys
 import os
 import argparse
+import argcomplete
 import glob
 import re
 import logging
@@ -85,6 +87,8 @@ def main():
 
     # Add exampleyamls to appsdk
     genimage.set_subparser_exampleyamls(subparsers)
+
+    argcomplete.autocomplete(parser)
 
     if len(sys.argv) == 1:
         parser.print_help()
