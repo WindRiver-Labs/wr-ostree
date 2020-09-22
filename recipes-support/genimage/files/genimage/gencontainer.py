@@ -55,7 +55,7 @@ class GenContainer(GenXXX):
         self.oci_rootfs_dir = "{0}/{1}-{2}.container.rootfs-oci".format(self.deploydir, self.image_name, self.machine)
         utils.remove(self.oci_rootfs_dir, recurse=True)
         if not self.data['container_upload_cmd'] or self.data['container_upload_cmd'].startswith('#'):
-            skopeo_opt = "--dest-tls-verify=false"
+            skopeo_opt = "--dest-tls-verify=false --insecure-policy"
             src_image = "oci:%s" % os.path.relpath(self.oci_rootfs_dir)
             dest_image = "docker://pek-lpdfs01:5000/{0}-{1}".format(self.image_name, self.machine)
             self.data['container_upload_cmd'] = "#skopeo copy {0} {1} {2}".format(skopeo_opt, src_image, dest_image)
