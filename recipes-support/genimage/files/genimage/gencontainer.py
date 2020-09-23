@@ -28,6 +28,9 @@ from genimage.constant import DEFAULT_CONTAINER_NAME
 from genimage.constant import DEFAULT_CONTAINER_PACKAGES
 from genimage.constant import DEFAULT_OCI_CONTAINER_DATA
 from genimage.constant import DEFAULT_MACHINE
+from genimage.constant import DEFAULT_PACKAGE_FEED
+from genimage.constant import DEFAULT_REMOTE_PKGDATADIR
+from genimage.constant import DEFAULT_IMAGE_FEATURES
 from genimage.container import CreateContainer
 from genimage.genXXX import set_parser
 from genimage.genXXX import GenXXX
@@ -61,11 +64,17 @@ class GenContainer(GenXXX):
             self.data['container_upload_cmd'] = "#skopeo copy {0} {1} {2}".format(skopeo_opt, src_image, dest_image)
 
     def _parse_default(self):
-        super(GenContainer, self)._parse_default()
-
         self.data['name'] = DEFAULT_CONTAINER_NAME
+        self.data['machine'] = DEFAULT_MACHINE
         self.data['image_type'] = ['container']
+        self.data['package_feeds'] = DEFAULT_PACKAGE_FEED
+        self.data['remote_pkgdatadir'] = DEFAULT_REMOTE_PKGDATADIR
+        self.data['features'] =  DEFAULT_IMAGE_FEATURES
         self.data['packages'] = DEFAULT_CONTAINER_PACKAGES
+        self.data['external-packages'] = []
+        self.data['include-default-packages'] = "1"
+        self.data['rootfs-pre-scripts'] = ['echo "run script before do_rootfs in $IMAGE_ROOTFS"']
+        self.data['rootfs-post-scripts'] = ['echo "run script after do_rootfs in $IMAGE_ROOTFS"']
         self.data['environments'] = ['NO_RECOMMENDATIONS="1"']
         self.data['container_oci'] = DEFAULT_OCI_CONTAINER_DATA
         if DEFAULT_MACHINE == 'intel-x86-64':

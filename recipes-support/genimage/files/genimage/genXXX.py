@@ -28,12 +28,7 @@ import atexit
 from genimage.utils import get_today
 from genimage.utils import show_task_info
 import genimage.constant as constant
-from genimage.constant import DEFAULT_PACKAGE_FEED
-from genimage.constant import DEFAULT_REMOTE_PKGDATADIR
-from genimage.constant import DEFAULT_PACKAGES
 from genimage.constant import DEFAULT_MACHINE
-from genimage.constant import DEFAULT_IMAGE
-from genimage.constant import DEFAULT_IMAGE_FEATURES
 from genimage.rootfs import Rootfs
 
 import genimage.utils as utils
@@ -160,25 +155,11 @@ class GenXXX(object, metaclass=ABCMeta):
         logger.info("Pakcage Feeds:\n%s\n" % '\n'.join(self.pkg_feeds))
         logger.info("enviroments: %s", self.environments)
         logger.debug("Deploy Directory: %s" % self.outdir)
-        logger.debug("GPG Path: %s" % self.data["gpg"]["gpg_path"])
         logger.debug("Work Directory: %s" % self.workdir)
 
+    @abstractmethod
     def _parse_default(self):
-        self.data['name'] = DEFAULT_IMAGE
-        self.data['machine'] = DEFAULT_MACHINE
-        self.data['image_type'] = ['ustart', 'ostree-repo']
-        self.data['package_feeds'] = DEFAULT_PACKAGE_FEED
-        self.data["ostree"] = constant.DEFAULT_OSTREE_DATA
-        self.data["wic"] = constant.DEFAULT_WIC_DATA
-        self.data['remote_pkgdatadir'] = DEFAULT_REMOTE_PKGDATADIR
-        self.data['features'] =  DEFAULT_IMAGE_FEATURES
-        self.data["gpg"] = constant.DEFAULT_GPG_DATA
-        self.data['packages'] = DEFAULT_PACKAGES[DEFAULT_MACHINE]
-        self.data['external-packages'] = []
-        self.data['include-default-packages'] = "1"
-        self.data['rootfs-pre-scripts'] = ['echo "run script before do_rootfs in $IMAGE_ROOTFS"']
-        self.data['rootfs-post-scripts'] = ['echo "run script after do_rootfs in $IMAGE_ROOTFS"']
-        self.data['environments'] = ['NO_RECOMMENDATIONS="0"', 'KERNEL_PARAMS="key=value"']
+        pass
 
     def _parse_inputyamls(self):
         if not self.args.input:
@@ -255,9 +236,6 @@ class GenXXX(object, metaclass=ABCMeta):
         if self.args.pkg_external:
             self.data['external-packages'].extend(self.args.pkg_external)
 
-        if self.args.gpgpath:
-            self.data["gpg"]["gpg_path"] = os.path.realpath(self.args.gpgpath)
-
         if self.args.rootfs_post_script:
             self.data['rootfs-post-scripts'].extend(self.args.rootfs_post_script)
 
@@ -268,16 +246,6 @@ class GenXXX(object, metaclass=ABCMeta):
             self.data['environments'].extend(self.args.env)
 
     def _parse_amend(self):
-        # Use default to fill missing params of "ostree" section
-        for ostree_param in constant.DEFAULT_OSTREE_DATA:
-            if ostree_param not in self.data["ostree"]:
-                self.data["ostree"][ostree_param] = constant.DEFAULT_OSTREE_DATA[ostree_param]
-
-        # Use default to fill missing params of "wic" section
-        for wic_param in constant.DEFAULT_WIC_DATA:
-            if wic_param not in self.data["wic"]:
-                self.data["wic"][wic_param] = constant.DEFAULT_WIC_DATA[wic_param]
-
         if self.data['machine'] != DEFAULT_MACHINE:
             logger.error("MACHINE %s is invalid, SDK is working for %s only" % (self.data['machine'], DEFAULT_MACHINE))
             sys.exit(1)
@@ -302,6 +270,8 @@ class GenXXX(object, metaclass=ABCMeta):
             sys.exit(1)
 
     def _save_output_yaml(self):
+        # The output yaml does not require to include default packages
+        self.data['include-default-packages'] = "0"
         with open(self.output_yaml, "w") as f:
             utils.ordered_dump(self.data, f, Dumper=yaml.SafeDumper)
             logger.debug("Save Yaml FIle to : %s" % (self.output_yaml))
@@ -314,9 +284,6 @@ class GenXXX(object, metaclass=ABCMeta):
         if not self.args.no_clean:
             cmd = "rm -rf {0}/*/rootfs*".format(self.workdir)
             atexit.register(utils.run_cmd_oneshot, cmd=cmd)
-
-        gpg_data = self.data["gpg"]
-        utils.check_gpg_keys(gpg_data)
 
     def do_post(self):
         pass

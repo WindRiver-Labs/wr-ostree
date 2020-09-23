@@ -33,6 +33,14 @@ from genimage.image import CreateBootfs
 from genimage.genXXX import GenXXX
 from genimage.genXXX import set_parser
 
+import genimage.constant as constant
+from genimage.constant import DEFAULT_PACKAGE_FEED
+from genimage.constant import DEFAULT_REMOTE_PKGDATADIR
+from genimage.constant import DEFAULT_PACKAGES
+from genimage.constant import DEFAULT_MACHINE
+from genimage.constant import DEFAULT_IMAGE
+from genimage.constant import DEFAULT_IMAGE_FEATURES
+
 import genimage.utils as utils
 
 logger = logging.getLogger('appsdk')
@@ -58,9 +66,42 @@ class GenImage(GenXXX):
 
     def __init__(self, args):
         super(GenImage, self).__init__(args)
+        logger.debug("GPG Path: %s" % self.data["gpg"]["gpg_path"])
+
+    def _parse_default(self):
+        self.data['name'] = DEFAULT_IMAGE
+        self.data['machine'] = DEFAULT_MACHINE
+        self.data['image_type'] = ['ustart', 'ostree-repo']
+        self.data['package_feeds'] = DEFAULT_PACKAGE_FEED
+        self.data["ostree"] = constant.DEFAULT_OSTREE_DATA
+        self.data["wic"] = constant.DEFAULT_WIC_DATA
+        self.data['remote_pkgdatadir'] = DEFAULT_REMOTE_PKGDATADIR
+        self.data['features'] =  DEFAULT_IMAGE_FEATURES
+        self.data["gpg"] = constant.DEFAULT_GPG_DATA
+        self.data['packages'] = DEFAULT_PACKAGES[DEFAULT_MACHINE]
+        self.data['external-packages'] = []
+        self.data['include-default-packages'] = "1"
+        self.data['rootfs-pre-scripts'] = ['echo "run script before do_rootfs in $IMAGE_ROOTFS"']
+        self.data['rootfs-post-scripts'] = ['echo "run script after do_rootfs in $IMAGE_ROOTFS"']
+        self.data['environments'] = ['NO_RECOMMENDATIONS="0"', 'KERNEL_PARAMS="key=value"']
+
+    def _parse_options(self):
+        super(GenImage, self)._parse_options()
+        if self.args.gpgpath:
+            self.data["gpg"]["gpg_path"] = os.path.realpath(self.args.gpgpath)
 
     def _parse_amend(self):
         super(GenImage, self)._parse_amend()
+
+        # Use default to fill missing params of "ostree" section
+        for ostree_param in constant.DEFAULT_OSTREE_DATA:
+            if ostree_param not in self.data["ostree"]:
+                self.data["ostree"][ostree_param] = constant.DEFAULT_OSTREE_DATA[ostree_param]
+
+        # Use default to fill missing params of "wic" section
+        for wic_param in constant.DEFAULT_WIC_DATA:
+            if wic_param not in self.data["wic"]:
+                self.data["wic"][wic_param] = constant.DEFAULT_WIC_DATA[wic_param]
 
         if 'all' in self.data['image_type']:
             self.data['image_type'] = ['ostree-repo', 'wic', 'ustart', 'vmdk', 'vdi']
@@ -121,6 +162,11 @@ class GenImage(GenXXX):
         else:
             cmd = "cp -rf {0}/boot/* {1}".format(self.target_rootfs, self.deploydir)
             utils.run_cmd_oneshot(cmd)
+
+    def do_prepare(self):
+        super(GenImage, self).do_prepare()
+        gpg_data = self.data["gpg"]
+        utils.check_gpg_keys(gpg_data)
 
     def do_post(self):
         for f in ["qemu-u-boot-bcm-2xxx-rpi4.bin", "ovmf.qcow2"]:

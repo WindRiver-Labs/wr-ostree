@@ -20,11 +20,14 @@ import os
 import sys
 import logging
 import argcomplete
+import glob
+import yaml
 
 from genimage.utils import set_logger
 from genimage.genXXX import GenXXX
 from genimage.genXXX import set_parser
 
+import genimage.constant as constant
 from genimage.constant import DEFAULT_MACHINE
 from genimage.constant import DEFAULT_PACKAGES
 from genimage.constant import OSTREE_INITRD_PACKAGES
@@ -33,6 +36,9 @@ from genimage.constant import DEFAULT_IMAGE
 from genimage.constant import DEFAULT_INITRD_NAME
 from genimage.constant import DEFAULT_CONTAINER_NAME
 from genimage.constant import DEFAULT_OCI_CONTAINER_DATA
+from genimage.constant import DEFAULT_PACKAGE_FEED
+from genimage.constant import DEFAULT_REMOTE_PKGDATADIR
+from genimage.constant import DEFAULT_IMAGE_FEATURES
 
 import genimage.utils as utils
 
@@ -56,6 +62,8 @@ class GenYaml(GenXXX):
     * Use Input Yaml and command option to customize and generate new Yaml file:
     """
     def __init__(self, args):
+        self._set_gen_type(args)
+
         super(GenYaml, self).__init__(args)
 
         self.data['include-default-packages'] = "0"
@@ -64,14 +72,69 @@ class GenYaml(GenXXX):
 
         utils.remove(self.deploydir, recurse=True)
 
-    def _parse_default(self):
-        super(GenYaml, self)._parse_default()
+    def _set_gen_type(self, args):
+        '''
+        According to image_type, set generate type:
+        genimage for any of ostree_repo, wic, ustart, vmdk, vid
+        gencontainer for container
+        geninitramfs for initramfs
+        '''
+        image_types = []
 
-        if not self.args.type:
-            pass
-        elif 'container' in self.args.type:
+        # Colloect image_type from input yamls
+        if args.input:
+            for input_glob in args.input:
+                if not glob.glob(input_glob):
+                    continue
+                for yaml_file in glob.glob(input_glob):
+                    with open(yaml_file) as f:
+                        d = yaml.load(f, Loader=yaml.FullLoader) or dict()
+                        if 'image_type' in d:
+                            image_types.extend(d['image_type'])
+
+        # Use option --type to override
+        if args.type:
+            image_types = args.type
+
+        self.gen_type = "genimage"
+        if any([i == t for i in image_types for t in ['ostree_repo', 'wic', 'ustart', 'vmdk', 'vdi']]):
+            self.gen_type = "genimage"
+        elif 'container' in image_types:
+            self.gen_type = "gencontainer"
+        elif 'initramfs' in image_types:
+            self.gen_type = "geninitramfs"
+
+        return
+
+    def _parse_default(self):
+        if self.gen_type == "genimage":
+            self.data['name'] = DEFAULT_IMAGE
+            self.data['machine'] = DEFAULT_MACHINE
+            self.data['image_type'] = ['ustart', 'ostree-repo']
+            self.data['package_feeds'] = DEFAULT_PACKAGE_FEED
+            self.data["ostree"] = constant.DEFAULT_OSTREE_DATA
+            self.data["wic"] = constant.DEFAULT_WIC_DATA
+            self.data['remote_pkgdatadir'] = DEFAULT_REMOTE_PKGDATADIR
+            self.data['features'] =  DEFAULT_IMAGE_FEATURES
+            self.data["gpg"] = constant.DEFAULT_GPG_DATA
+            self.data['packages'] = DEFAULT_PACKAGES[DEFAULT_MACHINE]
+            self.data['external-packages'] = []
+            self.data['include-default-packages'] = "1"
+            self.data['rootfs-pre-scripts'] = ['echo "run script before do_rootfs in $IMAGE_ROOTFS"']
+            self.data['rootfs-post-scripts'] = ['echo "run script after do_rootfs in $IMAGE_ROOTFS"']
+            self.data['environments'] = ['NO_RECOMMENDATIONS="0"', 'KERNEL_PARAMS="key=value"']
+        elif self.gen_type == "gencontainer":
             self.data['name'] = DEFAULT_CONTAINER_NAME
+            self.data['machine'] = DEFAULT_MACHINE
+            self.data['image_type'] = ['container']
+            self.data['package_feeds'] = DEFAULT_PACKAGE_FEED
+            self.data['remote_pkgdatadir'] = DEFAULT_REMOTE_PKGDATADIR
+            self.data['features'] =  DEFAULT_IMAGE_FEATURES
             self.data['packages'] = DEFAULT_CONTAINER_PACKAGES
+            self.data['external-packages'] = []
+            self.data['include-default-packages'] = "1"
+            self.data['rootfs-pre-scripts'] = ['echo "run script before do_rootfs in $IMAGE_ROOTFS"']
+            self.data['rootfs-post-scripts'] = ['echo "run script after do_rootfs in $IMAGE_ROOTFS"']
             self.data['environments'] = ['NO_RECOMMENDATIONS="1"']
             self.data['container_oci'] = DEFAULT_OCI_CONTAINER_DATA
             if DEFAULT_MACHINE == 'intel-x86-64':
@@ -79,11 +142,19 @@ class GenYaml(GenXXX):
             elif DEFAULT_MACHINE == 'bcm-2xxx-rpi4':
                 self.data['container_oci']['OCI_IMAGE_ARCH'] = 'aarch64'
             self.data['container_upload_cmd'] = ""
-        elif 'initramfs' in self.args.type:
+        elif self.gen_type == "geninitramfs":
             self.data['name'] = DEFAULT_INITRD_NAME
+            self.data['machine'] = DEFAULT_MACHINE
+            self.data['image_type'] = ['initramfs']
+            self.data['package_feeds'] = DEFAULT_PACKAGE_FEED
+            self.data['remote_pkgdatadir'] = DEFAULT_REMOTE_PKGDATADIR
+            self.data['features'] =  DEFAULT_IMAGE_FEATURES
             self.data['packages'] = OSTREE_INITRD_PACKAGES
+            self.data['external-packages'] = []
+            self.data['include-default-packages'] = "1"
+            self.data['rootfs-pre-scripts'] = ['echo "run script before do_rootfs in $IMAGE_ROOTFS"']
+            self.data['rootfs-post-scripts'] = ['echo "run script after do_rootfs in $IMAGE_ROOTFS"']
             self.data['environments'] = ['NO_RECOMMENDATIONS="1"']
-
 
     def do_generate(self):
         self._save_output_yaml()

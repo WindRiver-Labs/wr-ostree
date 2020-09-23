@@ -25,8 +25,13 @@ import argcomplete
 
 from genimage.utils import set_logger
 from genimage.utils import show_task_info
+import genimage.constant as constant
+from genimage.constant import DEFAULT_MACHINE
 from genimage.constant import DEFAULT_INITRD_NAME
 from genimage.constant import OSTREE_INITRD_PACKAGES
+from genimage.constant import DEFAULT_PACKAGE_FEED
+from genimage.constant import DEFAULT_REMOTE_PKGDATADIR
+from genimage.constant import DEFAULT_IMAGE_FEATURES
 from genimage.image import CreateInitramfs
 from genimage.genXXX import set_parser
 from genimage.genXXX import GenXXX
@@ -50,19 +55,28 @@ class GenInitramfs(GenXXX):
 
     def __init__(self, args):
         super(GenInitramfs, self).__init__(args)
-
-        if self.image_name == DEFAULT_INITRD_NAME:
-            logger.info("Replace eixsted %s as initrd for appsdk genimage", DEFAULT_INITRD_NAME)
-
         self.exclude_packages = ['busybox-syslog']
+        logger.debug("GPG Path: %s" % self.data["gpg"]["gpg_path"])
 
     def _parse_default(self):
-        super(GenInitramfs, self)._parse_default()
-
         self.data['name'] = DEFAULT_INITRD_NAME
+        self.data['machine'] = DEFAULT_MACHINE
         self.data['image_type'] = ['initramfs']
+        self.data['package_feeds'] = DEFAULT_PACKAGE_FEED
+        self.data['remote_pkgdatadir'] = DEFAULT_REMOTE_PKGDATADIR
+        self.data['features'] =  DEFAULT_IMAGE_FEATURES
+        self.data["gpg"] = constant.DEFAULT_GPG_DATA
         self.data['packages'] = OSTREE_INITRD_PACKAGES
+        self.data['external-packages'] = []
+        self.data['include-default-packages'] = "1"
+        self.data['rootfs-pre-scripts'] = ['echo "run script before do_rootfs in $IMAGE_ROOTFS"']
+        self.data['rootfs-post-scripts'] = ['echo "run script after do_rootfs in $IMAGE_ROOTFS"']
         self.data['environments'] = ['NO_RECOMMENDATIONS="1"']
+
+    def _parse_options(self):
+        super(GenInitramfs, self)._parse_options()
+        if self.args.gpgpath:
+            self.data["gpg"]["gpg_path"] = os.path.realpath(self.args.gpgpath)
 
     def _parse_amend(self):
         super(GenInitramfs, self)._parse_amend()
@@ -80,8 +94,16 @@ class GenInitramfs(GenXXX):
         script_cmd = "{0} {1} {2}".format(script_cmd, rootfs.target_rootfs, self.data['gpg']['gpg_path'])
         rootfs.add_rootfs_post_scripts(script_cmd)
 
+    def do_prepare(self):
+        super(GenInitramfs, self).do_prepare()
+        gpg_data = self.data["gpg"]
+        utils.check_gpg_keys(gpg_data)
+
     @show_task_info("Create Initramfs")
     def do_ostree_initramfs(self):
+        if self.image_name == DEFAULT_INITRD_NAME:
+            logger.info("Replace eixsted %s as initrd for appsdk genimage", DEFAULT_INITRD_NAME)
+
         # If the Initramfs exists, reuse it
         image_name = "{0}-{1}.cpio.gz".format(self.image_name, self.machine)
         if self.machine == "bcm-2xxx-rpi4":
