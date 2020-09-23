@@ -73,6 +73,13 @@ class GenInitramfs(GenXXX):
         self.data['rootfs-post-scripts'] = ['echo "run script after do_rootfs in $IMAGE_ROOTFS"']
         self.data['environments'] = ['NO_RECOMMENDATIONS="1"']
 
+    def _parse_inputyamls(self):
+        pykwalify_dir = os.path.join(os.environ['OECORE_NATIVE_SYSROOT'], 'usr/share/genimage/data/pykwalify')
+        self.pykwalify_schemas = [os.path.join(pykwalify_dir, 'partial-schemas.yaml')]
+        self.pykwalify_schemas.append(os.path.join(pykwalify_dir, 'geninitramfs-schema.yaml'))
+
+        super(GenInitramfs, self)._parse_inputyamls()
+
     def _parse_options(self):
         super(GenInitramfs, self)._parse_options()
         if self.args.gpgpath:

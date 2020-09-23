@@ -30,6 +30,7 @@ RDEPENDS_${PN} = "nativesdk-dnf \
                   nativesdk-skopeo \
                   nativesdk-python3-texttable \
                   nativesdk-python3-argcomplete \
+                  nativesdk-python3-pykwalify \
 "
 
 # Required by do_rootfs's intercept_scripts in sdk
@@ -76,6 +77,10 @@ SRC_URI = "\
            file://genimage/data/yaml_example/images/initramfs-ostree-image.yaml \
            file://genimage/data/yaml_example/machine/intel-x86-64.yaml \
            file://genimage/data/yaml_example/machine/bcm-2xxx-rpi4.yaml \
+           file://genimage/data/pykwalify/genimage-schema.yaml \
+           file://genimage/data/pykwalify/gencontainer-schema.yaml \
+           file://genimage/data/pykwalify/geninitramfs-schema.yaml \
+           file://genimage/data/pykwalify/partial-schemas.yaml \
            file://genimage/scripts/run.do_image_ostree \
            file://genimage/scripts/run.do_image_otaimg \
            file://genimage/scripts/run.do_image_wic \

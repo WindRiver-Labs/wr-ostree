@@ -24,6 +24,7 @@ import glob
 from abc import ABCMeta, abstractmethod
 import argparse
 import atexit
+from pykwalify.core import Core
 
 from genimage.utils import get_today
 from genimage.utils import show_task_info
@@ -90,6 +91,8 @@ def set_parser(parser=None, supported_types=None):
         action='append').completer = complete_env
     parser.add_argument("--no-clean",
         help = "Do not cleanup generated rootfs in workdir", action="store_true", default=False)
+    parser.add_argument("--no-validate",
+        help = "Do not validate parameters in Input yaml files", action="store_true", default=False)
 
     parser.add_argument('input',
         help='Input yaml files that the tool can be run against a package feed to generate an image',
@@ -155,6 +158,18 @@ class GenXXX(object, metaclass=ABCMeta):
     def _parse_default(self):
         pass
 
+    def _validate_inputyamls(self, yaml_file):
+        if self.args.no_validate:
+            logger.info("Do not validate parameters in %s", yaml_file)
+            return
+
+        try:
+            c = Core(source_file=yaml_file, schema_files=self.pykwalify_schemas)
+            c.validate(raise_exception=True)
+        except Exception as e:
+            logger.error("Load %s failed\n%s", yaml_file, e)
+            sys.exit(1)
+
     def _parse_inputyamls(self):
         if not self.args.input:
             logger.info("No Input YAML File, use default setting")
@@ -170,9 +185,7 @@ class GenXXX(object, metaclass=ABCMeta):
 
         for yaml_file in yaml_files:
             logger.info("Input YAML File: %s" % yaml_file)
-            if not os.path.exists(yaml_file):
-                logger.error("Input yaml file '%s' does not exist" % yaml_file)
-                sys.exit(1)
+            self._validate_inputyamls(yaml_file)
 
             with open(yaml_file) as f:
                 d = yaml.load(f, Loader=yaml.FullLoader) or dict()

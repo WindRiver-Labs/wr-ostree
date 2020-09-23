@@ -79,6 +79,13 @@ class GenContainer(GenXXX):
             self.data['container_oci']['OCI_IMAGE_ARCH'] = 'aarch64'
         self.data['container_upload_cmd'] = ""
 
+    def _parse_inputyamls(self):
+        pykwalify_dir = os.path.join(os.environ['OECORE_NATIVE_SYSROOT'], 'usr/share/genimage/data/pykwalify')
+        self.pykwalify_schemas = [os.path.join(pykwalify_dir, 'partial-schemas.yaml')]
+        self.pykwalify_schemas.append(os.path.join(pykwalify_dir, 'gencontainer-schema.yaml'))
+
+        super(GenContainer, self)._parse_inputyamls()
+
     def _parse_amend(self):
         super(GenContainer, self)._parse_amend()
         if len(self.data['image_type']) != 1 or 'container' not in self.data['image_type']:
