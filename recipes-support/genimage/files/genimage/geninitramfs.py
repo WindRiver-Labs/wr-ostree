@@ -41,12 +41,12 @@ import genimage.utils as utils
 logger = logging.getLogger('appsdk')
 
 def set_parser_geninitramfs(parser=None):
-    supported_types = [
-        'initramfs',
-    ]
-
-    return set_parser(parser, supported_types)
-
+    parser = set_parser(parser, None)
+    parser.add_argument('-g', '--gpgpath',
+        default=None,
+        help='Specify gpg homedir, it overrides \'gpg_path\' in Yaml, default is /tmp/.cbas_gnupg',
+        action='store')
+    return parser
 
 class GenInitramfs(GenXXX):
     """

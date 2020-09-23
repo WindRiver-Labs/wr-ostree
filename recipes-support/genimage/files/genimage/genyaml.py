@@ -59,7 +59,13 @@ def set_parser_genyaml(parser=None):
         'ustart',
     ]
 
-    return set_parser(parser, supported_types)
+    parser = set_parser(parser, supported_types)
+    parser.add_argument('-g', '--gpgpath',
+        default=None,
+        help='Specify gpg homedir, it overrides \'gpg_path\' in Yaml, default is /tmp/.cbas_gnupg',
+        action='store')
+
+    return parser
 
 genclass = {
     "genimage": GenImage,

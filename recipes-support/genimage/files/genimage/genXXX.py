@@ -53,26 +53,20 @@ def set_parser(parser=None, supported_types=None):
             help='Specify dir to save debug messages as log.appsdk regardless of the logging level',
             action='store')
 
-    if not supported_types:
-        logger.error("Supported Types is not set")
-        sys.exit(1)
+    if supported_types:
+        parser.add_argument('-t', '--type',
+            choices=supported_types,
+            help='Specify image type, it overrides \'image_type\' in Yaml',
+            action='append')
 
     parser.add_argument('-o', '--outdir',
         default=os.getcwd(),
         help='Specify output dir, default is current working directory',
         action='store')
-    parser.add_argument('-g', '--gpgpath',
-        default=None,
-        help='Specify gpg homedir, it overrides \'gpg_path\' in Yaml, default is /tmp/.cbas_gnupg',
-        action='store')
     parser.add_argument('-w', '--workdir',
         default=os.getcwd(),
         help='Specify work dir, default is current working directory',
         action='store')
-    parser.add_argument('-t', '--type',
-        choices=supported_types,
-        help='Specify image type, it overrides \'image_type\' in Yaml',
-        action='append')
     parser.add_argument('-n', '--name',
         help='Specify image name, it overrides \'name\' in Yaml',
         action='store')
@@ -223,9 +217,6 @@ class GenXXX(object, metaclass=ABCMeta):
     def _parse_options(self):
         if self.args.name:
             self.data['name'] = self.args.name
-
-        if self.args.type:
-            self.data['image_type'] = self.args.type
 
         if self.args.url:
             self.data['package_feeds'].extend(self.args.url)

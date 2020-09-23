@@ -54,8 +54,12 @@ def set_parser_genimage(parser=None):
         'ustart',
         'all',
     ]
-
-    return set_parser(parser, supported_types)
+    parser = set_parser(parser, supported_types)
+    parser.add_argument('-g', '--gpgpath',
+        default=None,
+        help='Specify gpg homedir, it overrides \'gpg_path\' in Yaml, default is /tmp/.cbas_gnupg',
+        action='store')
+    return parser
 
 class GenImage(GenXXX):
     """
@@ -87,6 +91,10 @@ class GenImage(GenXXX):
 
     def _parse_options(self):
         super(GenImage, self)._parse_options()
+
+        if self.args.type:
+            self.data['image_type'] = self.args.type
+
         if self.args.gpgpath:
             self.data["gpg"]["gpg_path"] = os.path.realpath(self.args.gpgpath)
 

@@ -40,11 +40,7 @@ import genimage.utils as utils
 logger = logging.getLogger('appsdk')
 
 def set_parser_gencontainer(parser=None):
-    supported_types = [
-        'container',
-    ]
-
-    return set_parser(parser, supported_types)
+    return set_parser(parser, None)
 
 
 class GenContainer(GenXXX):
