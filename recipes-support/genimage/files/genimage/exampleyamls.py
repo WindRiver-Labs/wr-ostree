@@ -76,6 +76,9 @@ def _main_run_internal(args):
     cmd = "cp -rf {0}/feature {1}/".format(yamlexample_dir, outdir)
     utils.run_cmd_oneshot(cmd)
 
+    if DEFAULT_MACHINE == "bcm-2xxx-rpi4":
+        utils.remove(os.path.join(outdir, "feature/vboxguestdrivers.yaml"))
+
     table = Texttable()
     table.set_cols_align(["l", "l"])
     table.set_cols_valign(["t", "t"])
