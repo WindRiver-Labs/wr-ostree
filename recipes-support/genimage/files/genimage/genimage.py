@@ -121,14 +121,6 @@ class GenImage(GenXXX):
         if 'all' in self.data['image_type']:
             self.data['image_type'] = ['ostree-repo', 'wic', 'ustart', 'vmdk', 'vdi']
 
-        if 'initramfs' in self.data['image_type']:
-            logger.error("The 'initramfs' image_type is not supported")
-            sys.exit(1)
-
-        if 'container' in self.data['image_type']:
-            logger.error("The 'container' image_type is not supported")
-            sys.exit(1)
-
     def _do_rootfs_pre(self, rootfs=None):
         if rootfs is None:
             return

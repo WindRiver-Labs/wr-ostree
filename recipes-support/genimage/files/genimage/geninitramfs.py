@@ -85,12 +85,6 @@ class GenInitramfs(GenXXX):
         if self.args.gpgpath:
             self.data["gpg"]["gpg_path"] = os.path.realpath(self.args.gpgpath)
 
-    def _parse_amend(self):
-        super(GenInitramfs, self)._parse_amend()
-        if len(self.data['image_type']) != 1 or 'initramfs' not in self.data['image_type']:
-            logger.error("Only 'initramfs' image_type is supported\nIncorrect setting: %s", self.data['image_type'])
-            sys.exit(1)
-
     def _do_rootfs_pre(self, rootfs=None):
         if rootfs is None:
             return

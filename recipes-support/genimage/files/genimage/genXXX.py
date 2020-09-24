@@ -254,24 +254,11 @@ class GenXXX(object, metaclass=ABCMeta):
             logger.error("MACHINE %s is invalid, SDK is working for %s only" % (self.data['machine'], DEFAULT_MACHINE))
             sys.exit(1)
 
-        if not self.data['package_feeds']:
-            logger.error("The package feeds does not exist, please set it")
-            sys.exit(1)
-
         # Sort and remove duplicated list except the section of environments,
         # rootfs-pre-scripts and rootfs-post-scripts
         for k,v in self.data.items():
             if isinstance(v, list) and k not in ['environments', 'rootfs-pre-scripts', 'rootfs-post-scripts']:
                 self.data[k] = list(sorted(set(v)))
-
-        if 'initramfs' in self.data['image_type'] and len(self.data['image_type']) > 1:
-            self.data['image_type'].remove('initramfs')
-            logger.error("The 'initramfs' image_type can't be together with %s", self.data['image_type'])
-            sys.exit(1)
-        elif 'container' in self.data['image_type'] and len(self.data['image_type']) > 1:
-            self.data['image_type'].remove('container')
-            logger.error("The 'container' image_type can't be together with %s", self.data['image_type'])
-            sys.exit(1)
 
     def _save_output_yaml(self):
         # The output yaml does not require to include default packages
