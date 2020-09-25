@@ -172,6 +172,9 @@ CROSS_CMDS ?= " \
     /usr/bin/glib-compile-schemas \
     /usr/bin/gconftool-2 \
 "
+
+QEMU_ARGS[gconftool-2] = "-E GCONF_BACKEND_DIR=$D/usr/lib/GConf/2"
+
 python do_create_cross_cmd_wrapper () {
     # cmd_wrapper.in -> shlibsign or ...
     cross_cmds = (d.getVar("CROSS_CMDS") or "").split()
@@ -181,8 +184,11 @@ python do_create_cross_cmd_wrapper () {
         cmd_content = template.read()
         for cmd in cross_cmds:
             cmd_name = os.path.basename(cmd)
+            qemuargs = d.getVarFlag('QEMU_ARGS', cmd_name) or ""
             with open(os.path.join(dest, cmd_name), "w") as cmd_f:
-                cmd_f.write(cmd_content.replace("@COMMAND@", cmd))
+                content = cmd_content.replace("@COMMAND@", cmd)
+                content = content.replace("@QEMU_ARGS@", qemuargs)
+                cmd_f.write(content)
 }
 
 
