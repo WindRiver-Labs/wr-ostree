@@ -97,12 +97,24 @@ def set_parser(parser=None, supported_types=None):
     parser.add_argument('input',
         help='Input yaml files that the tool can be run against a package feed to generate an image',
         action='store',
-        nargs='*')
+        nargs='*').completer = complete_input
 
     return parser
 
 def complete_env(**kwargs):
     return ['NAME=VALUE']
+
+def complete_input(parsed_args, **kwargs):
+    yamls = list()
+    for subdir in [".", "exampleyamls", "exampleyamls/feature", "deploy"]:
+        if not os.path.exists(os.path.join(parsed_args.outdir, subdir)):
+            continue
+
+        glob_yaml = os.path.join(parsed_args.outdir, subdir, "*.yaml")
+        yamls.extend(glob.glob(glob_yaml))
+
+    return [os.path.relpath(y) for y in yamls] or ["path_to_input_yamls"]
+
 
 class GenXXX(object, metaclass=ABCMeta):
     """
