@@ -47,9 +47,17 @@ DEPENDS += " \
     e2fsprogs-native util-linux-native tar-native\
 "
 
+# Make sure the existence of ostree initramfs image
+do_install[depends] += "initramfs-ostree-image:do_image_complete"
 do_install_append() {
     install -m 0755 ${RECIPE_SYSROOT}${bindir_native}/crossscripts/qemuwrapper \
         ${D}${bindir}/crossscripts
+
+    install -d ${D}${datadir}/genimage/data/initramfs
+    if [ -L ${DEPLOY_DIR_IMAGE}/${INITRAMFS_IMAGE}-${MACHINE}.${INITRAMFS_FSTYPES} ];then
+        cp -f ${DEPLOY_DIR_IMAGE}/${INITRAMFS_IMAGE}-${MACHINE}.${INITRAMFS_FSTYPES} \
+            ${D}${datadir}/genimage/data/initramfs/
+    fi
 }
 
 REMOTE_PKGDATADIR ?= "${PKGDATA_DIR}"
