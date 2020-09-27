@@ -58,6 +58,8 @@ do_install_append() {
         cp -f ${DEPLOY_DIR_IMAGE}/${INITRAMFS_IMAGE}-${MACHINE}.${INITRAMFS_FSTYPES} \
             ${D}${datadir}/genimage/data/initramfs/
     fi
+
+    ln -snf ${LAYER_PATH_ostree-layer}/scripts/bootfs.sh ${D}${bindir}/bootfs.sh
 }
 
 REMOTE_PKGDATADIR ?= "${PKGDATA_DIR}"
