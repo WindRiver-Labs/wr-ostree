@@ -140,16 +140,3 @@ do_install_append() {
 
 }
 
-python __anonymous () {
-    override = d.getVar('OVERRIDE')
-    machine = d.getVar('MACHINE')
-    if machine == 'bcm-2xxx-rpi4':
-        d.appendVar('OVERRIDES', ':{0}:aarch64'.format(machine))
-    elif machine == 'intel-x86-64':
-        d.appendVar('OVERRIDES', ':{0}:x86-64'.format(machine))
-
-    remote_uris = get_remote_uris(d.getVar('PACKAGE_FEED_URIS') or "",
-                                  d.getVar('PACKAGE_FEED_BASE_PATHS') or "",
-                                  d.getVar('PACKAGE_FEED_ARCHS'))
-    d.setVar("DEFAULT_PACKAGE_FEED", remote_uris)
-}
