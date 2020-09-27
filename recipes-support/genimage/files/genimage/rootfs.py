@@ -42,17 +42,18 @@ class Rootfs(object):
             self.target_rootfs = os.path.join(self.workdir, "rootfs")
         self.packages_yaml = os.path.join(self.workdir, "packages.yaml")
 
+        self.rootfs_pre_scripts = [os.path.join(self.data_dir, 'pre_rootfs', 'create_merged_usr_symlinks.sh')]
+        if remote_pkgdatadir:
+            script_cmd = os.path.join(self.data_dir, 'pre_rootfs', 'update_pkgdata.sh')
+            os.environ['REMOTE_PKGDATADIR'] = remote_pkgdatadir
+            self.rootfs_pre_scripts.append(script_cmd)
+
         self.pm = DnfRpm(self.workdir, self.target_rootfs, self.machine)
         self.pm.create_configs()
 
         self.installed_pkgs = OrderedDict()
 
         utils.fake_root_set_passwd(self.target_rootfs)
-
-        self.rootfs_pre_scripts = [os.path.join(self.data_dir, 'pre_rootfs', 'create_merged_usr_symlinks.sh')]
-        if remote_pkgdatadir:
-            script_cmd = "{0} {1}".format(os.path.join(self.data_dir, 'pre_rootfs', 'update_pkgdata.sh'), remote_pkgdatadir)
-            self.rootfs_pre_scripts.append(script_cmd)
 
         self.rootfs_post_scripts = []
 

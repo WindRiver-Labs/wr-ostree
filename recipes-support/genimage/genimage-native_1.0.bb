@@ -47,6 +47,8 @@ DEPENDS += " \
     e2fsprogs-native util-linux-native tar-native\
 "
 
+REMOTE_PKGDATADIR ?= "${PKGDATA_DIR}"
+
 python __anonymous () {
     override = d.getVar('OVERRIDE')
     machine = d.getVar('MACHINE')

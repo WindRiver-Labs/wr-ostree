@@ -45,6 +45,12 @@ class DnfRpm:
         self.machine = machine
 
         self.pkgdatadir = os.path.join(os.environ['OECORE_NATIVE_SYSROOT'], "../pkgdata", machine)
+        if not os.path.exists(self.pkgdatadir):
+            self.pkgdatadir = os.environ['REMOTE_PKGDATADIR']
+            if not os.path.exists(self.pkgdatadir):
+                logger.error("The pkgdatadir %s is not found", self.pkgdatadir)
+                sys.exit(1)
+
         self.oe_pkgdata_util = os.path.join(os.environ['OECORE_NATIVE_SYSROOT'], "usr/share/poky/scripts/oe-pkgdata-util")
 
         self._initialize_intercepts()
