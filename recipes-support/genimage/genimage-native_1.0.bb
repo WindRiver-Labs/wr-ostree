@@ -47,6 +47,11 @@ DEPENDS += " \
     e2fsprogs-native util-linux-native tar-native\
 "
 
+do_install_append() {
+    install -m 0755 ${RECIPE_SYSROOT}${bindir_native}/crossscripts/qemuwrapper \
+        ${D}${bindir}/crossscripts
+}
+
 REMOTE_PKGDATADIR ?= "${PKGDATA_DIR}"
 
 python __anonymous () {

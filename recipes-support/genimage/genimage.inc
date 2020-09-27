@@ -5,6 +5,8 @@ LIC_FILES_CHKSUM = "file://COPYING;md5=12f884d2ae1ff87c09e5b7ccc2c4ca7e"
 
 SRC_URI = "\
            file://COPYING \
+           file://crossscripts/depmodwrapper \
+           file://crossscript_wrapper.in \
            file://genimage/__init__.py \
            file://genimage/genimage.py \
            file://genimage/genyaml.py \
@@ -66,6 +68,31 @@ do_unpack[vardeps] += "MACHINE PACKAGE_FEED_BASE_PATHS PACKAGE_FEED_ARCHS PACKAG
 do_unpack_append() {
     bb.build.exec_func('do_write_py_template', d)
     bb.build.exec_func('do_copy_src', d)
+    bb.build.exec_func('do_create_cross_cmd_wrapper', d)
+}
+
+CROSS_CMDS ?= " \
+    /usr/bin/shlibsign \
+    /usr/bin/glib-compile-schemas \
+    /usr/bin/gconftool-2 \
+"
+
+QEMU_ARGS[gconftool-2] = "-E GCONF_BACKEND_DIR=$D/usr/lib/GConf/2"
+
+python do_create_cross_cmd_wrapper () {
+    # cmd_wrapper.in -> shlibsign or ...
+    cross_cmds = (d.getVar("CROSS_CMDS") or "").split()
+    dest = os.path.join(d.getVar("WORKDIR"), "crossscripts")
+    wrapper_template = os.path.join(d.getVar("WORKDIR"),"crossscript_wrapper.in")
+    with open(wrapper_template, "r") as template:
+        cmd_content = template.read()
+        for cmd in cross_cmds:
+            cmd_name = os.path.basename(cmd)
+            qemuargs = d.getVarFlag('QEMU_ARGS', cmd_name) or ""
+            with open(os.path.join(dest, cmd_name), "w") as cmd_f:
+                content = cmd_content.replace("@COMMAND@", cmd)
+                content = content.replace("@QEMU_ARGS@", qemuargs)
+                cmd_f.write(content)
 }
 
 # Refer insert_feeds_uris in oe-core/meta/lib/oe/package_manager.py
@@ -138,5 +165,7 @@ do_install_append() {
 	install -d ${D}${datadir}/genimage/data/wic/
 	cp -f ${LAYER_PATH_ostree-layer}/wic/ostree-*.wks.in ${D}${datadir}/genimage/data/wic/
 
+	install -d ${D}${bindir}/crossscripts
+	install -m 0755 ${WORKDIR}/crossscripts/* ${D}${bindir}/crossscripts
 }
 
