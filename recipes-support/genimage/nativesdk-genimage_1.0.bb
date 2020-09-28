@@ -32,6 +32,7 @@ RDEPENDS_${PN} = "nativesdk-dnf \
 
 # Required by do_rootfs's intercept_scripts in sdk
 RDEPENDS_${PN} += "nativesdk-gdk-pixbuf \
+                   nativesdk-gtk+3 \
                    nativesdk-kmod \
 "
 
