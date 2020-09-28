@@ -1,5 +1,8 @@
 include appsdk.inc
 
+SRC_URI += " \
+    file://0001-do-not-support-subcommand-gensdk.patch \
+"
 DEPENDS = " \
     genimage-native \
     python3-argcomplete-native \
