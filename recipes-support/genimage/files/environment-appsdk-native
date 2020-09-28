@@ -1,0 +1,11 @@
+#!/bin/bash
+if [ -z "$BASH_VERSION" ]; then
+    echo "Bash completion is not supported"
+    exit 0
+fi
+dirname=`dirname ${BASH_SOURCE[0]}`
+export OECORE_NATIVE_SYSROOT=`realpath $dirname`
+export PATH=$OECORE_NATIVE_SYSROOT/usr/bin/crossscripts:$OECORE_NATIVE_SYSROOT/usr/bin:$OECORE_NATIVE_SYSROOT/bin:$OECORE_NATIVE_SYSROOT/usr/sbin:$PATH
+
+. $OECORE_NATIVE_SYSROOT/environment-setup.d/bash_tab_completion.sh
+

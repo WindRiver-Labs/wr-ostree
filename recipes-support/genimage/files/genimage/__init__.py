@@ -15,6 +15,24 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 
+import os.path
+import sys
+import glob
+
+def add_path():
+    basepath = os.path.abspath(os.path.dirname(__file__) + '/../../../../..')
+    pathlist = "usr/bin/crossscripts usr/bin usr/sbin bin sbin"
+    for path in pathlist.split():
+        newpath = os.path.join(basepath, path)
+        os.environ['PATH'] = newpath + ":" + os.environ['PATH']
+    for newpath in glob.glob(os.path.join(basepath, "usr/bin/*-native")):
+        os.environ['PATH'] = newpath + ":" + os.environ['PATH']
+
+    if 'OECORE_NATIVE_SYSROOT' not in os.environ:
+        os.environ['OECORE_NATIVE_SYSROOT'] = basepath
+
+add_path()
+
 from genimage.genimage import set_subparser
 from genimage.genyaml import set_subparser_genyaml
 from genimage.exampleyamls import set_subparser_exampleyamls

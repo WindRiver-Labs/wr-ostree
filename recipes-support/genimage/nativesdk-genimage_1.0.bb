@@ -38,7 +38,6 @@ RDEPENDS_${PN} += "nativesdk-gdk-pixbuf \
 
 SRC_URI += "\
            file://add_path.sh \
-           file://bash_tab_completion.sh \
 "
 
 inherit nativesdk

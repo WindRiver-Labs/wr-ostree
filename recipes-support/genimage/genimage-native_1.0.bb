@@ -2,6 +2,10 @@ include genimage.inc
 
 inherit native
 
+SRC_URI += " \
+    file://environment-appsdk-native \
+"
+
 DEPENDS += " \
     dnf-native \
     rpm-native \
@@ -47,9 +51,36 @@ DEPENDS += " \
     e2fsprogs-native util-linux-native tar-native\
 "
 
+# Port from oe-core/meta/classes/distutils3.bbclass with minor revision
+# The revision will not modify the shebang of python scripts
+do_install() {
+        cd ${S}
+        install -d ${D}${PYTHON_SITEPACKAGES_DIR}
+        STAGING_INCDIR=${STAGING_INCDIR} \
+        STAGING_LIBDIR=${STAGING_LIBDIR} \
+        PYTHONPATH=${D}${PYTHON_SITEPACKAGES_DIR} \
+        ${STAGING_BINDIR_NATIVE}/${PYTHON_PN}-native/${PYTHON_PN} ${S}/setup.py \
+        build --build-base=${B} install --skip-build ${DISTUTILS_INSTALL_ARGS} || \
+        bbfatal_log "'${PYTHON_PN} setup.py install ${DISTUTILS_INSTALL_ARGS}' execution failed."
+
+        rm -f ${D}${PYTHON_SITEPACKAGES_DIR}/easy-install.pth
+
+        #
+        # FIXME: Bandaid against wrong datadir computation
+        #
+        if [ -e ${D}${datadir}/share ]; then
+            mv -f ${D}${datadir}/share/* ${D}${datadir}/
+            rmdir ${D}${datadir}/share
+        fi
+}
+
 # Make sure the existence of ostree initramfs image
 do_install[depends] += "initramfs-ostree-image:do_image_complete"
 do_install_append() {
+    mkdir -p ${D}${base_prefix}/environment-setup.d
+    install -m 0755 ${WORKDIR}/bash_tab_completion.sh ${D}${base_prefix}/environment-setup.d
+    install ${WORKDIR}/environment-appsdk-native ${D}${base_prefix}/
+
     install -m 0755 ${RECIPE_SYSROOT}${bindir_native}/crossscripts/qemuwrapper \
         ${D}${bindir}/crossscripts
 
@@ -61,6 +92,8 @@ do_install_append() {
 
     ln -snf ${LAYER_PATH_ostree-layer}/scripts/bootfs.sh ${D}${bindir}/bootfs.sh
 }
+
+SYSROOT_DIRS_NATIVE += "${base_prefix}/environment-setup.d ${base_prefix}/"
 
 REMOTE_PKGDATADIR ?= "${PKGDATA_DIR}"
 
