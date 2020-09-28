@@ -3,9 +3,24 @@
 
 import sys
 import os
+import glob
+
+def add_path():
+    basepath = os.path.abspath(os.path.dirname(__file__) + '/../../../../..')
+    pathlist = "usr/bin/crossscripts usr/bin usr/sbin bin sbin"
+    for path in pathlist.split():
+        newpath = os.path.join(basepath, path)
+        os.environ['PATH'] = newpath + ":" + os.environ['PATH']
+    for newpath in glob.glob(os.path.join(basepath, "usr/bin/*-native")):
+        os.environ['PATH'] = newpath + ":" + os.environ['PATH']
+
+    if 'OECORE_NATIVE_SYSROOT' not in os.environ:
+        os.environ['OECORE_NATIVE_SYSROOT'] = basepath
+
+add_path()
+
 import argparse
 import argcomplete
-import glob
 import re
 import logging
 from appsdk.appsdk import AppSDK
