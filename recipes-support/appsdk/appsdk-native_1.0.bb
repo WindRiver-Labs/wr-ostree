@@ -32,3 +32,5 @@ do_install() {
             rmdir ${D}${datadir}/share
         fi
 }
+
+do_install[nostamp] = "1"

@@ -93,6 +93,8 @@ do_install_append() {
     ln -snf ${LAYER_PATH_ostree-layer}/scripts/bootfs.sh ${D}${bindir}/bootfs.sh
 }
 
+do_install[nostamp] = "1"
+
 SYSROOT_DIRS_NATIVE += "${base_prefix}/environment-setup.d ${base_prefix}/"
 
 REMOTE_PKGDATADIR ?= "${PKGDATA_DIR}"
