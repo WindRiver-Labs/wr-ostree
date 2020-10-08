@@ -30,7 +30,6 @@ DEPENDS += " \
     python3-argcomplete-native \
     python3-pykwalify-native \
     opkg-utils-native \
-    poky-native \
     qemu-system-native \
     qemuwrapper-cross \
     systemd-systemctl-native \
@@ -44,12 +43,9 @@ DEPENDS += " \
     kmod-native \
 "
 
-# Require by wic
+# Require wic
 DEPENDS += " \
-    parted-native syslinux-native gptfdisk-native dosfstools-native \
-    mtools-native bmap-tools-native grub-native cdrtools-native \
-    btrfs-tools-native squashfs-tools-native pseudo-native \
-    e2fsprogs-native util-linux-native tar-native\
+    wic-native \
 "
 
 # Port from oe-core/meta/classes/distutils3.bbclass with minor revision
