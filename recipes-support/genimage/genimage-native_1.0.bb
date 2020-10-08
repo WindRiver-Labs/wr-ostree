@@ -34,6 +34,7 @@ DEPENDS += " \
     qemu-system-native \
     qemuwrapper-cross \
     systemd-systemctl-native \
+    bootfs-native \
 "
 
 # Required by do_rootfs's intercept_scripts in sdk
@@ -89,8 +90,6 @@ do_install_append() {
         cp -f ${DEPLOY_DIR_IMAGE}/${INITRAMFS_IMAGE}-${MACHINE}.${INITRAMFS_FSTYPES} \
             ${D}${datadir}/genimage/data/initramfs/
     fi
-
-    ln -snf ${LAYER_PATH_ostree-layer}/scripts/bootfs.sh ${D}${bindir}/bootfs.sh
 }
 
 do_install[nostamp] = "1"
