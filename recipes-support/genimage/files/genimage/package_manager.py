@@ -151,7 +151,11 @@ class DnfRpm:
 
     def _invoke_dnf(self, dnf_args, fatal = True, print_output = True ):
         os.environ['RPM_ETCCONFIGDIR'] = self.target_rootfs
-        dnf_cmd = shutil.which("dnf", path=os.getenv('PATH'))
+        path = os.getenv('PATH')
+        python3native = os.path.join(os.environ['OECORE_NATIVE_SYSROOT'], 'usr/bin/python3-native')
+        if os.path.exists(python3native):
+            path = "{0}:{1}".format(python3native, path)
+        dnf_cmd = shutil.which("dnf", path=path)
         standard_dnf_args = ["-v", "--rpmverbosity=info", "-y",
                              "-c", os.path.join(self.target_rootfs, "etc/dnf/dnf.conf"),
                              "--setopt=reposdir=%s" %(os.path.join(self.temp_dir, "yum.repos.d")),
@@ -163,7 +167,9 @@ class DnfRpm:
         cmd = [dnf_cmd] + standard_dnf_args + dnf_args
         logger.debug('Running %s' % ' '.join(cmd))
 
-        res, output = utils.run_cmd(cmd, print_output=print_output)
+        env = os.environ.copy()
+        env['PATH'] = path
+        res, output = utils.run_cmd(cmd, print_output=print_output, env=env)
         if res:
             raise Exception("Could not invoke dnf. Command "
                      "'%s' returned %d:\n%s" % (' '.join(cmd), res, output))

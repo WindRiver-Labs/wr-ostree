@@ -25,8 +25,6 @@ def add_path():
     for path in pathlist.split():
         newpath = os.path.join(basepath, path)
         os.environ['PATH'] = newpath + ":" + os.environ['PATH']
-    for newpath in glob.glob(os.path.join(basepath, "usr/bin/*-native")):
-        os.environ['PATH'] = newpath + ":" + os.environ['PATH']
 
     if 'OECORE_NATIVE_SYSROOT' not in os.environ:
         os.environ['OECORE_NATIVE_SYSROOT'] = basepath
