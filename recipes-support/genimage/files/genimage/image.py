@@ -148,6 +148,9 @@ class CreateWicImage(Image):
 
     def _write_qemuboot_conf(self):
         qemuboot_conf_in = os.path.expandvars("$OECORE_NATIVE_SYSROOT/usr/share/qemu_data/qemuboot.conf.in")
+        if not os.path.exists(qemuboot_conf_in):
+            return
+
         with open(qemuboot_conf_in, "r") as qemuboot_conf_in_f:
             content = qemuboot_conf_in_f.read()
             content = content.replace("@DEPLOYDIR@", self.deploydir)
@@ -190,7 +193,8 @@ class CreateWicImage(Image):
                 logger.debug("Creating symlink: %s -> %s" % (dst, src))
                 utils.resymlink(os.path.basename(src), dst)
             else:
-                logger.error("Skipping symlink, source does not exist: %s -> %s" % (dst, src))
+                if suffix_dst != ".qemuboot.conf":
+                    logger.error("Skipping symlink, source does not exist: %s -> %s" % (dst, src))
 
 
 class CreateVMImage(Image):

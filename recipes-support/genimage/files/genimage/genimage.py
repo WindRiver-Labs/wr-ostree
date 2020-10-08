@@ -314,9 +314,10 @@ class GenImage(GenXXX):
             output = subprocess.check_output(cmd_wic, shell=True, cwd=self.deploydir)
             table.add_row(["WIC Image Doc", output.strip()])
 
-            cmd_wic = cmd_format % "{0}.qemuboot.conf".format(image_name)
-            output = subprocess.check_output(cmd_wic, shell=True, cwd=self.deploydir)
-            table.add_row(["WIC Image\nQemu Conf", output.strip()])
+            if os.path.exists(os.path.join(self.deploydir, "{0}.qemuboot.conf".format(image_name))):
+                cmd_wic = cmd_format % "{0}.qemuboot.conf".format(image_name)
+                output = subprocess.check_output(cmd_wic, shell=True, cwd=self.deploydir, stderr=subprocess.STDOUT)
+                table.add_row(["WIC Image\nQemu Conf", output.strip()])
 
         if "vdi" in self.image_type:
             cmd_wic = cmd_format % "{0}.wic.vdi".format(image_name)
