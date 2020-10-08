@@ -171,6 +171,7 @@ class CreateWicImage(Image):
         wic_env['MACHINE'] = self.machine
         wic_env['WKS_FILE'] = self.wks_full_path
         wic_env['DATETIME'] = self.date
+        del wic_env['LD_PRELOAD']
         cmd = os.path.join(wic_env['OECORE_NATIVE_SYSROOT'], "usr/share/genimage/scripts/run.do_image_wic")
         res, output = utils.run_cmd(cmd, env=wic_env)
         if res:
