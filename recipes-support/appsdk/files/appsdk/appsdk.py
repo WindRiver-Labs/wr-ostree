@@ -804,6 +804,12 @@ class PackageConfig(object):
         for dir in dirs_0755_root_root:
             default_layout[dir] = '(0755, root, root)'
 
+        full_files_list = []
+        for fp in self.pkg_data['files']:
+            gfp = fp.replace('*', '**')
+            gfp = buildroot + gfp
+            full_files_list.extend(glob.glob(gfp, recursive=True))
+            
         # get dirs specified in yaml
         yaml_dirs = []
         for dir_entry in self.pkg_data['dirs']:
@@ -813,6 +819,9 @@ class PackageConfig(object):
         for root, dirs, files in os.walk(buildroot):
             for d in dirs:
                 dirpath = os.path.join(root, d)
+                # check if dirpath should be dealt according to 'files' setting
+                if not self.is_dirpath_valid(dirpath, full_files_list):
+                    continue
                 dirpath = dirpath.replace(buildroot, '')
                 if dirpath in yaml_dirs:
                     logger.debug("%s is already specified by user in yaml file" % dirpath)
@@ -820,6 +829,12 @@ class PackageConfig(object):
                     if dirpath in default_layout:
                         logger.debug("adding %s as %s" % (dirpath, default_layout[dirpath]))
                         self.pkg_data['dirs'].append('%s %s' % (dirpath, default_layout[dirpath]))
+
+    def is_dirpath_valid(self, dirpath, full_files_list):
+        for f in full_files_list:
+            if f.startswith(dirpath):
+                return True
+        return False
                 
     
 def test_appsdk():
