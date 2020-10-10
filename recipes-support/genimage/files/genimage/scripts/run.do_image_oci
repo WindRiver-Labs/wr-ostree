@@ -48,7 +48,7 @@ OCI_IMAGE_ENV_VARS="${OCI_IMAGE_ENV_VARS:-}"
 
 # whether the oci image dir should be left as a directory, or
 # bundled into a tarball.
-OCI_IMAGE_TAR_OUTPUT="${OCI_IMAGE_TAR_OUTPUT:-true}"
+OCI_IMAGE_TAR_OUTPUT="${OCI_IMAGE_TAR_OUTPUT:-false}"
 
 do_image_oci() {
     sloci_options=""
@@ -98,7 +98,7 @@ do_image_oci() {
         oci_image_working_dir_options="--working-dir ${OCI_IMAGE_WORKINGDIR}"
     fi
 
-    if [ -n "${OCI_IMAGE_TAR_OUTPUT}" ]; then
+    if ${OCI_IMAGE_TAR_OUTPUT}; then
         sloci_options="$sloci_options --tar"
     fi
 

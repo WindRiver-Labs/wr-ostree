@@ -65,8 +65,6 @@ schema;container_oci_map:
       type: str
     OCI_IMAGE_TAG:
       type: str
-    OCI_IMAGE_TAR_OUTPUT:
-      type: str
     OCI_IMAGE_WORKINGDIR:
       type: str
 
