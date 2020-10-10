@@ -51,11 +51,9 @@ class GenContainer(GenXXX):
     def __init__(self, args):
         super(GenContainer, self).__init__(args)
         self.exclude_packages = ['systemd*']
-        self.oci_rootfs_dir = "{0}/{1}-{2}.container.rootfs-oci".format(self.deploydir, self.image_name, self.machine)
-        utils.remove(self.oci_rootfs_dir, recurse=True)
         if not self.data['container_upload_cmd'] or self.data['container_upload_cmd'].startswith('#'):
             skopeo_opt = "--dest-tls-verify=false --insecure-policy"
-            src_image = "oci:%s" % os.path.relpath(self.oci_rootfs_dir)
+            src_image = "docker-archive:{0}/{1}-{2}.docker-image.tar.bz2".format(os.path.relpath(self.deploydir), self.image_name, self.machine)
             dest_image = "docker://pek-lpdfs01:5000/{0}-{1}".format(self.image_name, self.machine)
             self.data['container_upload_cmd'] = "#skopeo copy {0} {1} {2}".format(skopeo_opt, src_image, dest_image)
 
@@ -99,13 +97,6 @@ class GenContainer(GenXXX):
         container.create()
 
     def do_upload(self):
-        tgz = "{0}-{1}.container.rootfs-oci-{2}-{3}-linux.oci-image.tar".format(self.image_name,
-                                                                                self.machine,
-                                                                                self.data['container_oci']['OCI_IMAGE_TAG'],
-                                                                                self.data['container_oci']['OCI_IMAGE_ARCH'])
-        cmd = "tar -xvf {0}".format(tgz)
-        utils.run_cmd_oneshot(cmd, cwd=self.deploydir)
-
         if self.data['container_upload_cmd'] and not self.data['container_upload_cmd'].startswith('#'):
             cmd = self.data['container_upload_cmd']
             logger.info("Run the following command to upload container image:\n   %s", cmd)
@@ -123,17 +114,13 @@ class GenContainer(GenXXX):
         image_name = "%s-%s" % (self.image_name, self.machine)
         cmd_format = "ls -gh --time-style=+%%Y %s | awk '{$1=$2=$3=$4=$5=\"\"; print $0}'"
 
-        cmd = cmd_format % "{0}.container.tar.bz2".format(image_name)
+        cmd = cmd_format % "{0}.docker-image.tar.bz2".format(image_name)
         output = subprocess.check_output(cmd, shell=True, cwd=self.deploydir)
-        table.add_row(["Container Image", output.strip()])
+        table.add_row(["Docker Image", output.strip()])
 
-        cmd = "ls {0}.container.rootfs-oci-*-linux.oci-image.tar".format(image_name)
+        cmd = "ls -d {0}.rootfs-oci".format(image_name)
         output = subprocess.check_output(cmd, shell=True, cwd=self.deploydir)
-        table.add_row(["OCI Image Tarball", output.strip()])
-
-        cmd = "ls -d {0}.container.rootfs-oci".format(image_name)
-        output = subprocess.check_output(cmd, shell=True, cwd=self.deploydir)
-        table.add_row(["OCI Image Extract Dir", output.strip()])
+        table.add_row(["OCI Image Rootfs", output.strip()])
 
         cmd = cmd_format % "{0}.container.README.md".format(image_name)
         output = subprocess.check_output(cmd, shell=True, cwd=self.deploydir)

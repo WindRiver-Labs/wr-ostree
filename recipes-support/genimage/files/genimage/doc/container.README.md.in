@@ -7,16 +7,10 @@ The images are built from Wind River Linux CBAS Application SDK
         intel-x86-64
 
 ## How to run an instance of container with docker
-### Dockerfile
-        FROM scratch
-        ADD @IMAGE_NAME@.container.tar.bz2 /
-        CMD ["/bin/sh"]
-
-### Build image from Dockerfile
-        $ docker build -t wrlcontainer:latest -f Dockerfile .
+        $ docker load DEPLOYDIR/@IMAGE_NAME@.docker-image.tar.bz2
 
 ### Run an instance of wrlinux container
-        $ docker run -it wrlcontainer:latest
+        $ docker run -it @IMAGE_NAME@:latest
 
 ## How to run an instance of container with runc
 Use runc command to create an instance of a container for a bundle.
@@ -25,15 +19,15 @@ and run a container. Use a tool umoci to convert an OCI Image to
 a Bundle for runc to run
 
 An example to run an instance of wrlinux container with runc:
-        $ umoci unpack --rootless --image DEPLOYDIR/@IMAGE_NAME@.container.rootfs-oci:latest container-bundle
+        $ umoci unpack --rootless --image DEPLOYDIR/@IMAGE_NAME@.rootfs-oci:latest container-bundle
         $ cd container-bundle
         $ runc run CONTAINER-ID
 
 Where CONTAINER-ID is the name for the instance of the container
 
-## How to upload OCI image to docker registry
+## How to upload image to docker registry
 Run skopeo copy to upload container image:
-   skopeo copy <option> oci:DEPLOYDIR/@IMAGE_NAME@.container.rootfs-oci:latest docker://docker-reference
+   skopeo copy <option> docker-archive:DEPLOYDIR/@IMAGE_NAME@.docker-image.tar.bz2 docker://docker-registry/@IMAGE_NAME@
 
 docker://docker-reference
  An image in a registry implementing the "Docker Registry HTTP API V2".
@@ -42,10 +36,6 @@ docker://docker-reference
  state is not found there, $HOME/.docker/config.json is checked, which is
  set using (docker login). If Docker Registry is insecure registry, add
  --dest-tls-verify=false to <option>
-
-oci:path:tag
- An image tag in a directory compliant with "Open Container Image
- Layout Specification" at path.
 
 ## Known issues
 - ecryptfs-utils

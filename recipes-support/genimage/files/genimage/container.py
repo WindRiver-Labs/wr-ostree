@@ -22,7 +22,7 @@ class CreateContainer(Image):
         ota_env = os.environ.copy()
         ota_env['DEPLOY_DIR_IMAGE'] = self.deploydir
         ota_env['IMAGE_NAME'] = self.image_linkname
-        ota_env['IMAGE_NAME_SUFFIX'] = '.container.rootfs'
+        ota_env['IMAGE_NAME_SUFFIX'] = '.rootfs'
         ota_env['MACHINE'] = self.machine
         for k in self.container_oci:
             ota_env[k] = self.container_oci[k]
@@ -37,23 +37,19 @@ class CreateContainer(Image):
     def create(self):
         self._write_readme("container")
 
-        cmd = "tar --numeric-owner -cf {0}/{1}.container.rootfs.tar -C {2} .".format(self.deploydir,self.image_fullname, \
-                self.target_rootfs)
-        utils.run_cmd_oneshot(cmd)
-
-        cmd = "pbzip2 -f -k {0}/{1}.container.rootfs.tar".format(self.deploydir, self.image_fullname)
-        utils.run_cmd_oneshot(cmd)
-
-        cmd = "rm -f {0}/{1}.container.rootfs.tar".format(self.deploydir, self.image_fullname)
-        utils.run_cmd_oneshot(cmd)
+        cmd = "rm -rf {0}.rootfs-oci".format(self.image_linkname)
+        utils.run_cmd_oneshot(cmd, cwd=self.deploydir)
 
         self._create_oci()
+
+        cmd = "skopeo copy oci:{0}.rootfs-oci docker-archive:{1}.docker-image.tar.bz2:{2}".format(self.image_linkname, self.image_fullname, self.image_linkname)
+        utils.run_cmd_oneshot(cmd, cwd=self.deploydir)
 
         self._create_symlinks()
 
     def _create_symlinks(self):
-        container_dst = os.path.join(self.deploydir, self.image_linkname + ".container.tar.bz2")
-        container_src = os.path.join(self.deploydir, self.image_fullname + ".container.rootfs.tar.bz2")
+        container_dst = os.path.join(self.deploydir, self.image_linkname + ".docker-image.tar.bz2")
+        container_src = os.path.join(self.deploydir, self.image_fullname + ".docker-image.tar.bz2")
 
         for dst, src in [(container_dst, container_src)]:
 
