@@ -30,6 +30,8 @@ mapping:
     include: wic_map
   gpg:
     include: gpg_map
+  include-container-images:
+    include: include-container-images_seq
 
 schema;image_type_seq:
   type: seq
@@ -104,3 +106,27 @@ schema;wic_map:
     OSTREE_WKS_ROOT_SIZE:
       type: str
 
+schema;include-container-images_seq:
+  type: seq
+  sequence:
+    - type: map
+      mapping:
+        container-name:
+          type: str
+          nullable: False
+          required: True
+        copy-container:
+          type: str
+          nullable: False
+          required: True
+          pattern: .+\$IMAGE_ROOTFS\/var\/docker-images/*
+        add-container:
+          type: str
+          nullable: False
+          pattern: docker .+ \/var\/docker-images/*
+          required: True
+        run-container:
+          type: str
+          nullable: False
+          pattern: docker * run .*
+          required: True

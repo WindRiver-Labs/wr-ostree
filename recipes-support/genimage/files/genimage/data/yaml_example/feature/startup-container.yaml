@@ -1,0 +1,16 @@
+packages:
+- startup-container
+- docker
+include-container-images:
+- container-name: container-base
+  copy-container: cp deploy/container-base-intel-x86-64.docker-image.tar.bz2 $IMAGE_ROOTFS/var/docker-images/
+  add-container: docker load -i /var/docker-images/container-base-intel-x86-64.docker-image.tar.bz2
+  run-container: docker run -it container-base-intel-x86-64
+- container-name: container-ubuntu
+  copy-container: skopeo copy --src-tls-verify=false --insecure-policy docker://pek-lpdfs01:5000/ubuntu docker-archive:$IMAGE_ROOTFS/var/docker-images/ubuntu.docker-image.tar.bz2:ubuntu
+  add-container: docker load -i /var/docker-images/ubuntu.docker-image.tar.bz2
+  run-container: docker run -it ubuntu
+- container-name: container-wrlinux-full
+  copy-container: wget http://pek-lpgtest7302.wrs.com/buildarea1/SharedImage/LINCD_STD_BINARY/intel-x86-64/latest/WRLinux-CD-Images/intel-x86-64/container-full-intel-x86-64/wrlinux-image-full-intel-x86-64.tar.bz2 -P $IMAGE_ROOTFS/var/docker-images/
+  add-container: docker import /var/docker-images/wrlinux-image-full-intel-x86-64.tar.bz2 wrlinux-image-full
+  run-container: docker run -it wrlinux-image-full /bin/sh

@@ -7,6 +7,6 @@ packages:
 - docker
 include-container-images:
 - container-name: @IMAGE_NAME@
-  copy_to_target: copy deploy/@IMAGE_NAME@.docker-image.tar.bz2 $IMAGE_ROOTFS/opt/docker-images/
-  add_to_docker: docker load -i /opt/docker-images/@IMAGE_NAME@.docker-image.tar.bz2
-  docker-run: docker run -itd @IMAGE_NAME@ /bin/sh
+  copy-container: cp deploy/@IMAGE_NAME@.docker-image.tar.bz2 $IMAGE_ROOTFS/var/docker-images/
+  add-container: docker load -i /var/docker-images/@IMAGE_NAME@.docker-image.tar.bz2
+  run-container: docker run -itd @IMAGE_NAME@ /bin/sh
