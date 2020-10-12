@@ -33,6 +33,17 @@ class CreateContainer(Image):
             raise Exception("Executing %s failed\nExit code %d. Output:\n%s"
                                % (cmd, res, output))
 
+    def _write_load_run_container_yaml(self):
+        src = os.path.expandvars("$OECORE_NATIVE_SYSROOT/usr/share/genimage/data/yaml_template/startup-container.yaml.in")
+        image_name = "{0}-{1}".format(self.image_name, self.machine)
+        yaml_file = os.path.join(self.deploydir, "{0}.startup-container.yaml".format(image_name))
+
+        with open(src, "r") as src_f:
+            content = src_f.read()
+            content = content.replace("@IMAGE_NAME@", image_name)
+
+        with open(yaml_file, "w") as yaml_file_f:
+            yaml_file_f.write(content)
 
     def create(self):
         self._write_readme("container")
@@ -44,6 +55,8 @@ class CreateContainer(Image):
 
         cmd = "skopeo copy oci:{0}.rootfs-oci docker-archive:{1}.docker-image.tar.bz2:{2}".format(self.image_linkname, self.image_fullname, self.image_linkname)
         utils.run_cmd_oneshot(cmd, cwd=self.deploydir)
+
+        self._write_load_run_container_yaml()
 
         self._create_symlinks()
 
@@ -58,4 +71,3 @@ class CreateContainer(Image):
                 utils.resymlink(os.path.basename(src), dst)
             else:
                 logger.error("Skipping symlink, source does not exist: %s -> %s" % (dst, src))
-

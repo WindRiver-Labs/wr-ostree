@@ -126,6 +126,10 @@ class GenContainer(GenXXX):
         output = subprocess.check_output(cmd, shell=True, cwd=self.deploydir)
         table.add_row(["Container Image Doc", output.strip()])
 
+        cmd = cmd_format % "{0}.startup-container.yaml".format(image_name)
+        output = subprocess.check_output(cmd, shell=True, cwd=self.deploydir)
+        table.add_row(["Yaml file for genimage\nto load and run", output.strip()])
+
         logger.info("Deploy Directory: %s\n%s", self.deploydir, table.draw())
 
 def _main_run_internal(args):
