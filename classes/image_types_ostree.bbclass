@@ -126,14 +126,14 @@ create_tarball_and_ostreecommit() {
 		       "or you tried to use an invalid GPG database.  " \
 		       "It could also be possible that OSTREE_GPGID, OSTREE_GPG_PASSPHRASE, " \
 		       "WR_KEYS_DIR has a bad value."
-		ostree --repo=${OSTREE_REPO}.temp.$$ commit \
+		ostree --repo=${OSTREE_REPO_TEMP} commit \
 			--tree=dir=${OSTREE_ROOTFS} \
 			--skip-if-unchanged \
 			--branch=${_image_basename} \
 			--timestamp=${_timestamp} \
 			--subject="Commit-id: ${_image_basename}-${MACHINE}-${DATETIME}"
 		# Pull new commmit into old repo
-		flock ${OSTREE_REPO}.lock ostree --repo=${OSTREE_REPO} pull-local ${OSTREE_REPO}.temp.$$ ${_image_basename}
+		flock ${OSTREE_REPO}.lock ostree --repo=${OSTREE_REPO} pull-local ${OSTREE_REPO_TEMP} ${_image_basename}
 	else
 		# Setup gpg key for signing
 		if [ -n "${OSTREE_GPGID}" ] && [ -n "${OSTREE_GPG_PASSPHRASE}" ] && [ -n "$gpg_path" ] ; then
@@ -163,7 +163,7 @@ create_tarball_and_ostreecommit() {
 			chmod 700 ${WORKDIR}/gpg
 		fi
 		if [ -n "${@bb.utils.contains('DISTRO_FEATURES', 'selinux', 'Y', '', d)}" ]; then
-			PATH="${WORKDIR}:$PATH" ostree --repo=${OSTREE_REPO}.temp.$$ commit \
+			PATH="${WORKDIR}:$PATH" ostree --repo=${OSTREE_REPO_TEMP} commit \
 				--tree=dir=${OSTREE_ROOTFS} \
 				--selinux-policy ${OSTREE_ROOTFS} \
 				--skip-if-unchanged \
@@ -173,7 +173,7 @@ create_tarball_and_ostreecommit() {
 				--timestamp=${_timestamp} \
 				--subject="Commit-id: ${_image_basename}-${MACHINE}-${DATETIME}"
 		else
-			PATH="${WORKDIR}:$PATH" ostree --repo=${OSTREE_REPO}.temp.$$ commit \
+			PATH="${WORKDIR}:$PATH" ostree --repo=${OSTREE_REPO_TEMP} commit \
 				--tree=dir=${OSTREE_ROOTFS} \
 				--skip-if-unchanged \
 				--gpg-sign="${OSTREE_GPGID}" \
@@ -183,7 +183,7 @@ create_tarball_and_ostreecommit() {
 				--subject="Commit-id: ${_image_basename}-${MACHINE}-${DATETIME}"
 		fi
 		# Pull new commmit into old repo
-		flock ${OSTREE_REPO}.lock ostree --repo=${OSTREE_REPO} pull-local ${OSTREE_REPO}.temp.$$ ${_image_basename}
+		flock ${OSTREE_REPO}.lock ostree --repo=${OSTREE_REPO} pull-local ${OSTREE_REPO_TEMP} ${_image_basename}
 
 		gpgconf=$(dirname $gpg_bin)/gpgconf
 		if [ ! -f $gpgconf ] ; then
@@ -214,6 +214,7 @@ IMAGE_CMD_ostree () {
 		bbfatal "OSTREE_BRANCHNAME should be set in your local.conf"
 	fi
 
+	OSTREE_REPO_TEMP="${WORKDIR}/ostree_repo.temp.$$"
 	OSTREE_ROOTFS=`mktemp -du ${WORKDIR}/ostree-root-XXXXX`
 	cp -a ${IMAGE_ROOTFS} ${OSTREE_ROOTFS}
 	chmod a+rx ${OSTREE_ROOTFS}
@@ -424,15 +425,15 @@ IMAGE_CMD_ostree () {
         fi
 	echo "LABEL=fluxdata	 /var    auto   defaults 0 0" >>usr/etc/fstab
 	# Install a trap handler to remove the temporary ostree_repo
-	trap "rm -rf ${OSTREE_REPO}.temp.$$" EXIT
+	trap "rm -rf ${OSTREE_REPO_TEMP}" EXIT
 	cd ${WORKDIR}
 
-	rm -rf ${OSTREE_REPO}.temp.$$
-	ostree --repo=${OSTREE_REPO}.temp.$$ init --mode=bare
+	rm -rf ${OSTREE_REPO_TEMP}
+	ostree --repo=${OSTREE_REPO_TEMP} init --mode=bare
 	if [ ! -d ${OSTREE_REPO} ]; then
 		flock ${OSTREE_REPO}.lock ostree --repo=${OSTREE_REPO} init --mode=archive-z2
 	else
-		ostree pull-local --repo=${OSTREE_REPO}.temp.$$ ${OSTREE_REPO} ${OSTREE_BRANCHNAME} || (exit 0)
+		ostree pull-local --repo=${OSTREE_REPO_TEMP} ${OSTREE_REPO} ${OSTREE_BRANCHNAME} || (exit 0)
 	fi
 
 	# Preserve OSTREE_BRANCHNAME for future information
@@ -460,7 +461,7 @@ IMAGE_CMD_ostree () {
 	create_tarball_and_ostreecommit "${OSTREE_BRANCHNAME}" "$timestamp"
 
 	# Cleanup and remove trap handler
-	rm -rf ${OSTREE_REPO}.temp.$$
+	rm -rf ${OSTREE_REPO_TEMP}
 	trap - EXIT
 
 	flock ${OSTREE_REPO}.lock ostree summary -u --repo=${OSTREE_REPO}
