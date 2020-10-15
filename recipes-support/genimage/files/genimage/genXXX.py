@@ -280,13 +280,14 @@ class GenXXX(object, metaclass=ABCMeta):
             logger.debug("Save Yaml FIle to : %s" % (self.output_yaml))
 
     def do_prepare(self):
-        utils.fake_root(workdir=self.workdir)
         utils.mkdirhier(self.workdir)
+        image_workdir = os.path.join(self.workdir, self.image_name)
+        utils.fake_root(workdir=image_workdir)
 
         # Cleanup all generated rootfs dir by default
         if not self.args.no_clean:
-            cmd = "rm -rf {0}/*/rootfs*".format(self.workdir)
-            atexit.register(utils.run_cmd_oneshot, cmd=cmd)
+            cmd = "rm -rf ./rootfs* ./pseudo"
+            atexit.register(utils.run_cmd_oneshot, cmd=cmd, cwd=image_workdir)
 
     def do_post(self):
         pass
