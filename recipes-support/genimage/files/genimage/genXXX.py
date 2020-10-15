@@ -283,7 +283,7 @@ class GenXXX(object, metaclass=ABCMeta):
         utils.mkdirhier(self.workdir)
         image_workdir = os.path.join(self.workdir, self.image_name)
         utils.fake_root(workdir=image_workdir)
-
+        os.environ['PSEUDO_IGNORE_PATHS'] = self.deploydir
         # Cleanup all generated rootfs dir by default
         if not self.args.no_clean:
             cmd = "rm -rf ./rootfs* ./pseudo"
