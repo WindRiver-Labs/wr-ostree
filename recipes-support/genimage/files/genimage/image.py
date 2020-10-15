@@ -207,9 +207,11 @@ class CreateVMImage(Image):
         self.image_linkname =  "%s-%s" % (self.image_name, self.machine)
 
     def create(self):
+        vm_env = os.environ.copy()
+        del vm_env['LD_PRELOAD']
         img = os.path.join(self.deploydir, "{0}.rootfs.wic".format(self.image_fullname))
         cmd = "qemu-img convert -O {0} {1} {2}.{3}".format(self.vm_type, img, img, self.vm_type)
-        utils.run_cmd_oneshot(cmd)
+        utils.run_cmd(cmd, shell=True, env=vm_env)
 
         self._create_symlinks()
 
