@@ -141,8 +141,16 @@ python __anonymous () {
         if not d.getVar('PACKAGE_FEED_ARCHS'):
             d.setVar('PACKAGE_FEED_ARCHS', 'corei7_64 intel_x86_64 noarch')
 
-    remote_uris = get_remote_uris('file://%s' % (d.getVar('DEPLOY_DIR')),
+    if d.getVar('PACKAGE_FEED_URIS') and d.getVar('PACKAGE_FEED_BASE_PATHS'):
+        remote_uris = get_remote_uris(d.getVar('PACKAGE_FEED_URIS') or "",
+                                      d.getVar('PACKAGE_FEED_BASE_PATHS') or "",
+                                      d.getVar('PACKAGE_FEED_ARCHS'))
+    else:
+        remote_uris = ""
+    d.setVar("DEFAULT_PACKAGE_FEED", remote_uris)
+
+    local_repos = get_remote_uris('file://%s' % (d.getVar('DEPLOY_DIR')),
                                   'rpm',
                                   d.getVar('PACKAGE_FEED_ARCHS'))
-    d.setVar("DEFAULT_PACKAGE_FEED", remote_uris)
+    d.setVar("DEFAULT_LOCAL_PACKAGE_FEED", local_repos)
 }

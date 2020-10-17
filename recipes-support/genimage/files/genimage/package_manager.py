@@ -11,8 +11,8 @@ import configparser
 
 from genimage.utils import set_logger
 from genimage.constant import FEED_ARCHS_DICT
+from genimage.constant import DEFAULT_LOCAL_PACKAGE_FEED
 import genimage.utils as utils
-
 logger = logging.getLogger('appsdk')
 
 def failed_postinsts_abort(pkgs, log_path):
@@ -142,12 +142,21 @@ class DnfRpm:
             repo_base = "oe-remote-repo" + "-".join(urlparse(uri).path.split("/"))
             repo_name = "OE Remote Repo:" + " ".join(urlparse(uri).path.split("/"))
             repo_uri = uri
-            repo_cacert = os.path.join(os.environ["OECORE_NATIVE_SYSROOT"], "etc/ssl/certs/ca-certificates.crt")
-            open(os.path.join(self.temp_dir, "yum.repos.d", repo_base + ".repo"), 'w').write(
-                    "[%s]\nname=%s\nbaseurl=%s\nsslcacert=%s\n%s" % (repo_base, repo_name, repo_uri, repo_cacert, gpg_opts))
+            if utils.is_sdk():
+                repo_cacert = os.path.join(os.environ["OECORE_NATIVE_SYSROOT"], "etc/ssl/certs/ca-certificates.crt")
+                open(os.path.join(self.temp_dir, "yum.repos.d", repo_base + ".repo"), 'w').write(
+                        "[%s]\nname=%s\nbaseurl=%s\nsslcacert=%s\n%s" % (repo_base, repo_name, repo_uri, repo_cacert, gpg_opts))
 
             if save_repo:
                 open(os.path.join(self.target_rootfs, "etc", "yum.repos.d", repo_base + ".repo"), 'w').write(
+                        "[%s]\nname=%s\nbaseurl=%s\n%s" % (repo_base, repo_name, repo_uri, gpg_opts))
+
+        if utils.is_build():
+            for uri in DEFAULT_LOCAL_PACKAGE_FEED:
+                repo_base = "oe-local-repo" + "-".join(urlparse(uri).path.split("/"))
+                repo_name = "OE Local Repo:" + " ".join(urlparse(uri).path.split("/"))
+                repo_uri = uri
+                open(os.path.join(self.temp_dir, "yum.repos.d", repo_base + ".repo"), 'w').write(
                         "[%s]\nname=%s\nbaseurl=%s\n%s" % (repo_base, repo_name, repo_uri, gpg_opts))
 
     def _invoke_dnf(self, dnf_args, fatal = True, print_output = True ):

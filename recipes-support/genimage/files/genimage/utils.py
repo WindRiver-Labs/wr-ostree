@@ -365,12 +365,10 @@ def show_task_info(msg):
 sysroot_dir = os.path.abspath(os.path.dirname(__file__) + '/../../../../../..')
 def is_sdk():
     if os.path.exists(os.path.join(sysroot_dir, "x86_64-wrlinuxsdk-linux")):
-        logger.info("is_sdk true")
         return True
     return False
 def is_build():
     if os.path.exists(os.path.join(sysroot_dir, "x86_64")):
-        logger.info("is_build true")
         return True
     return False
 

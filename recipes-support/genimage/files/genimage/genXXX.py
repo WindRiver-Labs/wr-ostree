@@ -30,6 +30,7 @@ from genimage.utils import get_today
 from genimage.utils import show_task_info
 import genimage.constant as constant
 from genimage.constant import DEFAULT_MACHINE
+from genimage.constant import DEFAULT_LOCAL_PACKAGE_FEED
 from genimage.rootfs import Rootfs
 
 import genimage.utils as utils
@@ -161,7 +162,11 @@ class GenXXX(object, metaclass=ABCMeta):
         logger.debug("Pakcages: %s" % self.packages)
         logger.info("External Packages Number: %d" % len(self.external_packages))
         logger.debug("External Packages: %s" % self.external_packages)
-        logger.info("Pakcage Feeds:\n%s\n" % '\n'.join(self.pkg_feeds))
+        if utils.is_build():
+            logger.info("Local Pakcage Feeds To Generate Image:\n%s\n" % '\n'.join(DEFAULT_LOCAL_PACKAGE_FEED))
+            logger.info("Remote Pakcage Feeds as Target Yum Repo:\n%s\n" % '\n'.join(self.pkg_feeds))
+        elif utils.is_sdk():
+            logger.info("Pakcage Feeds:\n%s\n" % '\n'.join(self.pkg_feeds))
         logger.info("enviroments: %s", self.environments)
         logger.debug("Deploy Directory: %s" % self.outdir)
         logger.debug("Work Directory: %s" % self.workdir)

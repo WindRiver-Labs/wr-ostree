@@ -66,4 +66,6 @@ python __anonymous () {
                                   d.getVar('PACKAGE_FEED_BASE_PATHS') or "",
                                   d.getVar('PACKAGE_FEED_ARCHS'))
     d.setVar("DEFAULT_PACKAGE_FEED", remote_uris)
+
+    d.setVar("DEFAULT_LOCAL_PACKAGE_FEED", "")
 }
