@@ -44,12 +44,13 @@ class DnfRpm:
         self.primary_arch = machine.replace('-', '_')
         self.machine = machine
 
-        self.pkgdatadir = os.path.join(os.environ['OECORE_NATIVE_SYSROOT'], "../pkgdata", machine)
-        if not os.path.exists(self.pkgdatadir):
-            self.pkgdatadir = os.environ['REMOTE_PKGDATADIR']
-            if not os.path.exists(self.pkgdatadir):
-                logger.error("The pkgdatadir %s is not found", self.pkgdatadir)
-                sys.exit(1)
+        if utils.is_sdk():
+            self.pkgdatadir = os.path.join(os.environ['OECORE_NATIVE_SYSROOT'], "../pkgdata", machine)
+        elif utils.is_build():
+            self.pkgdatadir = os.path.join(utils.sysroot_dir, "../pkgdata", machine)
+        else:
+            logger.error("Neither sdk or build")
+            sys.exit(1)
 
         self.oe_pkgdata_util = os.path.join(os.environ['OECORE_NATIVE_SYSROOT'], "usr/share/poky/scripts/oe-pkgdata-util")
 

@@ -129,8 +129,6 @@ do_install[nostamp] = "1"
 
 SYSROOT_DIRS_NATIVE += "${base_prefix}/environment-setup.d ${base_prefix}/"
 
-REMOTE_PKGDATADIR ?= "${PKGDATA_DIR}"
-
 python __anonymous () {
     override = d.getVar('OVERRIDE')
     machine = d.getVar('MACHINE')

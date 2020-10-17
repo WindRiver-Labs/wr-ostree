@@ -43,7 +43,7 @@ class Rootfs(object):
         self.packages_yaml = os.path.join(self.workdir, "packages.yaml")
 
         self.rootfs_pre_scripts = [os.path.join(self.data_dir, 'pre_rootfs', 'create_merged_usr_symlinks.sh')]
-        if remote_pkgdatadir:
+        if remote_pkgdatadir and utils.is_sdk():
             script_cmd = os.path.join(self.data_dir, 'pre_rootfs', 'update_pkgdata.sh')
             os.environ['REMOTE_PKGDATADIR'] = remote_pkgdatadir
             self.rootfs_pre_scripts.append(script_cmd)
