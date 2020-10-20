@@ -163,8 +163,9 @@ class GenXXX(object, metaclass=ABCMeta):
         logger.info("External Packages Number: %d" % len(self.external_packages))
         logger.debug("External Packages: %s" % self.external_packages)
         if utils.is_build():
-            logger.info("Local Pakcage Feeds To Generate Image:\n%s\n" % '\n'.join(DEFAULT_LOCAL_PACKAGE_FEED))
-            logger.info("Remote Pakcage Feeds as Target Yum Repo:\n%s\n" % '\n'.join(self.pkg_feeds))
+            logger.info("Local Package Feeds To Generate Image:\n%s\n" % '\n'.join(DEFAULT_LOCAL_PACKAGE_FEED))
+            if self.pkg_feeds:
+                logger.info("Remote Package Feeds as Target Yum Repo:\n%s\n" % '\n'.join(self.pkg_feeds))
         elif utils.is_sdk():
             logger.info("Pakcage Feeds:\n%s\n" % '\n'.join(self.pkg_feeds))
         logger.info("enviroments: %s", self.environments)
