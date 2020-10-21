@@ -29,7 +29,8 @@ The arguments to this script are passed through the kernel boot arguments.
 REQUIRED:
  rdinit=/install		- Activates the installer
  instdev=/dev/YOUR_DEVCICE	- One or more devices separated by a comma
-	  where the first valid device found is used as the install device
+	  where the first valid device found is used as the install device,
+          OR use the ask keyword to ask for device
  instname=OSTREE_REMOTE_NAME	- Remote name like wrlinux
  instbr=OSTREE_BRANCH_NAME	- Branch for OSTree to use
  insturl=OSTREE_URL		- URL to OSTree repository
@@ -91,6 +92,36 @@ lreboot() {
 	echo b > /proc/sysrq-trigger
 	while [ 1 ] ; do
 		sleep 60
+	done
+}
+
+ask_dev() {
+	local 'heading' 'inp' 'i' 'reply' 'reply2' 'out'
+	local choices
+	heading="    `lsblk -o NAME,VENDOR,SIZE,MODEL,TYPE |head -n 1`"
+	while [ 1 ] ; do
+		choices=()
+		while IFS="" read -r inp; do
+			choices+=("$inp")
+		done<<< $(lsblk -o NAME,VENDOR,SIZE,MODEL,TYPE |grep disk)
+		echo "$heading"
+		for i in ${!choices[@]}; do
+			[ "${choices[$i]}" = "" ] && continue
+			echo "$i - ${choices[$i]}"
+		done
+		echo "B - Reboot"
+		out=0
+		IFS='' read -p "Select disk to format and install: " -r reply
+		[ "$reply" = "B" ] && echo b > /proc/sysrq-trigger;
+		[ "$reply" -ge 0 -a "$reply" -lt ${#choices[@]} ] 2> /dev/null && out=1
+		if [ $out = 1 ] ; then
+			i=$(echo ${choices[$reply]}|awk '{print $1}')
+			IFS='' read -p "ERASE /dev/$i (y/n) " -r reply2
+			if [ "$reply2" = "y" ] ; then
+				INSTDEV=/dev/$i
+				break
+			fi
+		fi
 	done
 }
 
@@ -192,7 +223,7 @@ wifi_scan() {
 			[ "$reply" = "r" ] && reply=R
 			[ "$reply" = "R" ] && break;
 			[ "$reply" = "B" ] && echo b > /proc/sysrq-trigger;
-			[ "$reply" -ge 0 -a "$reply" -lt ${#bss[@]} ] && break
+			[ "$reply" -ge 0 -a "$reply" -lt ${#bss[@]} ] 2> /dev/null && break
 		done
 		[ $reply != "R" ] && break
 	done
@@ -764,6 +795,10 @@ if [ "$INSTDEV" = "" ] ; then
 fi
 
 # Device setup
+if [ "$INSTDEV" = "ask" ] ; then
+	ask_dev
+fi
+
 retry=0
 fail=1
 while [ $retry -lt $MAX_TIMEOUT_FOR_WAITING_LOWSPEED_DEVICE ] ; do
@@ -805,6 +840,15 @@ fi
 # Customize here for disk partitioning
 
 dev=${INSTDEV}
+
+# Special case check if install media is different than boot media
+if [ $INSTSF = 1 ] ; then
+	i=$(blkid --label instboot)
+	if [ "$i" != "" -a "${fs_dev}1" != "${i}" ] ; then
+		echo "Install disk is different than boot disk setting instsf=0"
+		INSTSF=0
+	fi
+fi
 
 if [ "$INSTPT" != "0" ] ; then
 	if [ "$BL" = "grub" ] ; then
