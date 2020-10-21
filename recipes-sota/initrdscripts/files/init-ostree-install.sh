@@ -365,7 +365,7 @@ early_setup() {
 	do_mount_fs sysfs /sys
 	mount -t devtmpfs none /dev
 	mkdir -p /dev/pts
-	mount -t devpts /dev/pts
+	mount -t devpts none /dev/pts
 	do_mount_fs tmpfs /tmp
 	do_mount_fs tmpfs /run
 
@@ -719,7 +719,10 @@ if [ "$RE_EXEC" != "1" ] ; then
 		export RE_EXEC=1
 		cmd="/bin/mttyexec -s"
 		for e in $CONSOLES; do
-			cmd="$cmd -d /dev/$e"
+			echo > /dev/$e 2> /dev/null
+			if [ $? = 0 ] ; then
+				cmd="$cmd -d /dev/$e"
+			fi
 		done
 		exec $cmd $0 $@
 	fi
