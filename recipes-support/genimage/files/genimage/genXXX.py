@@ -158,8 +158,8 @@ class GenXXX(object, metaclass=ABCMeta):
         logger.info("Machine: %s" % self.machine)
         logger.info("Image Name: %s" % self.image_name)
         logger.info("Image Type: %s" % ' '.join(self.image_type))
-        logger.info("Pakcages Number: %d" % len(self.packages))
-        logger.debug("Pakcages: %s" % self.packages)
+        logger.info("Packages Number: %d" % len(self.packages))
+        logger.debug("Packages: %s" % self.packages)
         logger.info("External Packages Number: %d" % len(self.external_packages))
         logger.debug("External Packages: %s" % self.external_packages)
         if utils.is_build():
@@ -167,7 +167,7 @@ class GenXXX(object, metaclass=ABCMeta):
             if self.pkg_feeds:
                 logger.info("Remote Package Feeds as Target Yum Repo:\n%s\n" % '\n'.join(self.pkg_feeds))
         elif utils.is_sdk():
-            logger.info("Pakcage Feeds:\n%s\n" % '\n'.join(self.pkg_feeds))
+            logger.info("Package Feeds:\n%s\n" % '\n'.join(self.pkg_feeds))
         logger.info("enviroments: %s", self.environments)
         logger.debug("Deploy Directory: %s" % self.outdir)
         logger.debug("Work Directory: %s" % self.workdir)
