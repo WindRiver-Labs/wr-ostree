@@ -96,6 +96,54 @@ lreboot() {
 	done
 }
 
+rename_conflict_label() {
+	local i=$1
+	for label in otaefi otaboot otaboot_b otaroot otaroot_b fluxdata; do
+		fdev=`blkid --label $label`
+		if [ $? -eq 0 ]; then
+			dev=`lsblk -no pkname $fdev`
+			if [ $label = "otaefi" ]; then
+				dosfslabel ${fdev} ${label}_${i}
+			else
+				e2label ${fdev} ${label}_${i}
+			fi
+		fi
+	done
+}
+
+has_conflict_label() {
+	for label in otaefi otaboot otaboot_b otaroot otaroot_b fluxdata; do
+		blkid --label $label
+		if [ $? -eq 0 ]; then
+			return 0
+		fi
+	done
+	return 1
+}
+
+ask_fix_label() {
+	local reply
+	local cnt=1
+	while [ 1 ] ; do
+		has_conflict_label
+		if [ $? -eq 0 ];then
+			blkid
+			echo "Detect conflict labels on multiple disks"
+			echo "B - Reboot"
+			IFS='' read -p "FIX: (y/n/B)" -r reply
+			[ "$reply" = "B" ] && echo b > /proc/sysrq-trigger;
+			if [ "$reply" = "y" ] ; then
+				rename_conflict_label ${cnt}
+				cnt=$(($cnt + 1))
+			elif [ "$reply" = "n" ] ; then
+				break
+			fi
+		else
+			break
+		fi
+	done
+}
+
 ask_dev() {
 	local 'heading' 'inp' 'i' 'reply' 'reply2' 'out'
 	local choices
@@ -805,6 +853,7 @@ fi
 if [ "$INSTDEV" = "ask" ] ; then
 	INSTW=0
 	ask_dev
+	ask_fix_label
 fi
 
 retry=0
