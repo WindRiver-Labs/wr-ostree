@@ -36,7 +36,8 @@ REQUIRED:
  insturl=OSTREE_URL		- URL to OSTree repository
 
 OPTIONAL:
- bl=booloader                  - grub, ufsd(u-boot fdisk sd)
+ bl=booloader			- grub, ufsd(u-boot fdisk sd)
+ instw=#			- Number of seconds to wait before erasing disk
  instab=0			- Do not use the AB layout, only use A
  instnet=0			- Do not invoke udhcpc or dhcpcd
    If the above is 0, use the kernel arg:
@@ -417,6 +418,7 @@ _UDEV_DAEMON=`udev_daemon`
 INSTDATE=${INSTDATE=""}
 INSTSH=${INSTSH=""}
 INSTNET=${INSTNET=""}
+INSTW=${INSTW=""}
 INSTDEV=${INSTDEV=""}
 INSTAB=${INSTAB=""}
 INSTPOST=${INSTPOST=""}
@@ -479,6 +481,8 @@ read_args() {
 				INSTL=$optarg ;;
 			instdev=*)
 				INSTDEV=$optarg ;;
+			instw=*)
+				INSTW=$optarg ;;
 			instab=*)
 				INSTAB=$optarg ;;
 			instpost=*)
@@ -799,6 +803,7 @@ fi
 
 # Device setup
 if [ "$INSTDEV" = "ask" ] ; then
+	INSTW=0
 	ask_dev
 fi
 
@@ -825,8 +830,27 @@ while [ $retry -lt $MAX_TIMEOUT_FOR_WAITING_LOWSPEED_DEVICE ] ; do
 	sleep 0.1
 done
 if [ $fail = 1 ] ; then
-	fatal "Error device instdev=$INSTDEV not found"
+	INSTW=0
+	ask_dev
 fi
+
+cnt=0
+if [ "$INSTW" != "" -a "$INSTW" -gt 0 ] ; then
+	cnt=$INSTW
+fi
+while [ "$cnt" -gt 0 ] ; do
+	[ $(($cnt % 10)) -eq 0 ] && lsblk -o NAME,VENDOR,SIZE,MODEL,TYPE $INSTDEV
+	read -r -s -n 1 -t 1 -p "## Erasing $INSTDEV in $cnt sec ## 'y' = start ## Any key to abort ##" key
+	ret=$?
+	echo
+	if [ $ret = 0 ] ; then
+		if [ "$key" != y ] ; then
+			ask_dev
+		fi
+		break
+	fi
+	cnt=$(($cnt - 1))
+done
 
 fs_dev=${INSTDEV}
 
