@@ -20,6 +20,7 @@ from genimage.constant import DEFAULT_MACHINE
 from genimage.constant import DEFAULT_IMAGE
 from genimage.constant import DEFAULT_IMAGE_FEATURES
 from genimage.constant import OSTREE_INITRD_PACKAGES
+from genimage.constant import DEFAULT_MULTIMACH_TARGET_SYS_DICT
 from genimage.rootfs import Rootfs
 import genimage.utils as utils
 
@@ -55,7 +56,7 @@ class AppSDK(object):
             # default to "AppSDK"
             self.sdk_name = "AppSDK"
 
-        self.real_multimach_target_sys = os.path.basename(os.environ['OECORE_TARGET_SYSROOT'])
+        self.real_multimach_target_sys = DEFAULT_MULTIMACH_TARGET_SYS_DICT[DEFAULT_MACHINE]
         # current native sysroot dir
         self.native_sysroot = os.environ['OECORE_NATIVE_SYSROOT']
         self.data_dir = os.path.join(self.native_sysroot, "usr/share/genimage/data")

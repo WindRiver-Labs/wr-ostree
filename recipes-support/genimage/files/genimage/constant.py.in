@@ -1,5 +1,10 @@
 DEFAULT_MACHINE = "${MACHINE}"
 
+DEFAULT_MULTIMACH_TARGET_SYS_DICT = {
+    'intel-x86-64': 'corei7-64-wrs-linux',
+    'bcm-2xxx-rpi4': 'cortexa72-wrs-linux'
+}
+
 DEFAULT_PACKAGE_FEED = "${DEFAULT_PACKAGE_FEED}".split()
 
 DEFAULT_LOCAL_PACKAGE_FEED = "${DEFAULT_LOCAL_PACKAGE_FEED}".split()
