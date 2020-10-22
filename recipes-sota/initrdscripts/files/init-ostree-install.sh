@@ -817,7 +817,13 @@ while [ $retry -lt $MAX_TIMEOUT_FOR_WAITING_LOWSPEED_DEVICE ] ; do
 		fi
 	else
 		for i in ${INSTDEV//,/ }; do
-			if [ -e $i ] ; then
+			if [ "${i#LABEL=}" != "$i" ] ; then
+				idev=$(blkid --label ${i#LABEL=})
+				if [ "$idev" != "" ] ; then
+					INSTDEV=/dev/$(lsblk $idev -n -o pkname)
+					break
+				fi
+			elif [ -e $i ] ; then
 				INSTDEV=$i
 				echo "Installing to: $i"
 				fail=0
@@ -1003,7 +1009,7 @@ fi
 mount "${OSTREE_BOOT_DEVICE}" "${PHYS_SYSROOT}/boot"  || fatal "Error mouting ${OSTREE_BOOT_DEVICE}"
 
 mkdir /instboot
-blkid --label instboot
+blkid --label instboot > /dev/null
 if [ $? = 0 ] ; then
 	mount -r LABEL=instboot /instboot
 fi
