@@ -96,45 +96,47 @@ lreboot() {
 	done
 }
 
-rename_conflict_label() {
-	local i=$1
+conflict_label() {
+	local op=$1
+	local 'label' 'd' 'devs' 'conflict' 'i' 'fstype'
+	conflict=1
 	for label in otaefi otaboot otaboot_b otaroot otaroot_b fluxdata; do
-		fdev=`blkid --label $label`
-		if [ $? -eq 0 ]; then
-			dev=`lsblk -no pkname $fdev`
-			if [ $label = "otaefi" ]; then
-				dosfslabel ${fdev} ${label}_${i}
-			else
-				e2label ${fdev} ${label}_${i}
-			fi
+		devs=$(blkid -t LABEL=$label -o device |grep -v $INSTDEV)
+		if [ "$devs" != "" ] ; then
+			i=0
+			for d in $devs; do
+				i=$(($i+1))
+				if [ "$op" = "print" ] ; then
+					echo Change $label to ${label}_${i} on $d
+				else
+					echo Changing $label to ${label}_${i} on $d
+					fstype=$(lsblk $d -n -o FSTYPE)
+					if [ "$fstype" = vfat ] ; then
+						dosfslabel $d ${label}_${i}
+					elif [ "$fstype" != ${fstype#ext} ] ; then
+						e2label $d ${label}_${i}
+					else
+						fatal "Could not handle FSTYPE $fstype"
+					fi
+				fi
+			done
+			conflict=0
 		fi
 	done
-}
-
-has_conflict_label() {
-	for label in otaefi otaboot otaboot_b otaroot otaroot_b fluxdata; do
-		blkid --label $label
-		if [ $? -eq 0 ]; then
-			return 0
-		fi
-	done
-	return 1
+	return $conflict
 }
 
 ask_fix_label() {
 	local reply
-	local cnt=1
 	while [ 1 ] ; do
-		has_conflict_label
+		conflict_label print
 		if [ $? -eq 0 ];then
-			blkid
-			echo "Detect conflict labels on multiple disks"
+			echo "Partition labels above need to altered for proper install."
 			echo "B - Reboot"
 			IFS='' read -p "FIX: (y/n/B)" -r reply
 			[ "$reply" = "B" ] && echo b > /proc/sysrq-trigger;
 			if [ "$reply" = "y" ] ; then
-				rename_conflict_label ${cnt}
-				cnt=$(($cnt + 1))
+				conflict_label fix
 			elif [ "$reply" = "n" ] ; then
 				break
 			fi
@@ -145,8 +147,8 @@ ask_fix_label() {
 }
 
 ask_dev() {
-	local 'heading' 'inp' 'i' 'reply' 'reply2' 'out'
-	local choices
+	local 'heading' 'inp' 'i' 'reply' 'reply2' 'out' 'choices'
+	fix_part_labels=0
 	heading="    `lsblk -o NAME,VENDOR,SIZE,MODEL,TYPE |head -n 1`"
 	while [ 1 ] ; do
 		choices=()
@@ -172,6 +174,7 @@ ask_dev() {
 			fi
 		fi
 	done
+	ask_fix_label
 }
 
 ask() {
@@ -849,11 +852,11 @@ if [ "$INSTDEV" = "" ] ; then
 	fatal "Error no kernel argument instdev=..."
 fi
 
+fix_part_labels=1
 # Device setup
 if [ "$INSTDEV" = "ask" ] ; then
 	INSTW=0
 	ask_dev
-	ask_fix_label
 fi
 
 retry=0
@@ -893,6 +896,11 @@ cnt=0
 if [ "$INSTW" != "" -a "$INSTW" -gt 0 ] ; then
 	cnt=$INSTW
 fi
+
+# Start a wait loop below for user input and timeout to install if instw > 0
+if [ "$cnt" -gt 0 ] ; then
+	conflict_label print
+fi
 while [ "$cnt" -gt 0 ] ; do
 	[ $(($cnt % 10)) -eq 0 ] && lsblk -o NAME,VENDOR,SIZE,MODEL,TYPE $INSTDEV
 	read -r -s -n 1 -t 1 -p "## Erasing $INSTDEV in $cnt sec ## 'y' = start ## Any key to abort ##" key
@@ -906,6 +914,9 @@ while [ "$cnt" -gt 0 ] ; do
 	fi
 	cnt=$(($cnt - 1))
 done
+if [ "$fix_part_labels" = "1" ] ; then
+	conflict_label fix
+fi
 
 fs_dev=${INSTDEV}
 
