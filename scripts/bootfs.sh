@@ -33,6 +33,7 @@ SKIP_WIC=0
 OUTDIR=$PWD/bootfs
 LOCAL_REPO=0
 LOCAL_REPO_DIR=""
+UUID="auto"
 
 usage() {
         cat<<EOF
@@ -63,6 +64,7 @@ Image Creation Options:
  -N         Do not modify the boot.scr file on the image
  -s <#>     Size in MB of the boot partition (default 256)
             Setting this to zero will make the partition as small as possible
+ -U <UUID>  Use a specific UUID rather than generating one for the install media
  -w         Skip wic disk creation
 
 EOF
@@ -159,9 +161,17 @@ create_grub_cfg() {
 		cp $grubcfg $OUTDIR/EFI/BOOT/grub.cfg
 		return
 	fi
-	idev=/dev/vda,/dev/nbd,/dev/nvme0n1,/dev/sda
+	if [ ${UUID} != "" ]; then
+	    idev="PUUID=_PUUID_,UUID=_UUID_"
+	else
+	    idev="LABEL=instboot,LABEL=boot,LABEL=otaefi"
+	fi
 	if [ "$INST_DEV" != "" ] ; then
 		idev=$INST_DEV
+	fi
+	if [ ${UUID} != "" ]; then
+	    idev=$(echo "$idev" |sed "s/_PUUID_/${UUID}/g")
+	    idev=$(echo "$idev" |sed "s/_UUID_/$(echo ${UUID:0:4}-${UUID:4:4}|sed 's/[a-z]/\U&/g')/g")
 	fi
 	ostree_dir=${DEPLOY_DIR_IMAGE}/ostree_repo
 	iurl="$OSTREE_REMOTE_URL"
@@ -169,6 +179,7 @@ create_grub_cfg() {
 		iurl="$INST_URL"
 	fi
 	bootargs="${OSTREE_CONSOLE} rdinit=/install instdev=$idev instname=wrlinux instbr=$INST_BRANCH insturl=$iurl instab=$OSTREE_USE_AB instsf=1 $EXTRA_INST_ARGS kernelparams=$EXTRA_KERNEL_ARGS"
+
 	if [ "$OSTREE_FLUX_PART" = "luksfluxdata" -a "$EXTRA_INST_ARGS" = "${EXTRA_INST_ARGS/LUKS/}" ] ; then
 		bootargs="$bootargs LUKS=1"
 	fi
@@ -336,7 +347,12 @@ write_wic() {
 	if [ "$PARTSIZE" != "0" ] ; then
 		PARTSZ="--fixed-size=$PARTSIZE"
 	fi
-	echo "part / --source rootfs --rootfs-dir=$OUTDIR --ondisk sda --fstype=vfat --label instboot --active --align 2048 $PARTSZ" >> ustart.wks
+
+	if [ ${UUID} != "" ]; then
+		echo "part / --source rootfs --rootfs-dir=$OUTDIR --ondisk sda --fstype=vfat --uuid ${UUID} --fsuuid $(echo ${UUID:0:8}|sed 's/[a-z]/\U&/g') --label instboot --active --align 2048 $PARTSZ" >> ustart.wks
+	else
+		echo "part / --source rootfs --rootfs-dir=$OUTDIR --ondisk sda --fstype=vfat --label instboot --active --align 2048 $PARTSZ" >> ustart.wks
+	fi
 
 	echo "Writing: ustart.img and ustart.img.bmap"
 	rm -rf out-tmp
@@ -467,7 +483,7 @@ print_part_layout() {
 	echo -e "================================================="
 }
 
-while getopts "a:Bb:d:e:hk:Ll:Nns:u:w" opt; do
+while getopts "a:Bb:d:e:hk:Ll:Nns:u:U:w" opt; do
 	case ${opt} in
 		a)
 			EXTRA_INST_ARGS=$OPTARG
@@ -503,6 +519,9 @@ while getopts "a:Bb:d:e:hk:Ll:Nns:u:w" opt; do
 		N)
 			MODIFY_BOOT_SCR=0
 			;;
+		U)
+			UUID=$OPTARG
+			;;
 		u)
 			INST_URL=$OPTARG
 			;;
@@ -523,6 +542,15 @@ done
 which perl > /dev/null
 if [ $? != 0 ] ; then
 	fatal "Could not locate perl binary in PATH";
+fi
+
+which uuidgen >/dev/null
+if [ $? -eq 0 ]; then
+	if [ "$UUID" = "auto" ] ; then
+		UUID=$(uuidgen)
+	fi
+else
+	fatal "Could not locate uuidgen binary in PATH"
 fi
 
 if [ "$ENVFILE" = "" -o "$ENVFILE" = "auto" ] ; then

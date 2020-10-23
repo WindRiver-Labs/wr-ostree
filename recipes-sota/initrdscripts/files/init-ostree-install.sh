@@ -30,7 +30,7 @@ REQUIRED:
  rdinit=/install		- Activates the installer
  instdev=/dev/YOUR_DEVCICE	- One or more devices separated by a comma
 	  where the first valid device found is used as the install device,
-          OR use the ask keyword to ask for device
+          OR use "ask" to ask for device, OR use LABEL=x, PUUID=x, UUID=x
  instname=OSTREE_REMOTE_NAME	- Remote name like wrlinux
  instbr=OSTREE_BRANCH_NAME	- Branch for OSTree to use
  insturl=OSTREE_URL		- URL to OSTree repository
@@ -862,28 +862,36 @@ fi
 retry=0
 fail=1
 while [ $retry -lt $MAX_TIMEOUT_FOR_WAITING_LOWSPEED_DEVICE ] ; do
-	if [ "$INSTDEV" = "${INSTDEV//,/ }" ] ; then
-		if [ -e $INSTDEV ] ; then
-			fail=0
-			break
-		fi
-	else
-		for i in ${INSTDEV//,/ }; do
-			if [ "${i#LABEL=}" != "$i" ] ; then
-				idev=$(blkid --label ${i#LABEL=})
-				if [ "$idev" != "" ] ; then
-					INSTDEV=/dev/$(lsblk $idev -n -o pkname)
-					break
-				fi
-			elif [ -e $i ] ; then
-				INSTDEV=$i
-				echo "Installing to: $i"
+	for i in ${INSTDEV//,/ }; do
+		if [ "${i#PUUID=}" != "$i" ] ; then
+			idev=$(blkid -o device -l -t PARTUUID=${i#PUUID=})
+			if [ "$idev" != "" ] ; then
+				INSTDEV=/dev/$(lsblk $idev -n -o pkname)
 				fail=0
 				break
 			fi
-		done
-		[ fail = 0 ] && break
-	fi
+		elif [ "${i#UUID=}" != "$i" ] ; then
+			idev=$(blkid --uuid ${i#UUID=})
+			if [ "$idev" != "" ] ; then
+				INSTDEV=/dev/$(lsblk $idev -n -o pkname)
+				fail=0
+				break
+			fi
+		elif [ "${i#LABEL=}" != "$i" ] ; then
+			idev=$(blkid --label ${i#LABEL=})
+			if [ "$idev" != "" ] ; then
+				INSTDEV=/dev/$(lsblk $idev -n -o pkname)
+				fail=0
+				break
+			fi
+		elif [ -e $i ] ; then
+			INSTDEV=$i
+			echo "Installing to: $i"
+			fail=0
+			break
+		fi
+	done
+	[ $fail = 0 ] && break
 	retry=$(($retry+1))
 	sleep 0.1
 done
