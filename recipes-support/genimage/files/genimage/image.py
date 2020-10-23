@@ -318,7 +318,7 @@ class CreateBootfs(Image):
         ustart_env = os.environ.copy()
         del ustart_env['LD_PRELOAD']
         cmd = os.path.expandvars("$OECORE_NATIVE_SYSROOT/usr/bin/bootfs.sh")
-        cmd = "{0} -L -a instdate=BUILD_DATE -s 0 -e {1}/{2}-{3}.env".format(cmd, self.deploydir, self.image_name, self.machine)
+        cmd = "{0} -L -a 'instdate=BUILD_DATE instw=60' -s 0 -e {1}/{2}-{3}.env".format(cmd, self.deploydir, self.image_name, self.machine)
         res, output = utils.run_cmd(cmd, shell=True, cwd=self.workdir, env=ustart_env)
         if res:
             raise Exception("Executing %s failed\nExit code %d. Output:\n%s"
