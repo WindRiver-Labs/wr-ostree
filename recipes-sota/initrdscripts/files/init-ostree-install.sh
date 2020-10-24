@@ -901,7 +901,7 @@ if [ $fail = 1 ] ; then
 fi
 
 cnt=0
-if [ "$INSTW" != "" -a "$INSTW" -gt 0 ] ; then
+if [ "$INSTW" != "" ] && [ "$INSTW" -gt 0 ] ; then
 	cnt=$INSTW
 fi
 
