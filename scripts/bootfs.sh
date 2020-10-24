@@ -110,9 +110,18 @@ modify_boot_scr() {
 		iurl="$INST_URL"
 	fi
 	perl -p -i -e "s#^( *setenv URL) .*#\$1 $iurl# if (\$_ !~ /oURL/) " $OUTDIR/boot.scr.raw
+
+	if [ ${UUID} != "" ]; then
+		idev="PUUID=_PUUID_,UUID=_UUID_"
+		idev=$(echo "$idev" |sed "s/_PUUID_/${UUID}/g")
+		idev=$(echo "$idev" |sed "s/_UUID_/$(echo ${UUID:0:4}-${UUID:4:4}|sed 's/[a-z]/\U&/g')/g")
+		perl -p -i -e "s#instdev=.*?([ \"])#instdev=$idev\$1#" $OUTDIR/boot.scr.raw
+	fi
+
 	if [ -n "$INST_DEV" ] ; then
 		perl -p -i -e "s#instdev=.*?([ \"])#instdev=$INST_DEV\$1#" $OUTDIR/boot.scr.raw
 	fi
+
 	OLDPATH="$PATH"
 	FOUND_ARGS=`cat $OUTDIR/boot.scr.raw | grep ^setenv\ instdef | sed -e 's/^setenv instdef "//;s/"$//;'`
 	PATH=$RECIPE_SYSROOT_NATIVE/usr/bin:$RECIPE_SYSROOT_NATIVE/bin:$PATH
