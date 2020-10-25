@@ -1080,6 +1080,10 @@ mkdir /instboot
 blkid --label instboot > /dev/null
 if [ $? = 0 ] ; then
 	mount -r LABEL=instboot /instboot
+# Special case check if instboot is not available and
+# install media is different than boot media
+elif [ -n "$idev" ] && [ -e "$idev" ] && [ "$idev" != "${fs_dev}1"  ] ; then
+	mount -r $idev /instboot
 fi
 
 mkdir -p ${PHYS_SYSROOT}/boot/efi
