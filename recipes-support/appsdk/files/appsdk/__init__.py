@@ -2,6 +2,9 @@
 # PYTHON_ARGCOMPLETE_OK
 
 import sys
+if sys.argv[0].endswith('.real'):
+    sys.argv[0] = sys.argv[0][:-5]
+
 import os
 import glob
 

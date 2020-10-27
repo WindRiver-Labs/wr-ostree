@@ -17,6 +17,9 @@
 
 import os.path
 import sys
+if sys.argv[0].endswith('.real'):
+    sys.argv[0] = sys.argv[0][:-5]
+
 import glob
 
 def add_path():
