@@ -8,7 +8,7 @@ setuptools.setup(
     version="1.0",
     author="Qi Chen",
     author_email="qi.chen@windriver.com",
-    description="Application SDK management tool for CBAS",
+    description="Wind River Linux Assembly Tool",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="todo",

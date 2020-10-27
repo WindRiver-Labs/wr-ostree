@@ -1,6 +1,6 @@
 # Wind River Linux ustart images
 
-The images are built from Wind River Linux CBAS Application SDK
+The images are built from Wind River Linux Assembly Tool Application SDK
 
 ## Features
 Arch: x86_64 (corei7_64)

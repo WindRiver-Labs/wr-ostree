@@ -72,7 +72,7 @@ schema;gpg_map:
         min: 1
         max: 80
       desc: The length of gpg path must be less than 80 chars
-      example: /tmp/.cbas_gnupg
+      example: /tmp/.lat_gnupg
     grub:
       type: map
       mapping:

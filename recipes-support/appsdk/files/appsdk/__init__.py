@@ -71,7 +71,7 @@ def main():
         raise Exception("Do not use appsdk as root.")
 
     parser = argparse.ArgumentParser(
-        description='Application SDK Management Tool for CBAS',
+        description='Wind River Linux Assembly Tool',
         epilog='Use %(prog)s <subcommand> --help to get help')
     parser.add_argument('-d', '--debug',
                         help = "Enable debug output",

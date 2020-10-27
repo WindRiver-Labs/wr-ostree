@@ -1,7 +1,7 @@
 appsdk
 ======
 
-Application SDK Management Tool for CBAS
+Wind River Linux Assembly Tool
 
 * Generate a new SDK
 

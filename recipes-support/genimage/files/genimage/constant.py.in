@@ -99,7 +99,7 @@ DEFAULT_CONTAINER_PACKAGES = '''
 '''.split()
 
 DEFAULT_GPG_DATA = {
-  'gpg_path':'/tmp/.cbas_gnupg',
+  'gpg_path':'/tmp/.lat_gnupg',
   'ostree': {
     'gpgid': '${OSTREE_GPGID}',
     'gpgkey': '$OECORE_NATIVE_SYSROOT/usr/share/genimage/rpm_keys/RPM-GPG-PRIVKEY-${OSTREE_GPGID}',
