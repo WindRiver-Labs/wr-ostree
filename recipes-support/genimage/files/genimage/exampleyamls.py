@@ -78,7 +78,7 @@ def _main_run_internal(args):
 
     if DEFAULT_MACHINE == "bcm-2xxx-rpi4":
         utils.remove(os.path.join(outdir, "feature/vboxguestdrivers.yaml"))
-        utils.remove(os.path.join(outdir, "feature/startup-container.yaml.in"))
+        utils.remove(os.path.join(outdir, "feature/startup-container.yaml"))
 
     table = Texttable()
     table.set_cols_align(["l", "l"])
