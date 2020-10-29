@@ -122,9 +122,7 @@ modify_boot_scr() {
 		perl -p -i -e "s#instdev=.*?([ \"])#instdev=$INST_DEV\$1#" $OUTDIR/boot.scr.raw
 	fi
 
-	OLDPATH="$PATH"
 	FOUND_ARGS=`cat $OUTDIR/boot.scr.raw | grep ^setenv\ instdef | sed -e 's/^setenv instdef "//;s/"$//;'`
-	PATH=$RECIPE_SYSROOT_NATIVE/usr/bin:$RECIPE_SYSROOT_NATIVE/bin:$PATH
 	echo "Using \$BRANCH = $INST_BRANCH"
 	echo "Using \$URL = $iurl"
 	bootargs="$FOUND_ARGS $EXTRA_INST_ARGS"
@@ -135,7 +133,6 @@ modify_boot_scr() {
 	fi
 	mkimage -A arm -T script -O linux -d $OUTDIR/boot.scr.raw $OUTDIR/boot.scr || fatal "ERROR: mkimage failed"
 	rm -f $OUTDIR/boot.scr.raw
-	PATH="$OLDPATH"
 }
 
 do_cp_and_sig() {
@@ -149,8 +146,6 @@ do_cp_and_sig() {
 }
 
 sign_grub() {
-	OLDPATH="$PATH"
-	PATH=$RECIPE_SYSROOT_NATIVE/usr/bin:$RECIPE_SYSROOT_NATIVE/bin:$PATH
 	GRUB_KEY=`mktemp -d`
 	chmod 700 $GRUB_KEY
 	echo allow-loopback-pinentry > $GRUB_KEY/gpg-agent.conf
@@ -161,7 +156,6 @@ sign_grub() {
 		echo "$BOOT_GPG_PASSPHRASE" | gpg --pinentry-mode loopback --homedir $GRUB_KEY -u "$BOOT_GPG_NAME" --batch --detach-sign --passphrase-fd 0 $e || fatal "Error signing $e"
 	done
 	rm -rf $GRUB_KEY
-	PATH="$OLDPATH"
 }
 
 create_grub_cfg() {
@@ -280,15 +274,12 @@ build_bootfs() {
 	if [ $LOCAL_REPO = 1 ] ; then
 		if [ "$LOCAL_REPO_DIR" = "0" ] ; then
 			echo "Creating new inst_ostree_repo with: $INST_BRANCH"
-			OLDPATH="$PATH"
-			PATH=$RECIPE_SYSROOT_NATIVE/usr/bin:$RECIPE_SYSROOT_NATIVE/bin:$PATH
 			rm -rf localfs inst_ostree_repo
 			repo=${DEPLOY_DIR_IMAGE}/ostree_repo
 			ostree init --repo=inst_ostree_repo --mode=archive-z2 || fatal "ostree repo init failed"
 			ostree config --repo=inst_ostree_repo set core.mode archive-z2 || fatal "ostree repo config failed"
 			ostree pull-local --repo=inst_ostree_repo $repo $INST_BRANCH || fatal "ostree repo pull-local failed"
 			ostree summary -u --repo=inst_ostree_repo || fatal "ostree repo summary failed"
-			PATH="$OLDPATH"
 			cp -r inst_ostree_repo $OUTDIR/ostree_repo || \
 				fatal "Could not copy ${LOCAL_REPO_DIR}"
 		elif [ "$LOCAL_REPO_DIR" != "" ] ; then
@@ -547,12 +538,6 @@ while getopts "a:Bb:d:e:hk:Ll:Nns:u:U:w" opt; do
 done
 
 ### Main ###
-
-which perl > /dev/null
-if [ $? != 0 ] ; then
-	fatal "Could not locate perl binary in PATH";
-fi
-
 if [ "$ENVFILE" = "" -o "$ENVFILE" = "auto" ] ; then
 	# Generate an env file if possible...
 	latest=`ls -tr tmp*/deploy/images/*/ostree_repo/refs/heads/|tail -1`
@@ -608,13 +593,6 @@ eval `grep ^OSTREE_ $ENVFILE | perl -p -e '($a,$b) = split(/=/,$_,2); $a =~ s/-/
 eval `grep ^OSTREE_CONSOLE= $ENVFILE | sed -e 's:\\\\::g' -e "s:\":':g"`
 eval `grep ^DISTRO_FEATURES= $ENVFILE`
 
-if [ "$UUID" = "auto" ] ; then
-	OLDPATH="$PATH"
-	PATH=$RECIPE_SYSROOT_NATIVE/usr/bin:$RECIPE_SYSROOT_NATIVE/bin:$PATH
-	UUID=$(uuidgen)
-	PATH="$OLDPATH"
-fi
-
 grub=$(ls $DEPLOY_DIR_IMAGE/grubx64.efi 2> /dev/null)
 if [ "$grub" = "" ] ; then
 	# Look for bootx variant
@@ -637,6 +615,10 @@ if [ "$OSTREE_REMOTE_URL" = "" ] ; then
 	fi
 fi
 
+if [ -z "$RECIPE_SYSROOT_NATIVE" ]; then
+	fatal "The RECIPE_SYSROOT_NATIVE is not set"
+fi
+
 if [ ! -d "$RECIPE_SYSROOT_NATIVE" ] ; then
 	if [ ! -d "${STAGING_DIR}/x86_64" ] ; then
 		echo "Running: bitbake build-sysroots"
@@ -646,6 +628,15 @@ if [ ! -d "$RECIPE_SYSROOT_NATIVE" ] ; then
 		fatal "Could not locate sysroot binaries"
 	fi
 	RECIPE_SYSROOT_NATIVE="${STAGING_DIR}/x86_64"
+fi
+
+PATH=$RECIPE_SYSROOT_NATIVE/usr/bin:$RECIPE_SYSROOT_NATIVE/bin:$PATH
+if [ -d $RECIPE_SYSROOT_NATIVE/usr/bin/perl-native ]; then
+	PATH=$RECIPE_SYSROOT_NATIVE/usr/bin/perl-native:$PATH
+fi
+
+if [ "$UUID" = "auto" ] ; then
+	UUID=$(uuidgen)
 fi
 
 export PSEUDO_PREFIX=$RECIPE_SYSROOT_NATIVE/usr
