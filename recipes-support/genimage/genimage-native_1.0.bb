@@ -34,6 +34,9 @@ DEPENDS += " \
     qemuwrapper-cross \
     systemd-systemctl-native \
     bootfs-native \
+    bmap-tools-native \
+    util-linux-native \
+    perl-native \
 "
 
 # Required by do_rootfs's intercept_scripts in sdk

@@ -28,6 +28,9 @@ RDEPENDS_${PN} = "nativesdk-dnf \
                   nativesdk-python3-texttable \
                   nativesdk-python3-argcomplete \
                   nativesdk-python3-pykwalify \
+                  nativesdk-bmap-tools \
+                  nativesdk-util-linux-uuidgen \
+                  nativesdk-perl \
 "
 
 # Required by do_rootfs's intercept_scripts in sdk

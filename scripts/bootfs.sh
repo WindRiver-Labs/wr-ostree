@@ -553,15 +553,6 @@ if [ $? != 0 ] ; then
 	fatal "Could not locate perl binary in PATH";
 fi
 
-which uuidgen >/dev/null
-if [ $? -eq 0 ]; then
-	if [ "$UUID" = "auto" ] ; then
-		UUID=$(uuidgen)
-	fi
-else
-	fatal "Could not locate uuidgen binary in PATH"
-fi
-
 if [ "$ENVFILE" = "" -o "$ENVFILE" = "auto" ] ; then
 	# Generate an env file if possible...
 	latest=`ls -tr tmp*/deploy/images/*/ostree_repo/refs/heads/|tail -1`
@@ -616,6 +607,13 @@ eval `grep ^STAGING_DIR= $ENVFILE`
 eval `grep ^OSTREE_ $ENVFILE | perl -p -e '($a,$b) = split(/=/,$_,2); $a =~ s/-/_/g; $_ = "$a=$b"'`
 eval `grep ^OSTREE_CONSOLE= $ENVFILE | sed -e 's:\\\\::g' -e "s:\":':g"`
 eval `grep ^DISTRO_FEATURES= $ENVFILE`
+
+if [ "$UUID" = "auto" ] ; then
+	OLDPATH="$PATH"
+	PATH=$RECIPE_SYSROOT_NATIVE/usr/bin:$RECIPE_SYSROOT_NATIVE/bin:$PATH
+	UUID=$(uuidgen)
+	PATH="$OLDPATH"
+fi
 
 grub=$(ls $DEPLOY_DIR_IMAGE/grubx64.efi 2> /dev/null)
 if [ "$grub" = "" ] ; then
