@@ -151,6 +151,7 @@ python __anonymous () {
                                       d.getVar('PACKAGE_FEED_ARCHS'))
     else:
         remote_uris = ""
+        d.setVar('REMOTE_PKGDATADIR', '')
     d.setVar("DEFAULT_PACKAGE_FEED", remote_uris)
 
     local_repos = get_remote_uris('file://%s' % (d.getVar('DEPLOY_DIR')),

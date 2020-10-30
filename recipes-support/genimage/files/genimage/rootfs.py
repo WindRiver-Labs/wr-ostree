@@ -48,7 +48,7 @@ class Rootfs(object):
             os.environ['REMOTE_PKGDATADIR'] = remote_pkgdatadir
             self.rootfs_pre_scripts.append(script_cmd)
 
-        self.pm = DnfRpm(self.workdir, self.target_rootfs, self.machine)
+        self.pm = DnfRpm(self.workdir, self.target_rootfs, self.machine, remote_pkgdatadir)
         self.pm.create_configs()
 
         self.installed_pkgs = OrderedDict()

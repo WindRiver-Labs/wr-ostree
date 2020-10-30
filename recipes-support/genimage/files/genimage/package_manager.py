@@ -26,7 +26,8 @@ class DnfRpm:
     def __init__(self,
                  workdir = os.path.join(os.getcwd(),"workdir"),
                  target_rootfs = os.path.join(os.getcwd(), "workdir/rootfs"),
-                 machine = 'intel-x86-64'):
+                 machine = 'intel-x86-64',
+                 remote_pkgdatadir = None):
 
         self.workdir = workdir
         self.target_rootfs = target_rootfs
@@ -43,6 +44,8 @@ class DnfRpm:
         self.package_exclude = []
         self.primary_arch = machine.replace('-', '_')
         self.machine = machine
+
+        self.remote_pkgdatadir = remote_pkgdatadir
 
         if utils.is_sdk():
             self.pkgdatadir = os.path.join(os.environ['OECORE_NATIVE_SYSROOT'], "../pkgdata", machine)
@@ -146,6 +149,11 @@ class DnfRpm:
                 repo_cacert = os.path.join(os.environ["OECORE_NATIVE_SYSROOT"], "etc/ssl/certs/ca-certificates.crt")
                 open(os.path.join(self.temp_dir, "yum.repos.d", repo_base + ".repo"), 'w').write(
                         "[%s]\nname=%s\nbaseurl=%s\nsslcacert=%s\n%s" % (repo_base, repo_name, repo_uri, repo_cacert, gpg_opts))
+
+            # For native build, use third party repo to generate image
+            elif utils.is_build() and not repo_uri.startswith(self.remote_pkgdatadir):
+                open(os.path.join(self.temp_dir, "yum.repos.d", repo_base + ".repo"), 'w').write(
+                        "[%s]\nname=%s\nbaseurl=%s\n%s" % (repo_base, repo_name, repo_uri, gpg_opts))
 
             if save_repo:
                 open(os.path.join(self.target_rootfs, "etc", "yum.repos.d", repo_base + ".repo"), 'w').write(
