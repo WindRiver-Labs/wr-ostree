@@ -145,18 +145,24 @@ class DnfRpm:
             repo_base = "oe-remote-repo" + "-".join(urlparse(uri).path.split("/"))
             repo_name = "OE Remote Repo:" + " ".join(urlparse(uri).path.split("/"))
             repo_uri = uri
+
+            if save_repo:
+                open(os.path.join(self.target_rootfs, "etc", "yum.repos.d", repo_base + ".repo"), 'w').write(
+                        "[%s]\nname=%s\nbaseurl=%s\n%s" % (repo_base, repo_name, repo_uri, gpg_opts))
+
             if utils.is_sdk():
                 repo_cacert = os.path.join(os.environ["OECORE_NATIVE_SYSROOT"], "etc/ssl/certs/ca-certificates.crt")
                 open(os.path.join(self.temp_dir, "yum.repos.d", repo_base + ".repo"), 'w').write(
                         "[%s]\nname=%s\nbaseurl=%s\nsslcacert=%s\n%s" % (repo_base, repo_name, repo_uri, repo_cacert, gpg_opts))
 
-            # For native build, use third party repo to generate image
-            elif utils.is_build() and not repo_uri.startswith(self.remote_pkgdatadir):
-                open(os.path.join(self.temp_dir, "yum.repos.d", repo_base + ".repo"), 'w').write(
-                        "[%s]\nname=%s\nbaseurl=%s\n%s" % (repo_base, repo_name, repo_uri, gpg_opts))
+            # For native build
+            elif utils.is_build():
+                # Do not use remote package repo to generate image
+                if self.remote_pkgdatadir and repo_uri.startswith(self.remote_pkgdatadir):
+                    continue
 
-            if save_repo:
-                open(os.path.join(self.target_rootfs, "etc", "yum.repos.d", repo_base + ".repo"), 'w').write(
+                # Use third party repo to generate image
+                open(os.path.join(self.temp_dir, "yum.repos.d", repo_base + ".repo"), 'w').write(
                         "[%s]\nname=%s\nbaseurl=%s\n%s" % (repo_base, repo_name, repo_uri, gpg_opts))
 
         if utils.is_build():
