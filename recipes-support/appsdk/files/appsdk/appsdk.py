@@ -588,7 +588,7 @@ find {0} {1} -type f | xargs -n100 file | grep ":.*\(ASCII\|script\|source\).*te
                 generated_rpm_path = ol.split('Wrote: ')[1]
 
         # clean things up
-        for entry in ["BUILDROOT", "SPECS", "SRPMS", "SOURCES", "BUILD"]:
+        for entry in ["BUILDROOT", "SRPMS", "BUILD"]:
             shutil.rmtree("%s/%s" % (topdir, entry))
         
         logger.info("Generated %s" % generated_rpm_path)
