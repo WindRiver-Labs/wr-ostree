@@ -183,6 +183,8 @@ class DnfRpm:
         standard_dnf_args = ["-v", "--rpmverbosity=info", "-y",
                              "-c", os.path.join(self.target_rootfs, "etc/dnf/dnf.conf"),
                              "--setopt=reposdir=%s" %(os.path.join(self.temp_dir, "yum.repos.d")),
+                             "--setopt=keepcache=True",
+                             "--setopt=cachedir=%s" % (os.path.join(self.workdir, "dnfcache")),
                              "--installroot=%s" % (self.target_rootfs),
                              "--setopt=logdir=%s" % (self.temp_dir)
                             ]
