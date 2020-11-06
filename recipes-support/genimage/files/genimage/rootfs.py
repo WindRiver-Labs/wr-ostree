@@ -48,7 +48,11 @@ class Rootfs(object):
             os.environ['REMOTE_PKGDATADIR'] = remote_pkgdatadir
             self.rootfs_pre_scripts.append(script_cmd)
 
-        self.pm = DnfRpm(self.workdir, self.target_rootfs, self.machine, remote_pkgdatadir)
+        if remote_pkgdatadir:
+            self.pm = DnfRpm(self.workdir, self.target_rootfs, self.machine, remote_pkgdatadir)
+        else:
+            self.pm = DnfRpm(self.workdir, self.target_rootfs, self.machine)
+
         self.pm.create_configs()
 
         self.installed_pkgs = OrderedDict()
@@ -157,17 +161,6 @@ class Rootfs(object):
                     return found_ko
         return False
 
-    def get_kernel_ver(self):
-        kernel_abi_ver_file = os.path.join(self.pm.pkgdatadir,
-                                           'kernel-depmod',
-                                           'kernel-abiversion')
-        if not os.path.exists(kernel_abi_ver_file):
-            logger.error("No kernel-abiversion file found (%s), cannot run depmod, aborting" % kernel_abi_ver_file)
-            return None
-
-        kernel_ver = open(kernel_abi_ver_file).read().strip(' \n')
-        return kernel_ver
-
     def _generate_kernel_module_deps(self):
         modules_dir = os.path.join(self.target_rootfs, 'lib', 'modules')
         # if we don't have any modules don't bother to do the depmod
@@ -175,7 +168,6 @@ class Rootfs(object):
             logger.info("No Kernel Modules found, not running depmod")
             return
 
-        kernel_ver = self.get_kernel_ver()
-        versioned_modules_dir = os.path.join(self.target_rootfs, modules_dir, kernel_ver)
-        utils.mkdirhier(versioned_modules_dir)
-        utils.run_cmd_oneshot("depmodwrapper -a -b {0} {1}".format(self.target_rootfs, kernel_ver))
+        for kernel_ver in os.listdir(modules_dir):
+            if os.path.isdir(os.path.join(modules_dir, kernel_ver)):
+                utils.run_cmd_oneshot("depmodwrapper -a -b {0} {1}".format(self.target_rootfs, kernel_ver))
