@@ -95,7 +95,6 @@ bootscr_fs_links() {
 	cat <<EOF > ${WORKDIR}/uEnv.txt
 ${OSTREE_BOOTSCR_PRECMD}
 setenv machine_name ${MACHINE}
-test -n \${fdtcontroladdr} && setenv fdt_addr \${fdtcontroladdr}
 setenv bretry 32
 if test \${skip_script_fdt} != yes; then setenv fdt_file $default_dtb; fi
 setenv ninst ${OSTREE_NET_INSTALL}
