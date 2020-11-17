@@ -9,7 +9,13 @@ import genimage.utils as utils
 
 logger = logging.getLogger('appsdk')
 
-def install_contains(guest_yamls):
+def install_contains(guest_yamls, args):
+    extra_options = "-w %s/sub_workdir -o %s/sub_deploy" % (args.workdir, args.outdir)
+    if args.no_clean:
+        extra_options += " --no-clean"
+    if args.no_validate:
+        extra_options += " --no-validate"
+
     for yaml_file in guest_yamls:
         with open(yaml_file) as f:
             d = yaml.load(f, Loader=yaml.FullLoader) or dict()
@@ -20,10 +26,16 @@ def install_contains(guest_yamls):
         image_type = d['image_type']
         if "vmdk" in image_type or \
            "vdi" in image_type or \
+           "ostree_repo" in image_type or \
+           "ustart" in image_type or \
            "wic" in image_type:
-            utils.run_cmd("genimage -d %s" % yaml_file, shell=True)
+
+            if args.gpgpath:
+                extra_options += " -g %s" % self.args.gpgpath
+
+            utils.run_cmd("genimage -d %s %s" % (yaml_file, extra_options), shell=True)
         elif "container" in image_type:
-            utils.run_cmd("gencontainer -d %s" % yaml_file, shell=True)
+            utils.run_cmd("gencontainer -d %s %s" % (yaml_file, extra_options), shell=True)
         else:
             logger.error("The contains section does not support %s", image_type)
             sys.exit(1)

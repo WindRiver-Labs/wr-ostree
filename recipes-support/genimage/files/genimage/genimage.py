@@ -218,7 +218,7 @@ class GenImage(GenXXX):
                 guest_yamls += [yaml for yaml in element["contains"]]
 
         logger.info("sysdef contains:\n%s", '\n'.join(guest_yamls))
-        sysdef.install_contains(guest_yamls)
+        sysdef.install_contains(guest_yamls, self.args)
 
     def _include_container_images(self, rootfs):
         utils.run_cmd_oneshot("rm -rf $IMAGE_ROOTFS/var/docker-images/*")
