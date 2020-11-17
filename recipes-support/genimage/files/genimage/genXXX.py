@@ -107,7 +107,7 @@ def complete_env(**kwargs):
 
 def complete_input(parsed_args, **kwargs):
     yamls = list()
-    for subdir in [".", "exampleyamls", "exampleyamls/feature", "deploy"]:
+    for subdir in [".", "exampleyamls", "exampleyamls/feature", "exampleyamls/sysdef", "deploy"]:
         if not os.path.exists(os.path.join(parsed_args.outdir, subdir)):
             continue
 
@@ -182,7 +182,9 @@ class GenXXX(object, metaclass=ABCMeta):
             return
 
         try:
-            c = Core(source_file=yaml_file, schema_files=self.pykwalify_schemas)
+            pykwalify_dir = os.path.join(os.environ['OECORE_NATIVE_SYSROOT'], 'usr/share/genimage/data/pykwalify')
+            extensions = [os.path.join(pykwalify_dir, 'ext.py')]
+            c = Core(source_file=yaml_file, schema_files=self.pykwalify_schemas, extensions=extensions)
             c.validate(raise_exception=True)
         except Exception as e:
             logger.error("Load %s failed\n%s", yaml_file, e)
@@ -224,6 +226,7 @@ class GenXXX(object, metaclass=ABCMeta):
                            'external-packages',
                            'image_type',
                            'environments',
+                           'system',
                            'rootfs-pre-scripts',
                            'rootfs-post-scripts']:
                     data[key].extend(d[key])
@@ -275,7 +278,7 @@ class GenXXX(object, metaclass=ABCMeta):
         # Sort and remove duplicated list except the section of environments,
         # rootfs-pre-scripts and rootfs-post-scripts
         for k,v in self.data.items():
-            if isinstance(v, list) and k not in ['environments', 'rootfs-pre-scripts', 'rootfs-post-scripts', 'include-container-images']:
+            if isinstance(v, list) and k not in ['environments', 'rootfs-pre-scripts', 'rootfs-post-scripts', 'include-container-images', 'system']:
                 self.data[k] = list(sorted(set(v)))
 
     def _save_output_yaml(self):

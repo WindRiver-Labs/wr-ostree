@@ -47,6 +47,7 @@ SRC_URI = "\
            file://genimage/data/pykwalify/gencontainer-schema.yaml \
            file://genimage/data/pykwalify/geninitramfs-schema.yaml \
            file://genimage/data/pykwalify/partial-schemas.yaml \
+           file://genimage/data/pykwalify/ext.py \
            file://genimage/data/yaml_template/startup-container.yaml.in \
            file://genimage/scripts/run.do_image_ostree \
            file://genimage/scripts/run.do_image_otaimg \

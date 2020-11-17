@@ -32,6 +32,56 @@ mapping:
     include: gpg_map
   include-container-images:
     include: include-container-images_seq
+  system:
+    include: system_seq
+
+schema;system_seq:
+  type: seq
+  sequence:
+    - type: map
+      mapping:
+        run_once:
+          type: seq
+          sequence:
+            - type: str
+              nullable: False
+              func: ext_file_exists
+        run_on_upgrade:
+          type: seq
+          sequence:
+            - type: str
+              nullable: False
+              func: ext_file_exists
+        run_always:
+          type: seq
+          sequence:
+            - type: str
+              nullable: False
+              func: ext_file_exists
+        contains:
+          type: seq
+          sequence:
+            - type: str
+              nullable: False
+              func: ext_file_exists
+        files:
+          type: seq
+          sequence:
+            - type: map
+              mapping:
+                file:
+                  type: map
+                  mapping:
+                    src:
+                      type: str
+                      nullable: False
+                      func: ext_file_exists
+                    dst:
+                      type: str
+                      nullable: False
+                    mode:
+                      type: int
+                      nullable: False
 
 schema;image_type_seq:
   type: seq
