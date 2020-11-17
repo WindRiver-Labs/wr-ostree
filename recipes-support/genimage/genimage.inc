@@ -43,6 +43,26 @@ SRC_URI = "\
            file://genimage/data/yaml_example/images/initramfs-ostree-image.yaml \
            file://genimage/data/yaml_example/machine/intel-x86-64.yaml \
            file://genimage/data/yaml_example/machine/bcm-2xxx-rpi4.yaml \
+           file://genimage/data/yaml_example/sysdef/add-user-home.yaml \
+           file://genimage/data/yaml_example/sysdef/add-system-user.yaml \
+           file://genimage/data/yaml_example/sysdef/contains-container-base.yaml.in \
+           file://genimage/data/yaml_example/sysdef/files/windriver_dns.conf \
+           file://genimage/data/yaml_example/sysdef/files/docker_daemon.jason \
+           file://genimage/data/yaml_example/sysdef/files/sudoers_sudo \
+           file://genimage/data/yaml_example/sysdef/run_always.d/start_container-base.sh.in \
+           file://genimage/data/yaml_example/sysdef/run_always.d/start_containers.sh \
+           file://genimage/data/yaml_example/sysdef/run_on_upgrade.d/containers.dat \
+           file://genimage/data/yaml_example/sysdef/run_on_upgrade.d/update_containers.sh \
+           file://genimage/data/yaml_example/sysdef/run_once.d/add_system_user.sh \
+           file://genimage/data/yaml_example/sysdef/run_once.d/add_user_home.sh \
+           file://genimage/data/yaml_example/sysdef/run_once.d/load_container-base.sh.in \
+           file://genimage/data/yaml_example/sysdef/run_once.d/run_container-base.sh.in \
+           file://genimage/data/yaml_example/sysdef/run_once.d/set_hostname.sh \
+           file://genimage/data/yaml_example/sysdef/run_once.d/set_ntp.sh \
+           file://genimage/data/yaml_example/sysdef/set-dns.yaml \
+           file://genimage/data/yaml_example/sysdef/set-hostname.yaml \
+           file://genimage/data/yaml_example/sysdef/set-ntp.yaml \
+           file://genimage/data/yaml_example/sysdef/update-containers.yaml \
            file://genimage/data/pykwalify/genimage-schema.yaml \
            file://genimage/data/pykwalify/gencontainer-schema.yaml \
            file://genimage/data/pykwalify/geninitramfs-schema.yaml \

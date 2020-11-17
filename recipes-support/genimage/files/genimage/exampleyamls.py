@@ -57,6 +57,27 @@ def set_parser_exampleyamls(parser=None):
 
     return parser
 
+def _exampleyamls_sysdef(args):
+    outdir = os.path.join(args.outdir, 'exampleyamls')
+    native_sysroot = os.environ['OECORE_NATIVE_SYSROOT']
+    yamlexample_dir = os.path.join(native_sysroot, 'usr/share/genimage/data/yaml_example')
+    cmd = "cp -rf {0}/sysdef {1}/".format(yamlexample_dir, outdir)
+    utils.run_cmd_oneshot(cmd)
+
+    # Walk to convert `*.in' -> `*' with keys replacement, such as @MACHINE@
+    for root, dirs, files in os.walk(os.path.join(outdir, "sysdef"), topdown=True):
+        for name in files:
+            if name.endswith(".in"):
+                src = os.path.join(root, name)
+                with open(src, "r+") as f:
+                    content = f.read()
+                    f.seek(0)
+                    content = content.replace("@MACHINE@", DEFAULT_MACHINE)
+                    f.write(content)
+                dst = os.path.join(root, name[:-3])
+                os.rename(src, dst)
+                logger.debug("%s -> %s", src, dst)
+
 def _main_run_internal(args):
     outdir = os.path.join(args.outdir, 'exampleyamls')
 
@@ -80,6 +101,8 @@ def _main_run_internal(args):
         utils.remove(os.path.join(outdir, "feature/vboxguestdrivers.yaml"))
         utils.remove(os.path.join(outdir, "feature/startup-container.yaml"))
 
+    _exampleyamls_sysdef(args)
+
     table = Texttable()
     table.set_cols_align(["l", "l"])
     table.set_cols_valign(["t", "t"])
@@ -91,6 +114,8 @@ def _main_run_internal(args):
     output = subprocess.check_output("ls feature/*.yaml", shell=True, cwd=outdir)
     table.add_row(["Feature", output])
 
+    output = subprocess.check_output("ls sysdef/*.yaml", shell=True, cwd=outdir)
+    table.add_row(["System Definition\n Yamls", output])
 
     logger.info("Deploy Directory: %s\n%s", outdir, table.draw())
 

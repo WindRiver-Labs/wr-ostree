@@ -1,0 +1,19 @@
+image_type:
+- ostree-repo
+- ustart
+packages:
+- startup-container
+- docker
+system:
+- run_once:
+  - exampleyamls/sysdef/run_once.d/load_container-base.sh
+  - exampleyamls/sysdef/run_once.d/run_container-base.sh
+- run_always:
+  - exampleyamls/sysdef/run_always.d/start_container-base.sh
+- contains:
+  - exampleyamls/container-base-@MACHINE@.yaml
+- files:
+  - file:
+      src: deploy/container-base-@MACHINE@.docker-image.tar.bz2
+      dst: /var/docker-images/
+

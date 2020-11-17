@@ -1,0 +1,1 @@
+docker load -i /var/docker-images/container-base-@MACHINE@.docker-image.tar.bz2

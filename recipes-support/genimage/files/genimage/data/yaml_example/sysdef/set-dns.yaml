@@ -1,0 +1,10 @@
+# Set Wind River DNS
+image_type:
+- ostree-repo
+- ustart
+system:
+- files:
+  - file:
+      src: exampleyamls/sysdef/files/windriver_dns.conf
+      dst: /etc/systemd/resolved.conf.d/windriver_dns.conf
+      mode: 644

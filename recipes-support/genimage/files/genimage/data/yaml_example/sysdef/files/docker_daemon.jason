@@ -1,0 +1,1 @@
+{ "insecure-registries":["wr-docker-registry:5000", "yow-lpdfs01:5000", "ala-lpdfs01:5000", "pek-lpdfs01:5000", "147.11.105.68:5000"]}

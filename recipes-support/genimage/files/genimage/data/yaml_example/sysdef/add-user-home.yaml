@@ -1,0 +1,22 @@
+# - Add a new user and create user's home directory and
+#   add the user to sudo group
+# - Allow members of group sudo to execute any command
+# Username: admin
+# Password: 123456
+
+image_type:
+- ostree-repo
+- ustart
+packages:
+- shadow
+- base-passwd
+- base-files
+- sudo
+system:
+- run_once:
+  - exampleyamls/sysdef/run_once.d/add_user_home.sh
+- files:
+  - file:
+      src: exampleyamls/sysdef/files/sudoers_sudo
+      dst: /etc/sudoers.d/sudo
+      mode: 644

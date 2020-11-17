@@ -1,0 +1,10 @@
+#!/bin/sh
+# Set hostname based on MAC address or current time
+image_type:
+- ostree-repo
+- ustart
+packages:
+- sed
+system:
+- run_once:
+  - exampleyamls/sysdef/run_once.d/set_hostname.sh
