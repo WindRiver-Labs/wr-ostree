@@ -42,6 +42,7 @@ from genimage.constant import DEFAULT_IMAGE
 from genimage.constant import DEFAULT_IMAGE_FEATURES
 
 import genimage.utils as utils
+import genimage.sysdef as sysdef
 
 logger = logging.getLogger('appsdk')
 
@@ -173,6 +174,52 @@ class GenImage(GenXXX):
         if "include-container-images" in self.data:
             self._include_container_images(rootfs)
 
+        if "system" in self.data:
+            self._sysdef_rootfs(self.target_rootfs)
+
+    def _sysdef_rootfs(self, target_rootfs):
+        runonce_scripts = list()
+        runalways_scripts = list()
+        runupgrade_scripts = list()
+        files = list()
+        for element in self.data["system"]:
+            if "run_once" in element:
+                runonce_scripts += [script for script in element["run_once"]]
+
+            if "run_always" in element:
+                runalways_scripts += [script for script in element["run_always"]]
+
+            if "run_on_upgrade" in element:
+                runupgrade_scripts += [script for script in element["run_on_upgrade"]]
+
+            if "files" in element:
+                files += [file_d["file"] for file_d in element["files"] if "file" in file_d]
+
+        logger.info("sysdef runonce:\n%s", '\n'.join(runonce_scripts))
+        logger.info("sysdef runalways:\n%s", '\n'.join(runalways_scripts))
+        logger.info("sysdef run on upgrades:\n%s", '\n'.join(runupgrade_scripts))
+        logger.info("sysdef files:\n%s\n", files)
+
+        dst = os.path.join(target_rootfs, "etc/sysdef/run_once.d")
+        sysdef.install_scripts(runonce_scripts, dst)
+
+        dst = os.path.join(target_rootfs, "etc/sysdef/run_always.d")
+        sysdef.install_scripts(runalways_scripts, dst)
+
+        dst = os.path.join(target_rootfs, "etc/sysdef/run_on_upgrade.d/%s" % utils.get_today())
+        sysdef.install_scripts(runupgrade_scripts, dst)
+
+        sysdef.install_files(files, target_rootfs)
+
+    def _sysdef_contains(self):
+        guest_yamls = list()
+        for element in self.data["system"]:
+            if "contains" in element:
+                guest_yamls += [yaml for yaml in element["contains"]]
+
+        logger.info("sysdef contains:\n%s", '\n'.join(guest_yamls))
+        sysdef.install_contains(guest_yamls)
+
     def _include_container_images(self, rootfs):
         utils.run_cmd_oneshot("rm -rf $IMAGE_ROOTFS/var/docker-images/*")
 
@@ -206,6 +253,9 @@ class GenImage(GenXXX):
             logger.debug(cmd)
 
     def do_prepare(self):
+        if "system" in self.data:
+            self._sysdef_contains()
+
         super(GenImage, self).do_prepare()
         gpg_data = self.data["gpg"]
         utils.check_gpg_keys(gpg_data)

@@ -21,6 +21,7 @@ SRC_URI = "\
            file://genimage/rootfs.py \
            file://genimage/image.py \
            file://genimage/container.py \
+           file://genimage/sysdef.py \
            file://genimage/data/pre_rootfs/create_merged_usr_symlinks.sh \
            file://genimage/data/pre_rootfs/update_pkgdata.sh \
            file://genimage/data/post_rootfs/add_gpg_key.sh \
