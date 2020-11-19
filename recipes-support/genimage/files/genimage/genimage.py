@@ -151,6 +151,11 @@ class GenImage(GenXXX):
                 script_cmd = "{0} {1} multi-user.target".format(script_cmd, rootfs.target_rootfs)
             rootfs.add_rootfs_post_scripts(script_cmd)
 
+        if "system" in self.data:
+            script_cmd = os.path.join(self.data_dir, 'post_rootfs', 'add_sysdef_support.sh')
+            script_cmd = "{0} {1}".format(script_cmd, rootfs.target_rootfs)
+            rootfs.add_rootfs_post_scripts(script_cmd)
+
     def _do_rootfs_post(self, rootfs=None):
         if rootfs is None:
             return

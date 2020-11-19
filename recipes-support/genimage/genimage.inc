@@ -25,6 +25,7 @@ SRC_URI = "\
            file://genimage/data/pre_rootfs/create_merged_usr_symlinks.sh \
            file://genimage/data/pre_rootfs/update_pkgdata.sh \
            file://genimage/data/post_rootfs/add_gpg_key.sh \
+           file://genimage/data/post_rootfs/add_sysdef_support.sh \
            file://genimage/data/post_rootfs/update_boot_scr.sh \
            file://genimage/data/post_rootfs/update_grub_cfg.sh \
            file://genimage/data/post_rootfs/set_systemd_default_target.sh \
@@ -63,6 +64,8 @@ SRC_URI = "\
            file://genimage/data/yaml_example/sysdef/set-hostname.yaml \
            file://genimage/data/yaml_example/sysdef/set-ntp.yaml \
            file://genimage/data/yaml_example/sysdef/update-containers.yaml \
+           file://genimage/data/sysdef/sysdef.sh \
+           file://genimage/data/sysdef/sysdef.service \
            file://genimage/data/pykwalify/genimage-schema.yaml \
            file://genimage/data/pykwalify/gencontainer-schema.yaml \
            file://genimage/data/pykwalify/geninitramfs-schema.yaml \
