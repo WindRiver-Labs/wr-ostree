@@ -65,6 +65,10 @@ python __anonymous () {
         if not d.getVar('PACKAGE_FEED_ARCHS'):
             d.setVar('PACKAGE_FEED_ARCHS', 'corei7_64 intel_x86_64 noarch')
 
+    if not d.getVar('PACKAGE_FEED_URIS') or not d.getVar('PACKAGE_FEED_BASE_PATHS'):
+        d.setVar('PACKAGE_FEED_URIS', 'https://distro.windriver.com/release/wrlinux/linux-cd/base')
+        d.setVar('PACKAGE_FEED_BASE_PATHS', 'WRLinux-CD-Images/intel-x86-64/repos/rpm')
+
     remote_uris = get_remote_uris(d.getVar('PACKAGE_FEED_URIS') or "",
                                   d.getVar('PACKAGE_FEED_BASE_PATHS') or "",
                                   d.getVar('PACKAGE_FEED_ARCHS'))
