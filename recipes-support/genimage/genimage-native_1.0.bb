@@ -140,10 +140,12 @@ python __anonymous () {
         d.appendVar('OVERRIDES', ':{0}:aarch64'.format(machine))
         if not d.getVar('PACKAGE_FEED_ARCHS'):
             d.setVar('PACKAGE_FEED_ARCHS', 'cortexa72 bcm_2xxx_rpi4 noarch')
+        d.appendVarFlag('do_install', 'depends', ' u-boot:do_deploy')
     elif machine == 'intel-x86-64':
         d.appendVar('OVERRIDES', ':{0}:x86-64'.format(machine))
         if not d.getVar('PACKAGE_FEED_ARCHS'):
             d.setVar('PACKAGE_FEED_ARCHS', 'corei7_64 intel_x86_64 noarch')
+        d.appendVarFlag('do_install', 'depends', ' ovmf:do_deploy')
 
     for dep in d.getVar('RPMS_DEPENDS').split():
         d.appendVarFlag('do_populate_sysroot', 'depends', ' ' + dep)
