@@ -6,4 +6,4 @@ packages:
 - ntp
 system:
 - run_once:
-  - exampleyamls/sysdef/run_once.d/set_ntp.sh
+  - exampleyamls/sysdef/run_once.d/40_set_ntp.sh

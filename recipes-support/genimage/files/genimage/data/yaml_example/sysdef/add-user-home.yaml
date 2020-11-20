@@ -14,7 +14,7 @@ packages:
 - sudo
 system:
 - run_once:
-  - exampleyamls/sysdef/run_once.d/add_user_home.sh
+  - exampleyamls/sysdef/run_once.d/20_add_user_home.sh
 - files:
   - file:
       src: exampleyamls/sysdef/files/sudoers_sudo

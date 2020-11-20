@@ -5,8 +5,15 @@ image_type:
 packages:
 - startup-container
 - docker
-include-container-images:
-- container-name: @IMAGE_NAME@
-  copy-container: cp deploy/@IMAGE_NAME@.docker-image.tar.bz2 $IMAGE_ROOTFS/var/docker-images/
-  add-container: docker load -i /var/docker-images/@IMAGE_NAME@.docker-image.tar.bz2
-  run-container: docker run -itd @IMAGE_NAME@ /bin/sh
+rootfs-post-scripts:
+- echo "@IMAGE_NAME@ load=/var/docker-images/@IMAGE_NAME@.docker-image.tar.bz2 run-cmd=/bin/sh" >> $IMAGE_ROOTFS/etc/sysdef/run_on_upgrade.d/containers.dat
+system:
+- run_on_upgrade:
+  - exampleyamls/sysdef/run_on_upgrade.d/10_update_containers.sh
+- run_always:
+  - exampleyamls/sysdef/run_always.d/10_start_containers.sh
+- files:
+  - file:
+      src: deploy/@IMAGE_NAME@.docker-image.tar.bz2
+      dst: /var/docker-images/
+      mode: 644

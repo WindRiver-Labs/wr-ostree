@@ -10,4 +10,4 @@ packages:
 - base-files
 system:
 - run_once:
-  - exampleyamls/sysdef/run_once.d/add_system_user.sh
+  - exampleyamls/sysdef/run_once.d/10_add_system_user.sh

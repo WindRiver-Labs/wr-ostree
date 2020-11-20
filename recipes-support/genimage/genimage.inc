@@ -50,16 +50,13 @@ SRC_URI = "\
            file://genimage/data/yaml_example/sysdef/files/windriver_dns.conf \
            file://genimage/data/yaml_example/sysdef/files/docker_daemon.jason \
            file://genimage/data/yaml_example/sysdef/files/sudoers_sudo \
-           file://genimage/data/yaml_example/sysdef/run_always.d/start_container-base.sh.in \
-           file://genimage/data/yaml_example/sysdef/run_always.d/start_containers.sh \
+           file://genimage/data/yaml_example/sysdef/run_always.d/10_start_containers.sh \
            file://genimage/data/yaml_example/sysdef/run_on_upgrade.d/containers.dat \
-           file://genimage/data/yaml_example/sysdef/run_on_upgrade.d/update_containers.sh \
-           file://genimage/data/yaml_example/sysdef/run_once.d/add_system_user.sh \
-           file://genimage/data/yaml_example/sysdef/run_once.d/add_user_home.sh \
-           file://genimage/data/yaml_example/sysdef/run_once.d/load_container-base.sh.in \
-           file://genimage/data/yaml_example/sysdef/run_once.d/run_container-base.sh.in \
-           file://genimage/data/yaml_example/sysdef/run_once.d/set_hostname.sh \
-           file://genimage/data/yaml_example/sysdef/run_once.d/set_ntp.sh \
+           file://genimage/data/yaml_example/sysdef/run_on_upgrade.d/10_update_containers.sh \
+           file://genimage/data/yaml_example/sysdef/run_once.d/10_add_system_user.sh \
+           file://genimage/data/yaml_example/sysdef/run_once.d/20_add_user_home.sh \
+           file://genimage/data/yaml_example/sysdef/run_once.d/30_set_hostname.sh \
+           file://genimage/data/yaml_example/sysdef/run_once.d/40_set_ntp.sh \
            file://genimage/data/yaml_example/sysdef/set-dns.yaml \
            file://genimage/data/yaml_example/sysdef/set-hostname.yaml \
            file://genimage/data/yaml_example/sysdef/set-ntp.yaml \

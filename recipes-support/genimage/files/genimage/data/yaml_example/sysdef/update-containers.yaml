@@ -9,14 +9,20 @@ image_type:
 packages:
 - startup-container
 - docker
+rootfs-post-scripts:
+- echo "ubuntu" >> $IMAGE_ROOTFS/etc/sysdef/run_on_upgrade.d/containers.dat
+- echo "ubuntu-bash image=ubuntu run-opt="-p 2224:22 -it" run-cmd=/bin/bash" >> $IMAGE_ROOTFS/etc/sysdef/run_on_upgrade.d/containers.dat
 system:
 - run_on_upgrade:
-  - exampleyamls/sysdef/run_on_upgrade.d/update_containers.sh
-  - exampleyamls/sysdef/run_on_upgrade.d/containers.dat
+  - exampleyamls/sysdef/run_on_upgrade.d/10_update_containers.sh
 - run_always:
-  - exampleyamls/sysdef/run_always.d/start_containers.sh
+  - exampleyamls/sysdef/run_always.d/10_start_containers.sh
 - files:
   - file:
       src: exampleyamls/sysdef/files/docker_daemon.jason
       dst: /etc/docker/daemon.json
+      mode: 644
+  - file:
+      src: exampleyamls/sysdef/run_on_upgrade.d/containers.dat
+      dst: /etc/sysdef/run_on_upgrade.d/
       mode: 644

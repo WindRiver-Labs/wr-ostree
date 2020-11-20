@@ -7,4 +7,4 @@ packages:
 - sed
 system:
 - run_once:
-  - exampleyamls/sysdef/run_once.d/set_hostname.sh
+  - exampleyamls/sysdef/run_once.d/30_set_hostname.sh
