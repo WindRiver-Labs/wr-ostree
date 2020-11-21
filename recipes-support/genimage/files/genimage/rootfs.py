@@ -84,6 +84,11 @@ class Rootfs(object):
     def add_rootfs_post_scripts(self, script_cmd=None):
         if script_cmd is None:
             return
+
+        if "/etc/sysdef/run_on_upgrade.d/" in script_cmd:
+            script_cmd = script_cmd.replace("/etc/sysdef/run_on_upgrade.d/",
+                                            "/etc/sysdef/run_on_upgrade.d/%s/" % utils.get_today())
+
         self.rootfs_post_scripts.append(script_cmd)
 
     def add_rootfs_pre_scripts(self, script_cmd=None):

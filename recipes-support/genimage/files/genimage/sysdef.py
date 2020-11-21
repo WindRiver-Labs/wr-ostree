@@ -65,6 +65,9 @@ def install_files(files, target_rootfs):
         dst = e['dst']
         if not dst.startswith(target_rootfs):
             dst = target_rootfs + dst
+        if "/etc/sysdef/run_on_upgrade.d/" in dst:
+            dst = dst.replace("/etc/sysdef/run_on_upgrade.d/",
+                              "/etc/sysdef/run_on_upgrade.d/%s/" % utils.get_today())
         if not os.path.isdir(dst):
             utils.mkdirhier(os.path.dirname(dst))
         if dst.endswith("/"):
@@ -87,6 +90,7 @@ def install_files(files, target_rootfs):
             if os.path.isdir(dst):
                 dst = os.path.join(dst, os.path.basename(src))
             src = os.path.realpath(src)
+            logger.debug("%s -> %s" % (src, dst))
             utils.copyfile(src, dst)
 
         mode = e['mode'] if 'mode' in e else 664

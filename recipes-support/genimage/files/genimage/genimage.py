@@ -155,6 +155,7 @@ class GenImage(GenXXX):
             script_cmd = os.path.join(self.data_dir, 'post_rootfs', 'add_sysdef_support.sh')
             script_cmd = "{0} {1}".format(script_cmd, rootfs.target_rootfs)
             rootfs.add_rootfs_post_scripts(script_cmd)
+            self._sysdef_rootfs(rootfs.target_rootfs)
 
     def _do_rootfs_post(self, rootfs=None):
         if rootfs is None:
@@ -178,9 +179,6 @@ class GenImage(GenXXX):
 
         if "include-container-images" in self.data:
             self._include_container_images(rootfs)
-
-        if "system" in self.data:
-            self._sysdef_rootfs(self.target_rootfs)
 
     def _sysdef_rootfs(self, target_rootfs):
         runonce_scripts = list()
