@@ -187,13 +187,19 @@ class GenImage(GenXXX):
         files = list()
         for element in self.data["system"]:
             if "run_once" in element:
-                runonce_scripts += [script for script in element["run_once"]]
+                for script in element["run_once"]:
+                    if script not in runonce_scripts:
+                        runonce_scripts.append(script)
 
             if "run_always" in element:
-                runalways_scripts += [script for script in element["run_always"]]
+                for script in element["run_always"]:
+                    if script not in runalways_scripts:
+                        runalways_scripts.append(script)
 
             if "run_on_upgrade" in element:
-                runupgrade_scripts += [script for script in element["run_on_upgrade"]]
+                for script in element["run_on_upgrade"]:
+                    if script not in runupgrade_scripts:
+                        runupgrade_scripts.append(script)
 
             if "files" in element:
                 files += [file_d["file"] for file_d in element["files"] if "file" in file_d]
@@ -218,7 +224,9 @@ class GenImage(GenXXX):
         guest_yamls = list()
         for element in self.data["system"]:
             if "contains" in element:
-                guest_yamls += [yaml for yaml in element["contains"]]
+                for yaml in element["contains"]:
+                    if yaml not in guest_yamls:
+                        guest_yamls.append(yaml)
 
         logger.info("sysdef contains:\n%s", '\n'.join(guest_yamls))
         sysdef.install_contains(guest_yamls, self.args)
