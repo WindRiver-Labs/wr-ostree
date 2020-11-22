@@ -60,7 +60,16 @@ def set_parser_genimage(parser=None):
         default=None,
         help='Specify gpg homedir, it overrides \'gpg_path\' in Yaml, default is /tmp/.lat_gnupg',
         action='store')
+
+    parser.add_argument('--ostree-remote-url',
+        default=None,
+        help='Specify ostree remote url, it overrides \'ostree_remote_url\' in Yaml, default is None',
+        action='store').completer = complete_url
+
     return parser
+
+def complete_url(**kwargs):
+    return ["http://", "https://"]
 
 class GenImage(GenXXX):
     """
@@ -105,6 +114,9 @@ class GenImage(GenXXX):
 
         if self.args.gpgpath:
             self.data["gpg"]["gpg_path"] = os.path.realpath(self.args.gpgpath)
+
+        if self.args.ostree_remote_url:
+            self.data["ostree"]["ostree_remote_url"] = self.args.ostree_remote_url
 
     def _parse_amend(self):
         super(GenImage, self)._parse_amend()
