@@ -19,10 +19,6 @@ system:
   - exampleyamls/sysdef/run_always.d/10_start_containers.sh
 - files:
   - file:
-      src: exampleyamls/sysdef/files/docker_daemon.jason
-      dst: /etc/docker/daemon.json
-      mode: 644
-  - file:
       src: exampleyamls/sysdef/run_on_upgrade.d/containers.dat
       dst: /etc/sysdef/run_on_upgrade.d/
       mode: 644

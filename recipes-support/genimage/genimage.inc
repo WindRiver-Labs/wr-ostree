@@ -48,7 +48,6 @@ SRC_URI = "\
            file://genimage/data/yaml_example/sysdef/add-system-user.yaml \
            file://genimage/data/yaml_example/sysdef/contains-container-base.yaml.in \
            file://genimage/data/yaml_example/sysdef/files/windriver_dns.conf \
-           file://genimage/data/yaml_example/sysdef/files/docker_daemon.jason \
            file://genimage/data/yaml_example/sysdef/files/sudoers_sudo \
            file://genimage/data/yaml_example/sysdef/run_always.d/10_start_containers.sh \
            file://genimage/data/yaml_example/sysdef/run_on_upgrade.d/containers.dat \
