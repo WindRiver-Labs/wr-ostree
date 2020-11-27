@@ -189,9 +189,6 @@ class GenImage(GenXXX):
             cmd = "cp -rf {0}/boot/* {1}".format(self.target_rootfs, self.deploydir)
             utils.run_cmd_oneshot(cmd)
 
-        if "include-container-images" in self.data:
-            self._include_container_images(rootfs)
-
     def _sysdef_rootfs(self, target_rootfs):
         runonce_scripts = list()
         runalways_scripts = list()
@@ -242,38 +239,6 @@ class GenImage(GenXXX):
 
         logger.info("sysdef contains:\n%s", '\n'.join(guest_yamls))
         sysdef.install_contains(guest_yamls, self.args)
-
-    def _include_container_images(self, rootfs):
-        utils.run_cmd_oneshot("rm -rf $IMAGE_ROOTFS/var/docker-images/*")
-
-        load_docker_images = os.path.join(rootfs.target_rootfs, "etc/default", "load-docker-images")
-        run_docker_images = os.path.join(rootfs.target_rootfs, "etc/default", "run-docker-images")
-        auto_start_containers = os.path.join(rootfs.target_rootfs, "etc/default", "auto-start-containers")
-        open(run_docker_images, "w").write("")
-        open(load_docker_images, "w").write("")
-        open(auto_start_containers, "w").write("")
-
-        for d in self.data["include-container-images"]:
-            container = d["container-name"]
-            utils.run_cmd_oneshot(d["copy-container"])
-
-            # Copy/Pull docker images to target
-            cmd = d["add-container"]
-            logger.debug(cmd)
-            open(load_docker_images, "a").write("%s\n" % cmd)
-
-            # Start the container
-            cmd = "docker start %s >/dev/null 2>&1" % container
-            # If failed, it means the container does not exist, use docker run to create a new one
-            # Insert container name to docker run, and run container in background
-            cmd = cmd + " || " + d["run-container"].replace(" run ", " run --name %s -d " % container)
-            open(run_docker_images, "a").write("%s\n" % cmd)
-            logger.debug(cmd)
-
-            # enable auto startup of the container
-            cmd = "systemctl --no-reload enable start-container@%s.service" % container
-            open(auto_start_containers, "a").write("%s\n" % cmd)
-            logger.debug(cmd)
 
     def do_prepare(self):
         if "system" in self.data:

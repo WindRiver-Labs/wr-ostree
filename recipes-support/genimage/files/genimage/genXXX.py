@@ -278,7 +278,7 @@ class GenXXX(object, metaclass=ABCMeta):
         # Sort and remove duplicated list except the section of environments,
         # rootfs-pre-scripts and rootfs-post-scripts
         for k,v in self.data.items():
-            if isinstance(v, list) and k not in ['environments', 'rootfs-pre-scripts', 'rootfs-post-scripts', 'include-container-images', 'system']:
+            if isinstance(v, list) and k not in ['environments', 'rootfs-pre-scripts', 'rootfs-post-scripts', 'system']:
                 self.data[k] = list(sorted(set(v)))
 
     def _save_output_yaml(self):
