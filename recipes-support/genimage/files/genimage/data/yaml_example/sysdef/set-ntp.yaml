@@ -2,8 +2,6 @@
 image_type:
 - ostree-repo
 - ustart
-packages:
-- ntp
 system:
 - run_once:
   - exampleyamls/sysdef/run_once.d/40_set_ntp.sh
