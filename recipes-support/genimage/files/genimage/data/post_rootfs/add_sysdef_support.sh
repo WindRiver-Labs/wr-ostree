@@ -11,6 +11,9 @@ add_sysdef_support() {
     install -m 0664 ${sysdefdir}/sysdef.service ${rootfs}/usr/lib/systemd/system/
 
     systemctl --root ${rootfs}  enable sysdef.service
+
+    mkdir -p ${rootfs}/usr/lib/systemd/system-preset/
+    echo "enable sysdef.service" > ${rootfs}/usr/lib/systemd/system-preset/98-sysdef.preset
 }
 
 add_sysdef_support $1
