@@ -14,8 +14,18 @@ usage: sysdef.sh [-f] [-v] |run-once|run-on-upgrade|run-always [script1] [script
 EOF
 }
 
+if [ $# -lt 1 ]; then
+    usage
+    exit 1
+fi
+
 while [ $# -gt 0 ]; do
     case $1 in
+        list|run-all|run-once|run-on-upgrade|run-always)
+            action=$1
+            shift
+            continue
+            ;;
         -v) set -x
             shift
             continue
@@ -37,11 +47,6 @@ while [ $# -gt 0 ]; do
             ;;
     esac
 done
-
-if [ $# -lt 1 ]; then
-    usage
-    exit 1
-fi
 
 if [ ! -d ${sysdefdir} ]; then
     echo "Dirctory ${sysdefdir} not found"
@@ -134,10 +139,9 @@ list_all() {
     done
 }
 
-case $1 in
+case $action in
     run-once|run-on-upgrade|run-always)
-        type=$1
-        shift
+        type=$action
         if [ $# -eq 0 ]; then
             run_bundle $type
         else
