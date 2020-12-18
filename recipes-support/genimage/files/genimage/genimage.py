@@ -216,7 +216,11 @@ class GenImage(GenXXX):
         logger.info("sysdef runonce:\n%s", '\n'.join(runonce_scripts))
         logger.info("sysdef runalways:\n%s", '\n'.join(runalways_scripts))
         logger.info("sysdef run on upgrades:\n%s", '\n'.join(runupgrade_scripts))
-        logger.info("sysdef files:\n%s\n", files)
+        logger.info("sysdef files:")
+        for f in files:
+            out = "src: %s -> dst: %s" % (f['src'], f['dst'])
+            out += ", mode: %s" % f['mode'] if 'mode' in f else ""
+            logger.info(out)
 
         dst = os.path.join(target_rootfs, "etc/sysdef/run_once.d")
         sysdef.install_scripts(runonce_scripts, dst)
