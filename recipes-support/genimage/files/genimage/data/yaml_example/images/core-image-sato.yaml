@@ -13,7 +13,7 @@ packages:
 - ostree
 - ostree-upgrade-mgr
 - packagegroup-base-extended
-- packagegroup-busybox-replacement
+- packagegroup-core-base-utils
 - packagegroup-core-boot
 - packagegroup-core-ssh-dropbear
 - packagegroup-core-x11-sato

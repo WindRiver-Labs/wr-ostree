@@ -31,7 +31,7 @@ DEFAULT_PACKAGES_COMMON = '''
     packagegroup-core-boot
     kernel-modules
     i2c-tools
-    packagegroup-busybox-replacement
+    packagegroup-core-base-utils
     glib-networking
     ca-certificates
     ostree
@@ -92,7 +92,7 @@ DEFAULT_CONTAINER_PACKAGES = '''
     dnf
     openssh
     os-release
-    packagegroup-busybox-replacement
+    packagegroup-core-base-utils
     rpm
     run-postinsts
     update-alternatives-opkg

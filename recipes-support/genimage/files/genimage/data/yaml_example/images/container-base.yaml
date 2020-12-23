@@ -6,7 +6,7 @@ packages:
 - dnf
 - openssh
 - os-release
-- packagegroup-busybox-replacement
+- packagegroup-core-base-utils
 - rpm
 - run-postinsts
 - update-alternatives-opkg
