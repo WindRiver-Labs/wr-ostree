@@ -33,9 +33,17 @@ def install_contains(guest_yamls, args):
             if args.gpgpath:
                 extra_options += " -g %s" % self.args.gpgpath
 
-            utils.run_cmd("genimage -d %s %s" % (yaml_file, extra_options), shell=True)
+            rc, output = utils.run_cmd("genimage -d %s %s" % (yaml_file, extra_options), shell=True)
+            if rc != 0:
+                logger.error(output)
+                logger.error("Generate sub image failed")
+                sys.exit(1)
         elif "container" in image_type:
-            utils.run_cmd("gencontainer -d %s %s" % (yaml_file, extra_options), shell=True)
+            rc, output = utils.run_cmd("gencontainer -d %s %s" % (yaml_file, extra_options), shell=True)
+            if rc != 0:
+                logger.error(output)
+                logger.error("Generate sub container failed")
+                sys.exit(1)
         else:
             logger.error("The contains section does not support %s", image_type)
             sys.exit(1)
