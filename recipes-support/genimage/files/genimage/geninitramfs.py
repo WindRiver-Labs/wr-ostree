@@ -30,6 +30,7 @@ from genimage.constant import DEFAULT_MACHINE
 from genimage.constant import DEFAULT_INITRD_NAME
 from genimage.constant import OSTREE_INITRD_PACKAGES
 from genimage.constant import DEFAULT_PACKAGE_FEED
+from genimage.constant import DEFAULT_IMAGE_PKGTYPE
 from genimage.constant import DEFAULT_REMOTE_PKGDATADIR
 from genimage.constant import DEFAULT_IMAGE_FEATURES
 from genimage.image import CreateInitramfs
@@ -63,6 +64,7 @@ class GenInitramfs(GenXXX):
         self.data['machine'] = DEFAULT_MACHINE
         self.data['image_type'] = ['initramfs']
         self.data['package_feeds'] = DEFAULT_PACKAGE_FEED
+        self.data['package_type'] = DEFAULT_IMAGE_PKGTYPE
         self.data['remote_pkgdatadir'] = DEFAULT_REMOTE_PKGDATADIR
         self.data['features'] =  DEFAULT_IMAGE_FEATURES
         self.data["gpg"] = constant.DEFAULT_GPG_DATA

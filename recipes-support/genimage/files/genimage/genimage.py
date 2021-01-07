@@ -35,6 +35,7 @@ from genimage.genXXX import set_parser
 
 import genimage.constant as constant
 from genimage.constant import DEFAULT_PACKAGE_FEED
+from genimage.constant import DEFAULT_IMAGE_PKGTYPE
 from genimage.constant import DEFAULT_REMOTE_PKGDATADIR
 from genimage.constant import DEFAULT_PACKAGES
 from genimage.constant import DEFAULT_MACHINE
@@ -87,6 +88,7 @@ class GenImage(GenXXX):
         self.data['machine'] = DEFAULT_MACHINE
         self.data['image_type'] = ['ustart', 'ostree-repo']
         self.data['package_feeds'] = DEFAULT_PACKAGE_FEED
+        self.data['package_type'] = DEFAULT_IMAGE_PKGTYPE
         self.data["ostree"] = constant.DEFAULT_OSTREE_DATA
         self.data["wic"] = constant.DEFAULT_WIC_DATA
         self.data['remote_pkgdatadir'] = DEFAULT_REMOTE_PKGDATADIR

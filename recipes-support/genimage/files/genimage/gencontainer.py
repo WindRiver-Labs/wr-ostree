@@ -29,6 +29,7 @@ from genimage.constant import DEFAULT_CONTAINER_PACKAGES
 from genimage.constant import DEFAULT_OCI_CONTAINER_DATA
 from genimage.constant import DEFAULT_MACHINE
 from genimage.constant import DEFAULT_PACKAGE_FEED
+from genimage.constant import DEFAULT_IMAGE_PKGTYPE
 from genimage.constant import DEFAULT_REMOTE_PKGDATADIR
 from genimage.constant import DEFAULT_IMAGE_FEATURES
 from genimage.container import CreateContainer
@@ -62,6 +63,7 @@ class GenContainer(GenXXX):
         self.data['machine'] = DEFAULT_MACHINE
         self.data['image_type'] = ['container']
         self.data['package_feeds'] = DEFAULT_PACKAGE_FEED
+        self.data['package_type'] = DEFAULT_IMAGE_PKGTYPE
         self.data['remote_pkgdatadir'] = DEFAULT_REMOTE_PKGDATADIR
         self.data['features'] =  DEFAULT_IMAGE_FEATURES
         self.data['packages'] = DEFAULT_CONTAINER_PACKAGES

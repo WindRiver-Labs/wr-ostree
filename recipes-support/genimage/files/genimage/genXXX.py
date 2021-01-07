@@ -75,6 +75,10 @@ def set_parser(parser=None, supported_types=None):
     parser.add_argument('-u', '--url',
         help='Specify extra urls of rpm package feeds',
         action='append')
+    parser.add_argument('--pkg-type',
+        choices=['rpm', 'deb'],
+        help='Specify package type, it overrides \'package_type\' in Yaml',
+        action='store')
     parser.add_argument('-p', '--pkg',
         help='Specify extra package to be installed',
         action='append')
@@ -137,6 +141,7 @@ class GenXXX(object, metaclass=ABCMeta):
         self.packages = self.data['packages']
         self.external_packages = self.data['external-packages']
         self.exclude_packages = []
+        self.pkg_type = self.data['package_type']
         self.pkg_feeds = self.data['package_feeds']
         self.remote_pkgdatadir = self.data['remote_pkgdatadir']
         self.features = self.data['features']
@@ -255,6 +260,9 @@ class GenXXX(object, metaclass=ABCMeta):
         if self.args.url:
             self.data['package_feeds'].extend(self.args.url)
 
+        if self.args.pkg_type:
+            self.data['package_type'] = self.args.pkg_type
+
         if self.args.pkg:
             self.data['packages'].extend(self.args.pkg)
 
@@ -339,6 +347,7 @@ class GenXXX(object, metaclass=ABCMeta):
         workdir = os.path.join(self.workdir, self.image_name)
         pkg_globs = self.features.get("pkg_globs", None)
         image_linguas = self.features.get("image_linguas", None)
+
         rootfs = Rootfs(workdir,
                         self.data_dir,
                         self.machine,
@@ -348,6 +357,7 @@ class GenXXX(object, metaclass=ABCMeta):
                         exclude_packages=self.exclude_packages,
                         remote_pkgdatadir=self.remote_pkgdatadir,
                         image_linguas=image_linguas,
+                        pkgtype=self.pkg_type,
                         pkg_globs=pkg_globs)
 
         self._do_rootfs_pre(rootfs)
