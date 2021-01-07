@@ -182,19 +182,21 @@ python __anonymous () {
     for dep in d.getVar('EXAMPLEYAMLS_DEPENDS').split():
         d.appendVarFlag('do_populate_sysroot', 'depends', ' ' + dep)
 
+    img_pkgtype = d.getVar('IMAGE_PKGTYPE')
     if not d.getVar('PACKAGE_FEED_URIS') or not d.getVar('PACKAGE_FEED_BASE_PATHS'):
-        d.setVar('PACKAGE_FEED_URIS', 'https://distro.windriver.com/release/wrlinux/linux-cd/base')
-        d.setVar('PACKAGE_FEED_BASE_PATHS', 'WRLinux-CD-Images/intel-x86-64/repos/rpm')
+        if img_pkgtype == "rpm":
+            d.setVar('PACKAGE_FEED_URIS', 'https://distro.windriver.com/release/wrlinux/linux-cd/base')
+            d.setVar('PACKAGE_FEED_BASE_PATHS', 'WRLinux-CD-Images/intel-x86-64/repos/rpm')
 
     if d.getVar('PACKAGE_FEED_URIS') and d.getVar('PACKAGE_FEED_BASE_PATHS'):
         remote_uris = get_remote_uris(d.getVar('PACKAGE_FEED_URIS') or "",
                                       d.getVar('PACKAGE_FEED_BASE_PATHS') or "",
                                       d.getVar('PACKAGE_FEED_ARCHS'))
 
-    d.setVar("DEFAULT_PACKAGE_FEED", remote_uris)
+        d.setVar("DEFAULT_PACKAGE_FEED", remote_uris)
 
     local_repos = get_remote_uris('file://%s' % (d.getVar('DEPLOY_DIR')),
-                                  'rpm',
+                                  img_pkgtype,
                                   d.getVar('PACKAGE_FEED_ARCHS'))
     d.setVar("DEFAULT_LOCAL_PACKAGE_FEED", local_repos)
 }
