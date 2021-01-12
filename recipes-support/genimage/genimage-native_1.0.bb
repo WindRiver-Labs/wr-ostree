@@ -168,21 +168,27 @@ SYSROOT_DIRS_NATIVE += "${base_prefix}/environment-setup.d ${base_prefix}/"
 python __anonymous () {
     override = d.getVar('OVERRIDE')
     machine = d.getVar('MACHINE')
+    img_pkgtype = d.getVar('IMAGE_PKGTYPE')
     if machine == 'bcm-2xxx-rpi4':
         d.appendVar('OVERRIDES', ':{0}:aarch64'.format(machine))
         if not d.getVar('PACKAGE_FEED_ARCHS'):
-            d.setVar('PACKAGE_FEED_ARCHS', 'cortexa72 bcm_2xxx_rpi4 noarch')
+            if img_pkgtype == 'rpm':
+                d.setVar('PACKAGE_FEED_ARCHS', 'cortexa72 bcm_2xxx_rpi4 noarch')
+            elif pkgtype == 'deb':
+                img_d.setVar('PACKAGE_FEED_ARCHS', 'cortexa72 bcm_2xxx_rpi4 all')
         d.appendVarFlag('do_install', 'depends', ' u-boot:do_deploy')
     elif machine == 'intel-x86-64':
         d.appendVar('OVERRIDES', ':{0}:x86-64'.format(machine))
         if not d.getVar('PACKAGE_FEED_ARCHS'):
-            d.setVar('PACKAGE_FEED_ARCHS', 'corei7_64 intel_x86_64 noarch')
+            if img_pkgtype == 'rpm':
+                d.setVar('PACKAGE_FEED_ARCHS', 'corei7_64 intel_x86_64 noarch')
+            elif img_pkgtype == 'deb':
+                d.setVar('PACKAGE_FEED_ARCHS', 'corei7-64 intel_x86_64 all')
         d.appendVarFlag('do_install', 'depends', ' ovmf:do_deploy')
 
     for dep in d.getVar('EXAMPLEYAMLS_DEPENDS').split():
         d.appendVarFlag('do_populate_sysroot', 'depends', ' ' + dep)
 
-    img_pkgtype = d.getVar('IMAGE_PKGTYPE')
     if not d.getVar('PACKAGE_FEED_URIS') or not d.getVar('PACKAGE_FEED_BASE_PATHS'):
         if img_pkgtype == "rpm":
             d.setVar('PACKAGE_FEED_URIS', 'https://distro.windriver.com/release/wrlinux/linux-cd/base')

@@ -40,6 +40,8 @@ DEFAULT_IMAGE_FEATURES = {
     'image_linguas': '${IMAGE_LINGUAS}',
 }
 
+PACKAGE_FEED_ARCHS = '${PACKAGE_FEED_ARCHS}'
+
 FEED_ARCHS_DICT = {
     'intel-x86-64': "all any noarch x86 i586 i686 core2_32 corei7_32 intel_x86_64 x86_64 core2_64 corei7_64",
     'bcm-2xxx-rpi4': "all any noarch armv5hf_vfp armv5thf_vfp armv5ehf_vfp armv5tehf_vfp armv6hf_vfp armv6thf_vfp armv7ahf_vfp armv7at2hf_vfp armv7ahf_neon armv7at2hf_neon bcm_2xxx_rpi4 aarch64 armv8a armv8a_crc armv8a_crypto armv8a_crc_crypto cortexa72",
