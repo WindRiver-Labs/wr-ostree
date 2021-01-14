@@ -16,8 +16,11 @@
 #
 include genimage.inc
 
-RDEPENDS_${PN} = "nativesdk-dnf \
-                  nativesdk-rpm \
+RDEPENDS_${PN} = " \
+                  ${@bb.utils.contains('PACKAGE_CLASSES','package_rpm','nativesdk-dnf','',d)} \
+                  ${@bb.utils.contains('PACKAGE_CLASSES','package_rpm','nativesdk-rpm','',d)} \
+                  ${@bb.utils.contains('PACKAGE_CLASSES','package_deb','nativesdk-apt','',d)} \
+                  ${@bb.utils.contains('PACKAGE_CLASSES','package_deb','nativesdk-dpkg','',d)} \
                   nativesdk-createrepo-c \
                   nativesdk-dosfstools \
                   nativesdk-syslinux \
