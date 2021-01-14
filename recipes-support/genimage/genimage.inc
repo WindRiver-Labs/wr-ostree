@@ -17,7 +17,8 @@ SRC_URI = "\
            file://genimage/gencontainer.py \
            file://genimage/utils.py \
            file://genimage/constant.py.in \
-           file://genimage/package_manager.py \
+           file://genimage/package_manager/__init__.py \
+           file://genimage/package_manager/rpm/__init__.py \
            file://genimage/rootfs.py \
            file://genimage/image.py \
            file://genimage/container.py \
@@ -173,6 +174,7 @@ do_copy_src() {
     install -m 0644 ${WORKDIR}/COPYING ${S}/
     install -d ${S}/genimage
     install -m 0644 ${WORKDIR}/genimage/*.py ${S}/genimage
+    cp -rf ${WORKDIR}/genimage/package_manager ${S}/genimage/
 
     install -m 0644 ${WORKDIR}/METADATA.in ${S}
     install -m 0644 ${WORKDIR}/README.md ${S}

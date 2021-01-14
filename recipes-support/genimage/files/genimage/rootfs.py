@@ -21,7 +21,8 @@ import yaml
 from collections import OrderedDict
 import logging
 
-from genimage.package_manager import DnfRpm
+from genimage.package_manager import get_pm_class
+from genimage.constant import DEFAULT_IMAGE_PKGTYPE
 import genimage.utils as utils
 
 logger = logging.getLogger('appsdk')
@@ -38,6 +39,7 @@ class Rootfs(object):
                  remote_pkgdatadir=None,
                  target_rootfs=None,
                  image_linguas=None,
+                 pkgtype=DEFAULT_IMAGE_PKGTYPE,
                  pkg_globs=None):
 
         self.workdir = workdir
@@ -64,10 +66,11 @@ class Rootfs(object):
             os.environ['REMOTE_PKGDATADIR'] = remote_pkgdatadir
             self.rootfs_pre_scripts.append(script_cmd)
 
+        PackageManager = get_pm_class(pkgtype=pkgtype)
         if remote_pkgdatadir:
-            self.pm = DnfRpm(self.workdir, self.target_rootfs, self.machine, remote_pkgdatadir)
+            self.pm = PackageManager(self.workdir, self.target_rootfs, self.machine, remote_pkgdatadir)
         else:
-            self.pm = DnfRpm(self.workdir, self.target_rootfs, self.machine)
+            self.pm = PackageManager(self.workdir, self.target_rootfs, self.machine)
 
         self.pm.create_configs()
 
@@ -142,9 +145,10 @@ class Rootfs(object):
     def create(self):
         self._pre_rootfs()
 
-        self.pm.insert_feeds_uris(self.pkg_feeds, True if 'dnf' in self.packages else False)
-        self.pm.update()
+        self.pm.create_configs()
+        self.pm.insert_feeds_uris(self.pkg_feeds, True if 'dnf' in self.packages or 'apt' in self.packages else False)
         self.pm.set_exclude(self.exclude_packages)
+        self.pm.update()
         self.pm.install(self.packages)
         self.pm.install_complementary(self.pkg_globs)
 
@@ -162,10 +166,9 @@ class Rootfs(object):
         self.pm.install(self.external_packages)
         self._save_installed()
 
-        self.pm.run_intercepts()
+        self.pm.post_install()
 
-        if 'dnf' in self.packages:
-            self.pm.set_dnf_conf()
+        self.pm.run_intercepts()
 
         self._post_rootfs()
 

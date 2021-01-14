@@ -28,70 +28,12 @@ import configparser
 from genimage.utils import set_logger
 from genimage.constant import FEED_ARCHS_DICT
 from genimage.constant import DEFAULT_LOCAL_PACKAGE_FEED
+from genimage.package_manager import PackageManager
+from genimage.package_manager import failed_postinsts_abort
 import genimage.utils as utils
 logger = logging.getLogger('appsdk')
 
-def failed_postinsts_abort(pkgs, log_path):
-    logger.error("""Postinstall scriptlets of %s have failed. If the intention is to defer them to first boot,
-then please place them into pkg_postinst_ontarget_${PN} ().
-Deferring to first boot via 'exit 1' is no longer supported.
-Details of the failure are in %s.""" %(pkgs, log_path))
-    sys.exit(1)
-
-class DnfRpm:
-    def __init__(self,
-                 workdir = os.path.join(os.getcwd(),"workdir"),
-                 target_rootfs = os.path.join(os.getcwd(), "workdir/rootfs"),
-                 machine = 'intel-x86-64',
-                 remote_pkgdatadir = None):
-
-        self.workdir = workdir
-        self.target_rootfs = target_rootfs
-        
-        self.temp_dir = os.path.join(workdir, "temp")
-        utils.mkdirhier(self.target_rootfs)
-        utils.mkdirhier(self.temp_dir)
-
-        self.feed_archs= FEED_ARCHS_DICT.get(machine)
-
-        self.package_seed_sign = False
-
-        self.bad_recommendations = []
-        self.package_exclude = []
-        self.primary_arch = machine.replace('-', '_')
-        self.machine = machine
-
-        self.remote_pkgdatadir = remote_pkgdatadir
-
-        if utils.is_sdk():
-            self.pkgdatadir = os.path.join(os.environ['OECORE_NATIVE_SYSROOT'], "../pkgdata", machine)
-        elif utils.is_build():
-            self.pkgdatadir = os.path.join(utils.sysroot_dir, "../pkgdata", machine)
-        else:
-            logger.error("Neither sdk or build")
-            sys.exit(1)
-
-        self.oe_pkgdata_util = os.path.join(os.environ['OECORE_NATIVE_SYSROOT'], "usr/share/poky/scripts/oe-pkgdata-util")
-
-        self._initialize_intercepts()
-
-    def _initialize_intercepts(self):
-        logger.debug("Initializing intercept dir for %s" % self.target_rootfs)
-        # As there might be more than one instance of PackageManager operating at the same time
-        # we need to isolate the intercept_scripts directories from each other,
-        # hence the ugly hash digest in dir name.
-        self.intercepts_dir = os.path.join(self.workdir, "intercept_scripts-%s" %
-                                           (hashlib.sha256(self.target_rootfs.encode()).hexdigest()))
-
-        postinst_intercepts_path = "%s/usr/share/poky/scripts/postinst-intercepts" % os.environ['OECORE_NATIVE_SYSROOT']
-        postinst_intercepts = utils.which_wild('*', postinst_intercepts_path)
-
-        logger.debug('Collected intercepts:\n%s' % ''.join('  %s\n' % i for i in postinst_intercepts))
-        utils.remove(self.intercepts_dir, True)
-        utils.mkdirhier(self.intercepts_dir)
-        for intercept in postinst_intercepts:
-            utils.copyfile(intercept, os.path.join(self.intercepts_dir, os.path.basename(intercept)))
-
+class DnfRpm(PackageManager):
     def _configure_dnf(self):
         # libsolv handles 'noarch' internally, we don't need to specify it explicitly
         archs = [i for i in reversed(self.feed_archs.split()) if i not in ["any", "all", "noarch"]]
@@ -226,7 +168,12 @@ class DnfRpm:
         self.package_exclude = list(set(self.package_exclude))
         logger.debug("Set Exclude Packages: %s", self.package_exclude)
 
-    def set_dnf_conf(self):
+    def post_install(self):
+        logger.debug("post_install")
+        if 'dnf' in self.list_installed():
+            self._set_target_dnf_conf()
+
+    def _set_target_dnf_conf(self):
         if not self.package_exclude:
             return
 
@@ -367,52 +314,6 @@ class DnfRpm:
         # Save the package postinstalls in /etc/rpm-postinsts
         for pkg in registered_pkgs.split():
             self.save_rpmpostinst(pkg)
-
-    def _postpone_to_first_boot(self, postinst_intercept_hook):
-        with open(postinst_intercept_hook) as intercept:
-            registered_pkgs = None
-            for line in intercept.read().split("\n"):
-                m = re.match(r"^##PKGS:(.*)", line)
-                if m is not None:
-                    registered_pkgs = m.group(1).strip()
-                    break
-
-            if registered_pkgs is not None:
-                logger.debug("If an image is being built, the postinstalls for the following packages "
-                        "will be postponed for first boot: %s" %
-                        registered_pkgs)
-
-                # call the backend dependent handler
-                self._handle_intercept_failure(registered_pkgs)
-
-    def run_intercepts(self):
-        intercepts_dir = self.intercepts_dir
-
-        logger.debug("Running intercept scripts:")
-        os.environ['D'] = self.target_rootfs
-        os.environ['STAGING_DIR_NATIVE'] = os.environ['OECORE_NATIVE_SYSROOT']
-        os.environ['libdir_native'] = "/usr/lib"
-
-        for script in os.listdir(intercepts_dir):
-            script_full = os.path.join(intercepts_dir, script)
-
-            if script == "postinst_intercept" or not os.access(script_full, os.X_OK):
-                continue
-
-            # we do not want to run any multilib variant of this
-            if script.startswith("delay_to_first_boot"):
-                self._postpone_to_first_boot(script_full)
-                continue
-
-            logger.debug("> Executing %s intercept ..." % script)
-            res, output = utils.run_cmd(script_full)
-            if res:
-                if "qemuwrapper: qemu usermode is not supported" in output:
-                    logger.debug("The postinstall intercept hook '%s' could not be executed due to missing qemu usermode support"
-                            % (script))
-                    self._postpone_to_first_boot(script_full)
-                else:
-                    logger.warning("The postinstall intercept hook '%s' failed, ignore it\n%s" % (script, output))
 
     def install_complementary(self, globs=""):
         """
