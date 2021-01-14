@@ -152,6 +152,7 @@ def fake_root(workdir = os.path.join(os.getcwd(),"workdir")):
     os.environ['PSEUDO_NOSYMLINKEXP'] = "1"
     os.environ['LD_PRELOAD'] = os.path.join(native_sysroot, 'usr/lib/pseudo/lib64/libpseudo.so')
     os.environ['LC_ALL'] = "en_US.UTF-8"
+    os.environ['libexecdir'] = '/usr/libexec'
 
 def fake_root_set_passwd(rootfs=None):
     if rootfs is None:
@@ -168,6 +169,20 @@ def mkdirhier(directory):
     except subprocess.CalledProcessError as e:
         raise Exception("Create dir %s failed, please make sure you have the permission" % directory)
 
+def write(file_path, mode="w", content=None):
+    if not file_path or not mode or content is None:
+        return
+    if not content:
+        cmd = "touch %s" % file_path
+    else:
+        if mode == "w":
+            cmd = "echo '%s' > %s" % (content, file_path)
+        elif mode in ["w+", "a+"]:
+            cmd = "echo '%s' >> %s" % (content, file_path)
+    try:
+        res = subprocess.check_call(cmd, shell=True, stderr=subprocess.STDOUT)
+    except subprocess.CalledProcessError as e:
+        raise Exception("Write file %s failed" % res)
 
 def remove(path, recurse=False, ionice=False):
     """Equivalent to rm -f or rm -rf"""
@@ -387,4 +402,3 @@ def is_build():
     if os.path.exists(os.path.join(sysroot_dir, "x86_64")):
         return True
     return False
-
