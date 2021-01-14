@@ -19,6 +19,7 @@ SRC_URI = "\
            file://genimage/constant.py.in \
            file://genimage/package_manager/__init__.py \
            file://genimage/package_manager/rpm/__init__.py \
+           file://genimage/package_manager/deb/__init__.py \
            file://genimage/rootfs.py \
            file://genimage/image.py \
            file://genimage/container.py \
