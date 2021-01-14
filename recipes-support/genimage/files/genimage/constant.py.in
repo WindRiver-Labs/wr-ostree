@@ -109,11 +109,10 @@ DEFAULT_CONTAINER_PACKAGES = '''
     base-files
     base-passwd
     ca-certificates
-    dnf
+    ${PKG_MNGT_PACKAGE}
     openssh
     os-release
     packagegroup-core-base-utils
-    rpm
     run-postinsts
     update-alternatives-opkg
 '''.split()

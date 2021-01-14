@@ -171,6 +171,11 @@ DEFAULT_PACKAGE_FEED = ""
 
 IMAGE_BOOT_FILES ??= ""
 
+PKG_MNGT_PACKAGE = " \
+    ${@oe.utils.conditional('IMAGE_PKGTYPE', 'rpm', 'dnf rpm', '', d)} \
+    ${@oe.utils.conditional('IMAGE_PKGTYPE', 'deb', 'apt dpkg', '', d)} \
+"
+
 do_copy_src() {
     install -m 0644 ${WORKDIR}/COPYING ${S}/
     install -d ${S}/genimage
