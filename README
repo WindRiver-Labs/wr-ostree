@@ -20,10 +20,23 @@ Building with wr-ostree layer
 ---------------------------
 This layer should be added to the bblayers.conf file.
 
-Notes
------
-The layer is validate with Wind River intel-x86-64 BSP.
+BSP Support
+-----------
+- intel-x86-64
+- bcm-2xxx-rpi4
+- xilinx-zynqmp
 
+Note, the following security features are only supported on intel-x86-64 BSP
+and wrlinux DISTRO, other BSPs and DISTROs may not work with them:
+
+  feature/efi-secure-boot
+  feature/encrypted-storage
+  feature/ima
+  feature/tpm2
+  feature/initramfs-integrated (not working with efi-secure-boot)
+
+DISTRO Support
+----------------
 The following table summarizes the valid Wind River Linux distros for this layer.
 'Y' in each content cell stands for supported; 'N' stands for not supported:
 
@@ -32,13 +45,6 @@ The following table summarizes the valid Wind River Linux distros for this layer
   +--------------+-------------+-------------+
   |    valid     |      Y      |      Y      |
   +--------------+-------------+-------------+
-
-Due to ostree rootfs structure limitation, only the following feature
-are validated with ostree enabled:
-
-  feature/efi-secure-boot
-  feature/initramfs-integrated (not working with efi-secure-boot)
-
 
 License
 -------
