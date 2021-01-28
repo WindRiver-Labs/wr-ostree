@@ -36,8 +36,6 @@ from genimage.constant import DEFAULT_IMAGE
 from genimage.constant import DEFAULT_INITRD_NAME
 from genimage.constant import DEFAULT_CONTAINER_NAME
 from genimage.constant import DEFAULT_OCI_CONTAINER_DATA
-from genimage.constant import DEFAULT_PACKAGE_FEED
-from genimage.constant import DEFAULT_REMOTE_PKGDATADIR
 from genimage.constant import DEFAULT_IMAGE_FEATURES
 
 from genimage.genimage import GenImage

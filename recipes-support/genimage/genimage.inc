@@ -216,3 +216,57 @@ do_install_append() {
 	install -m 0755 ${WORKDIR}/crossscripts/* ${D}${bindir}/crossscripts
 }
 
+PACKAGE_FEED_URIS ??= ""
+PACKAGE_FEED_BASE_PATHS ??= ""
+RPM_PACKAGE_FEED_URIS ??= ""
+DEB_PACKAGE_FEED_URIS ??= ""
+RPM_PACKAGE_FEED_BASE_PATHS ??= ""
+DEB_PACKAGE_FEED_BASE_PATHS ??= ""
+REMOTE_RPM_PKGDATADIR ??= ""
+REMOTE_DEB_PKGDATADIR ??= ""
+python __anonymous () {
+    machine = d.getVar('MACHINE')
+    if machine == 'bcm-2xxx-rpi4':
+        d.setVar('RPM_PACKAGE_FEED_ARCHS', 'cortexa72 bcm_2xxx_rpi4 noarch')
+        d.setVar('DEB_PACKAGE_FEED_ARCHS', 'cortexa72 bcm_2xxx_rpi4 all')
+    elif machine == 'intel-x86-64':
+        d.setVar('RPM_PACKAGE_FEED_ARCHS', 'corei7_64 intel_x86_64 noarch')
+        d.setVar('DEB_PACKAGE_FEED_ARCHS', 'corei7-64 intel_x86_64 all')
+
+    # If PACKAGE_FEED_URIS is available, use it as default rpm and deb feed uris
+    if d.getVar('PACKAGE_FEED_URIS'):
+        if not d.getVar('DEB_PACKAGE_FEED_URIS'):
+            d.setVar('DEB_PACKAGE_FEED_URIS', d.getVar('PACKAGE_FEED_URIS'))
+
+        if not d.getVar('RPM_PACKAGE_FEED_URIS'):
+            d.setVar('RPM_PACKAGE_FEED_URIS', d.getVar('PACKAGE_FEED_URIS'))
+    else:
+        # Use distro.windriver.com as default rpm feed uris
+        if not d.getVar('RPM_PACKAGE_FEED_URIS'):
+            d.setVar('RPM_PACKAGE_FEED_URIS', 'https://distro.windriver.com/release/wrlinux/linux-cd/base')
+            d.setVar('RPM_PACKAGE_FEED_BASE_PATHS', 'WRLinux-CD-Images/intel-x86-64/repos/rpm')
+
+    # If PACKAGE_FEED_BASE_PATHS is available, use it for rpm only
+    if d.getVar('PACKAGE_FEED_BASE_PATHS'):
+        if not d.getVar('RPM_PACKAGE_FEED_BASE_PATHS'):
+            d.setVar('RPM_PACKAGE_FEED_BASE_PATHS', d.getVar('PACKAGE_FEED_BASE_PATHS'))
+    else:
+        if not d.getVar('DEB_PACKAGE_FEED_BASE_PATHS'):
+            d.setVar('DEB_PACKAGE_FEED_BASE_PATHS', 'deb')
+        if not d.getVar('RPM_PACKAGE_FEED_BASE_PATHS'):
+            d.setVar('RPM_PACKAGE_FEED_BASE_PATHS', 'rpm')
+
+    remote_rpm_uris = get_remote_uris(d.getVar('RPM_PACKAGE_FEED_URIS') or "",
+                                      d.getVar('RPM_PACKAGE_FEED_BASE_PATHS') or "",
+                                      d.getVar('RPM_PACKAGE_FEED_ARCHS'))
+    d.setVar("DEFAULT_RPM_PACKAGE_FEED", remote_rpm_uris)
+    d.setVar("REMOTE_RPM_PKGDATADIR", d.expand("${RPM_PACKAGE_FEED_URIS}/${RPM_PACKAGE_FEED_BASE_PATHS}"))
+
+    if d.getVar('DEB_PACKAGE_FEED_URIS'):
+        remote_deb_uris = get_remote_uris(d.getVar('DEB_PACKAGE_FEED_URIS') or "",
+                                          d.getVar('DEB_PACKAGE_FEED_BASE_PATHS') or "",
+                                          d.getVar('DEB_PACKAGE_FEED_ARCHS'))
+        d.setVar("DEFAULT_DEB_PACKAGE_FEED", remote_deb_uris)
+        d.setVar("REMOTE_DEB_PKGDATADIR", d.expand("${DEB_PACKAGE_FEED_URIS}/${DEB_PACKAGE_FEED_BASE_PATHS}"))
+
+}

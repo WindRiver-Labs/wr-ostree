@@ -87,11 +87,11 @@ class GenImage(GenXXX):
         self.data['name'] = DEFAULT_IMAGE
         self.data['machine'] = DEFAULT_MACHINE
         self.data['image_type'] = ['ustart', 'ostree-repo']
-        self.data['package_feeds'] = DEFAULT_PACKAGE_FEED
-        self.data['package_type'] = DEFAULT_IMAGE_PKGTYPE
+        self.data['package_feeds'] = DEFAULT_PACKAGE_FEED[self.pkg_type]
+        self.data['package_type'] = self.pkg_type
         self.data["ostree"] = constant.DEFAULT_OSTREE_DATA
         self.data["wic"] = constant.DEFAULT_WIC_DATA
-        self.data['remote_pkgdatadir'] = DEFAULT_REMOTE_PKGDATADIR
+        self.data['remote_pkgdatadir'] = DEFAULT_REMOTE_PKGDATADIR[self.pkg_type]
         self.data['features'] =  DEFAULT_IMAGE_FEATURES
         self.data["gpg"] = constant.DEFAULT_GPG_DATA
         self.data['packages'] = DEFAULT_PACKAGES[DEFAULT_MACHINE]

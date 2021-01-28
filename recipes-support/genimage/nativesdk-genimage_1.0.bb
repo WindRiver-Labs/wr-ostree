@@ -75,30 +75,11 @@ FILES_${PN} = "${SDKPATHNATIVE}"
 python __anonymous () {
     override = d.getVar('OVERRIDE')
     machine = d.getVar('MACHINE')
-    img_pkgtype = d.getVar('IMAGE_PKGTYPE')
     if machine == 'bcm-2xxx-rpi4':
         d.appendVar('OVERRIDES', ':{0}:aarch64'.format(machine))
-        if not d.getVar('PACKAGE_FEED_ARCHS'):
-            if img_pkgtype == 'rpm':
-                d.setVar('PACKAGE_FEED_ARCHS', 'cortexa72 bcm_2xxx_rpi4 noarch')
-            elif img_pkgtype == 'deb':
-                d.setVar('PACKAGE_FEED_ARCHS', 'cortexa72 bcm_2xxx_rpi4 all')
     elif machine == 'intel-x86-64':
         d.appendVar('OVERRIDES', ':{0}:x86-64'.format(machine))
-        if not d.getVar('PACKAGE_FEED_ARCHS'):
-            if img_pkgtype == 'rpm':
-                d.setVar('PACKAGE_FEED_ARCHS', 'corei7_64 intel_x86_64 noarch')
-            elif img_pkgtype == 'deb':
-                d.setVar('PACKAGE_FEED_ARCHS', 'corei7-64 intel_x86_64 all')
 
-    if not d.getVar('PACKAGE_FEED_URIS') or not d.getVar('PACKAGE_FEED_BASE_PATHS'):
-        d.setVar('PACKAGE_FEED_URIS', 'https://distro.windriver.com/release/wrlinux/linux-cd/base')
-        d.setVar('PACKAGE_FEED_BASE_PATHS', 'WRLinux-CD-Images/intel-x86-64/repos/rpm')
-
-    remote_uris = get_remote_uris(d.getVar('PACKAGE_FEED_URIS') or "",
-                                  d.getVar('PACKAGE_FEED_BASE_PATHS') or "",
-                                  d.getVar('PACKAGE_FEED_ARCHS'))
-    d.setVar("DEFAULT_PACKAGE_FEED", remote_uris)
-
-    d.setVar("DEFAULT_LOCAL_PACKAGE_FEED", "")
+    d.setVar("DEFAULT_LOCAL_RPM_PACKAGE_FEED", "")
+    d.setVar("DEFAULT_LOCAL_DEB_PACKAGE_FEED", "")
 }

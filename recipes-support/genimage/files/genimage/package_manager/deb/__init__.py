@@ -9,9 +9,9 @@ import tempfile
 
 from genimage.utils import set_logger
 from genimage.constant import FEED_ARCHS_DICT
-from genimage.constant import DEFAULT_LOCAL_PACKAGE_FEED
+from genimage.constant import DEFAULT_LOCAL_DEB_PACKAGE_FEED
 from genimage.constant import DEFAULT_MACHINE
-from genimage.constant import PACKAGE_FEED_ARCHS
+from genimage.constant import DEB_PACKAGE_FEED_ARCHS
 from genimage.package_manager import PackageManager
 from genimage.package_manager import failed_postinsts_abort
 import genimage.utils as utils
@@ -105,7 +105,7 @@ class AptDeb(PackageManager):
 
         self.apt_args = os.getenv('APT_ARGS', '')
 
-        self.all_arch_list = PACKAGE_FEED_ARCHS.split()
+        self.all_arch_list = DEB_PACKAGE_FEED_ARCHS.split()
 
     def _configure_apt(self):
         base_archs = debian_arch_map(self.machine)
@@ -191,7 +191,7 @@ class AptDeb(PackageManager):
                 utils.write(os.path.join(self.apt_conf_dir, "sources.list"), 'w+', "deb %s ./\n" % uri)
 
         if utils.is_build():
-            for uri in DEFAULT_LOCAL_PACKAGE_FEED:
+            for uri in DEFAULT_LOCAL_DEB_PACKAGE_FEED:
                 utils.write(os.path.join(self.apt_conf_dir, "sources.list"), 'a+', "deb %s ./\n" % uri)
 
     def set_exclude(self, package_exclude = None):
@@ -400,7 +400,7 @@ class AptDeb(PackageManager):
 
 
 def test():
-    from genimage.constant import DEFAULT_PACKAGE_FEED
+    from genimage.constant import DEFAULT_RPM_PACKAGE_FEED
     from genimage.constant import DEFAULT_PACKAGES, DEFAULT_CONTAINER_PACKAGES
     from genimage.constant import DEFAULT_MACHINE
     from genimage.constant import DEFAULT_IMAGE
@@ -416,7 +416,7 @@ def test():
     #package = DEFAULT_CONTAINER_PACKAGES
     pm = AptDeb(machine=DEFAULT_MACHINE)
     pm.create_configs()
-    pm.insert_feeds_uris(DEFAULT_PACKAGE_FEED)
+    pm.insert_feeds_uris(DEFAULT_RPM_PACKAGE_FEED)
     #pm.set_exclude(["systemd"])
     pm.update()
     pm.install(package)

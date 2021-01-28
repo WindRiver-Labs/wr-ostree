@@ -63,9 +63,9 @@ class GenInitramfs(GenXXX):
         self.data['name'] = DEFAULT_INITRD_NAME
         self.data['machine'] = DEFAULT_MACHINE
         self.data['image_type'] = ['initramfs']
-        self.data['package_feeds'] = DEFAULT_PACKAGE_FEED
-        self.data['package_type'] = DEFAULT_IMAGE_PKGTYPE
-        self.data['remote_pkgdatadir'] = DEFAULT_REMOTE_PKGDATADIR
+        self.data['package_feeds'] = DEFAULT_PACKAGE_FEED[self.pkg_type]
+        self.data['package_type'] = self.pkg_type
+        self.data['remote_pkgdatadir'] = DEFAULT_REMOTE_PKGDATADIR[self.pkg_type]
         self.data['features'] =  DEFAULT_IMAGE_FEATURES
         self.data["gpg"] = constant.DEFAULT_GPG_DATA
         self.data['packages'] = OSTREE_INITRD_PACKAGES

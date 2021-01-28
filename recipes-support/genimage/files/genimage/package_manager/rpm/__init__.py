@@ -27,7 +27,7 @@ import configparser
 
 from genimage.utils import set_logger
 from genimage.constant import FEED_ARCHS_DICT
-from genimage.constant import DEFAULT_LOCAL_PACKAGE_FEED
+from genimage.constant import DEFAULT_LOCAL_RPM_PACKAGE_FEED
 from genimage.package_manager import PackageManager
 from genimage.package_manager import failed_postinsts_abort
 import genimage.utils as utils
@@ -124,7 +124,7 @@ class DnfRpm(PackageManager):
                         "[%s]\nname=%s\nbaseurl=%s\n%s" % (repo_base, repo_name, repo_uri, gpg_opts))
 
         if utils.is_build():
-            for uri in DEFAULT_LOCAL_PACKAGE_FEED:
+            for uri in DEFAULT_LOCAL_RPM_PACKAGE_FEED:
                 repo_base = "oe-local-repo" + "-".join(urlparse(uri).path.split("/"))
                 repo_name = "OE Local Repo:" + " ".join(urlparse(uri).path.split("/"))
                 repo_uri = uri
@@ -351,7 +351,7 @@ class DnfRpm(PackageManager):
             self.install(install_pkgs, attempt_only=True)
 
 def test():
-    from genimage.constant import DEFAULT_PACKAGE_FEED
+    from genimage.constant import DEFAULT_RPM_PACKAGE_FEED
     from genimage.constant import DEFAULT_PACKAGES
     from genimage.constant import DEFAULT_MACHINE
     from genimage.constant import DEFAULT_IMAGE
@@ -366,7 +366,7 @@ def test():
     pm = DnfRpm(machine=DEFAULT_MACHINE)
     pm.create_configs()
     pm.update()
-    pm.insert_feeds_uris(DEFAULT_PACKAGE_FEED)
+    pm.insert_feeds_uris(DEFAULT_RPM_PACKAGE_FEED)
     pm.install(package)
     pm.install_complementary("*-src *-dev *-dbg")
     #pm.run_intercepts()

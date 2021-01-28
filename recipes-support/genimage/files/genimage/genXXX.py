@@ -31,6 +31,7 @@ from genimage.utils import show_task_info
 import genimage.constant as constant
 from genimage.constant import DEFAULT_MACHINE
 from genimage.constant import DEFAULT_LOCAL_PACKAGE_FEED
+from genimage.constant import DEFAULT_IMAGE_PKGTYPE
 from genimage.rootfs import Rootfs
 
 import genimage.utils as utils
@@ -130,6 +131,8 @@ class GenXXX(object, metaclass=ABCMeta):
         self.today = get_today()
         self.data = OrderedDict()
 
+        self.pkg_type = self._get_pkg_type(args)
+
         self._parse_default()
         self._parse_inputyamls()
         self._parse_options()
@@ -141,7 +144,6 @@ class GenXXX(object, metaclass=ABCMeta):
         self.packages = self.data['packages']
         self.external_packages = self.data['external-packages']
         self.exclude_packages = []
-        self.pkg_type = self.data['package_type']
         self.pkg_feeds = self.data['package_feeds']
         self.remote_pkgdatadir = self.data['remote_pkgdatadir']
         self.features = self.data['features']
@@ -168,7 +170,7 @@ class GenXXX(object, metaclass=ABCMeta):
         logger.info("External Packages Number: %d" % len(self.external_packages))
         logger.debug("External Packages: %s" % self.external_packages)
         if utils.is_build():
-            logger.info("Local Package Feeds To Generate Image:\n%s\n" % '\n'.join(DEFAULT_LOCAL_PACKAGE_FEED))
+            logger.info("Local Package Feeds To Generate Image:\n%s\n" % '\n'.join(DEFAULT_LOCAL_PACKAGE_FEED[self.pkg_type]))
             if self.pkg_feeds:
                 logger.info("Remote Package Feeds as Target Yum Repo:\n%s\n" % '\n'.join(self.pkg_feeds))
         elif utils.is_sdk():
@@ -176,6 +178,26 @@ class GenXXX(object, metaclass=ABCMeta):
         logger.info("enviroments: %s", self.environments)
         logger.debug("Deploy Directory: %s" % self.outdir)
         logger.debug("Work Directory: %s" % self.workdir)
+
+    def _get_pkg_type(self, args):
+        pkg_type = DEFAULT_IMAGE_PKGTYPE
+
+        # Collect package_type from input yamls
+        if args.input:
+            for input_glob in args.input:
+                if not glob.glob(input_glob):
+                    continue
+                for yaml_file in glob.glob(input_glob):
+                    with open(yaml_file) as f:
+                        d = yaml.load(f, Loader=yaml.FullLoader) or dict()
+                        if 'package_type' in d:
+                            pkg_type = d['package_type']
+
+        # Use option --pkg-type to override
+        if args.pkg_type:
+            pkg_type = args.pkg_type
+
+        return pkg_type
 
     @abstractmethod
     def _parse_default(self):
@@ -259,9 +281,6 @@ class GenXXX(object, metaclass=ABCMeta):
 
         if self.args.url:
             self.data['package_feeds'].extend(self.args.url)
-
-        if self.args.pkg_type:
-            self.data['package_type'] = self.args.pkg_type
 
         if self.args.pkg:
             self.data['packages'].extend(self.args.pkg)
