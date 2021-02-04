@@ -1,7 +1,5 @@
 include genimage.inc
 
-inherit native
-
 SRC_URI += " \
     file://environment-appsdk-native \
 "
@@ -168,3 +166,5 @@ python __anonymous () {
 }
 
 EXCLUDE_FROM_WORLD = "1"
+
+inherit native
