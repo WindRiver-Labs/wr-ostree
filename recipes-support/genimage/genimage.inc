@@ -86,7 +86,22 @@ S = "${WORKDIR}/sources"
 
 inherit setuptools3
 
-inherit image-oci
+OCI_IMAGE_AUTHOR ?= "${PATCH_GIT_USER_NAME}"
+OCI_IMAGE_AUTHOR_EMAIL ?= "${PATCH_GIT_USER_EMAIL}"
+OCI_IMAGE_TAG ?= "latest"
+OCI_IMAGE_RUNTIME_UID ?= ""
+OCI_IMAGE_WORKINGDIR ?= ""
+
+# List of ports to expose from a container running this image:
+#  PORT[/PROT]
+#     format: <port>/tcp, <port>/udp, or <port> (same as <port>/tcp).
+OCI_IMAGE_PORTS ?= ""
+
+# key=value list of labels
+OCI_IMAGE_LABELS ?= ""
+
+# key=value list of environment variables
+OCI_IMAGE_ENV_VARS ?= ""
 
 do_unpack[vardeps] += "MACHINE PACKAGE_FEED_BASE_PATHS PACKAGE_FEED_ARCHS PACKAGE_FEED_URIS"
 do_unpack_append() {
