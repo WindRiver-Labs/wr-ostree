@@ -175,11 +175,18 @@ class AptDeb(PackageManager):
         super(AptDeb, self).insert_feeds_uris(remote_uris, save_repo)
 
         for uri in remote_uris:
+            uri_has_suite = len(uri.strip().split()) > 1
             if save_repo:
-                utils.write(os.path.join("%s/etc/apt/sources.list" % self.target_rootfs), 'w+', "deb [trusted=yes] %s ./\n" % uri)
+                if not uri_has_suite:
+                    utils.write(os.path.join("%s/etc/apt/sources.list" % self.target_rootfs), 'w+', "deb [trusted=yes] %s ./\n" % uri)
+                else:
+                    utils.write(os.path.join("%s/etc/apt/sources.list" % self.target_rootfs), 'w+', "deb [trusted=yes] %s\n" % uri)
 
             if utils.is_sdk():
-                utils.write(os.path.join(self.apt_conf_dir, "sources.list"), 'w+', "deb %s ./\n" % uri)
+                if not uri_has_suite:
+                    utils.write(os.path.join(self.apt_conf_dir, "sources.list"), 'w+', "deb %s ./\n" % uri)
+                else:
+                    utils.write(os.path.join(self.apt_conf_dir, "sources.list"), 'w+', "deb [trusted=yes] %s\n" % uri)
 
             # For native build
             elif utils.is_build():
@@ -188,12 +195,18 @@ class AptDeb(PackageManager):
                     continue
 
                 # Use third party repo to generate image
-                utils.write(os.path.join(self.apt_conf_dir, "sources.list"), 'w+', "deb %s ./\n" % uri)
+                if not uri_has_suite:
+                    utils.write(os.path.join(self.apt_conf_dir, "sources.list"), 'w+', "deb %s ./\n" % uri)
+                else:
+                    utils.write(os.path.join(self.apt_conf_dir, "sources.list"), 'w+', "deb [trusted=yes] %s\n" % uri)
 
         if utils.is_build():
             for uri in DEFAULT_LOCAL_DEB_PACKAGE_FEED:
-                utils.write(os.path.join(self.apt_conf_dir, "sources.list"), 'a+', "deb %s ./\n" % uri)
-
+                if not uri_has_suite:
+                    utils.write(os.path.join(self.apt_conf_dir, "sources.list"), 'a+', "deb %s ./\n" % uri)
+                else:
+                    utils.write(os.path.join(self.apt_conf_dir, "sources.list"), 'a+', "deb [trusted=yes] %s\n" % uri)
+                    
     def set_exclude(self, package_exclude = None):
         if not package_exclude:
             return
