@@ -4,6 +4,12 @@ schema;name_str:
   desc: Image name
   example: wrlinux-image-small
 
+schema;package_str:
+  type: str
+  nullable: False
+  desc: Package Manager Type
+  example: rpm
+
 schema;machine_str:
   type: str
   enum: ['intel-x86-64', 'bcm-2xxx-rpi4']

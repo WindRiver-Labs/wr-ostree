@@ -6,6 +6,8 @@ mapping:
     include: machine_str
   image_type:
     include: image_type_seq
+  package_type:
+    include: package_str
   package_feeds:
     include: package_feeds_seq
   remote_pkgdatadir:
