@@ -17,3 +17,10 @@ do_install_append() {
 }
 
 do_install[nostamp] = "1"
+
+# Workaround manifest missing failure
+python do_prepare_recipe_sysroot_prepend () {
+    machine = d.getVar('MACHINE')
+    if machine == 'bcm-2xxx-rpi4':
+        d.setVar('TARGET_ARCH', 'aarch64')
+}
