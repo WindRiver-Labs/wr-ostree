@@ -649,18 +649,22 @@ if [ "$UUID" = "auto" ] ; then
 	UUID=$(uuidgen)
 fi
 
-export PSEUDO_PREFIX=$RECIPE_SYSROOT_NATIVE/usr
-export PSEUDO_LOCALSTATEDIR=$PWD/pseudo
-export PSEUDO_PASSWD=$PWD/rootfs/etc
-export PSEUDO_NOSYMLINKEXP=1
+if [ ${UID} = "0" ]; then
+	FAKEROOTCMD=""
+else
+	export PSEUDO_PREFIX=$RECIPE_SYSROOT_NATIVE/usr
+	export PSEUDO_LOCALSTATEDIR=$PWD/pseudo
+	export PSEUDO_PASSWD=$PWD/rootfs/etc
+	export PSEUDO_NOSYMLINKEXP=1
 
-# Double check the FAKEROOTCMD and PSEUDO_PREFIX
-if [ ! -e "${FAKEROOTCMD}" ] ; then
-	echo "ERROR: Could not locate $FAKEROOTCMD"
-	exit 1
-fi
-if [ ! -d "$PSEUDO_PREFIX" ] ; then
-	PSEUDO_PREFIX=$(dirname $(dirname $FAKEROOTCMD))
+	# Double check the FAKEROOTCMD and PSEUDO_PREFIX
+	if [ ! -e "${FAKEROOTCMD}" ] ; then
+		echo "ERROR: Could not locate $FAKEROOTCMD"
+		exit 1
+	fi
+	if [ ! -d "$PSEUDO_PREFIX" ] ; then
+		PSEUDO_PREFIX=$(dirname $(dirname $FAKEROOTCMD))
+	fi
 fi
 
 if [ -z "$INST_BRANCH" ] ; then
