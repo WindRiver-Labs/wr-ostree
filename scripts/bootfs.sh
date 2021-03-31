@@ -316,7 +316,12 @@ build_bootfs() {
 			if [ ! -e $OUTDIR/$argTO ] ; then
 				d=$(dirname $OUTDIR/$argTO)
 				[ ! -d $d ] && mkdir $d
-				cp ${DEPLOY_DIR_IMAGE}/$argFROM $OUTDIR/$argTO
+				argFROM_head=`echo $argFROM | cut -b 1`
+				if [ "$argFROM_head" = "/"  ]; then
+					cp $argFROM $OUTDIR/$argTO
+				else
+					cp ${DEPLOY_DIR_IMAGE}/$argFROM $OUTDIR/$argTO
+				fi
 			else
 				fatal "Error locating: $argFROM"
 			fi

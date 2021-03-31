@@ -164,13 +164,18 @@ IMAGE_CMD_otaimg () {
 				bfiles="${IMAGE_BOOT_FILES}"
 				for f in $bfiles; do
 					set +f
-	                                argFROM=$(echo "$f" |sed -e 's#;.*##')
-	                                argTO=$(echo "$f" |sed -e 's#.*;##')
+					argFROM=$(echo "$f" |sed -e 's#;.*##')
+					argTO=$(echo "$f" |sed -e 's#.*;##')
 					if [ "$argFROM" != "$argTO" ] ; then
 						if [ ! -e ${WORKDIR}/rootfs_ota_uboot/$argTO ] ; then
 							d=$(dirname ${WORKDIR}/rootfs_ota_uboot/$argTO)
 							[ ! -d $d ] && mkdir $d
-							cp ${DEPLOY_DIR_IMAGE}/$argFROM ${WORKDIR}/rootfs_ota_uboot/$argTO
+							argFROM_head=`echo $argFROM | cut -b 1`
+							if [ "$argFROM_head" = "/"  ]; then
+								cp $argFROM ${WORKDIR}/rootfs_ota_uboot/$argTO
+							else
+								cp ${DEPLOY_DIR_IMAGE}/$argFROM ${WORKDIR}/rootfs_ota_uboot/$argTO
+							fi
 						fi
 					else
 						cp ${DEPLOY_DIR_IMAGE}/$f ${WORKDIR}/rootfs_ota_uboot

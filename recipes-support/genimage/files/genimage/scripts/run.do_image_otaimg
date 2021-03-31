@@ -144,7 +144,12 @@ do_image_otaimg() {
 					if [ ! -e $WORKDIR/rootfs_ota_uboot/$argTO ] ; then
 						d=$(dirname $WORKDIR/rootfs_ota_uboot/$argTO)
 						[ ! -d $d ] && mkdir $d
-						cp $DEPLOY_DIR_IMAGE/$argFROM $WORKDIR/rootfs_ota_uboot/$argTO
+						argFROM_head=`echo $argFROM | cut -b 1`
+						if [ "$argFROM_head" = "/"  ]; then
+							cp $argFROM ${WORKDIR}/rootfs_ota_uboot/$argTO
+						else
+							cp ${DEPLOY_DIR_IMAGE}/$argFROM ${WORKDIR}/rootfs_ota_uboot/$argTO
+						fi
 					fi
 				else
 					cp $DEPLOY_DIR_IMAGE/$f $WORKDIR/rootfs_ota_uboot
