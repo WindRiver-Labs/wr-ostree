@@ -25,6 +25,7 @@ from genimage import constant
 
 logger = logging.getLogger('appsdk')
 
+
 class Image(object, metaclass=ABCMeta):
     """
     This is an abstract class. Do not instantiate this directly.
@@ -190,7 +191,8 @@ class CreateWicImage(Image):
         wic_env['MACHINE'] = self.machine
         wic_env['WKS_FILE'] = self.wks_full_path
         wic_env['DATETIME'] = self.date
-        del wic_env['LD_PRELOAD']
+        if 'LD_PRELOAD' in wic_env:
+            del wic_env['LD_PRELOAD']
         cmd = os.path.join(wic_env['OECORE_NATIVE_SYSROOT'], "usr/share/genimage/scripts/run.do_image_wic")
         res, output = utils.run_cmd(cmd, env=wic_env)
         if res:
@@ -224,7 +226,8 @@ class CreateVMImage(Image):
 
     def create(self):
         vm_env = os.environ.copy()
-        del vm_env['LD_PRELOAD']
+        if 'LD_PRELOAD' in vm_env:
+            del vm_env['LD_PRELOAD']
         img = os.path.join(self.deploydir, "{0}.rootfs.wic".format(self.image_fullname))
         cmd = "qemu-img convert -O {0} {1} {2}.{3}".format(self.vm_type, img, img, self.vm_type)
         utils.run_cmd(cmd, shell=True, env=vm_env)
@@ -289,6 +292,7 @@ class CreateOstreeRepo(Image):
         with open(env_file, 'w') as f:
             f.writelines('{}="{}"\n'.format(k,v) for k, v in env.items())
 
+
 class CreateOstreeOTA(Image):
     def _set_allow_keys(self):
         self.allowed_keys.remove('target_rootfs')
@@ -332,7 +336,8 @@ class CreateBootfs(Image):
         self._write_readme("ustart")
 
         ustart_env = os.environ.copy()
-        del ustart_env['LD_PRELOAD']
+        if 'LD_PRELOAD' in ustart_env:
+            del ustart_env['LD_PRELOAD']
         cmd = os.path.expandvars("$OECORE_NATIVE_SYSROOT/usr/bin/bootfs.sh")
         cmd = "{0} -L -a 'instdate=BUILD_DATE instw=60' -s 0 -e {1}/{2}-{3}.env".format(cmd, self.deploydir, self.image_name, self.machine)
         res, output = utils.run_cmd(cmd, shell=True, cwd=self.workdir, env=ustart_env)
