@@ -143,7 +143,7 @@ else
 fi
 setenv fdtargs
 setenv netinstpre
-if test -n \${use_fdtdtb} || test \${use_fdtdtb} -ge 1; then
+if test -n \${use_fdtdtb} && test \${use_fdtdtb} -ge 1; then
  fdt addr \${fdt_addr}
  if test \${use_fdtdtb} -ge 2; then
   fdt get value fdtargs /chosen bootargs
