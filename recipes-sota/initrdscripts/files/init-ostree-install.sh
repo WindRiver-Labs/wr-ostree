@@ -961,6 +961,8 @@ if [ "$INSTPT" != "0" ] ; then
 	fi
 fi
 
+udevadm settle --timeout=3
+
 cnt=50
 while [ $cnt ] ; do
 	blockdev --rereadpt ${dev} 2> /dev/null > /dev/null && break
