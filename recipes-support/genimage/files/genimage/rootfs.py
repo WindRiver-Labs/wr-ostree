@@ -17,13 +17,13 @@
 import os
 import os.path
 import subprocess
-import yaml
 from collections import OrderedDict
 import logging
 
 from genimage.package_manager import get_pm_class
 from genimage.constant import DEFAULT_IMAGE_PKGTYPE
 import genimage.utils as utils
+from genimage.utils import yaml
 
 logger = logging.getLogger('appsdk')
 
@@ -74,7 +74,7 @@ class Rootfs(object):
 
         self.pm.create_configs()
 
-        self.installed_pkgs = OrderedDict()
+        self.installed_pkgs = dict()
 
         utils.fake_root_set_passwd(self.target_rootfs)
 
@@ -139,7 +139,7 @@ class Rootfs(object):
             self.installed_pkgs[k] = v
 
         with open(self.packages_yaml, "w") as f:
-            utils.ordered_dump(self.installed_pkgs, f, Dumper=yaml.SafeDumper)
+            yaml.dump(self.installed_pkgs, f)
             logger.debug("Save Installed Packages Yaml File to : %s" % (self.packages_yaml))
 
     def create(self):

@@ -18,8 +18,6 @@
 import os
 import sys
 import logging
-import yaml
-from collections import OrderedDict
 import glob
 from abc import ABCMeta, abstractmethod
 import argparse
@@ -28,6 +26,8 @@ from pykwalify.core import Core
 
 from genimage.utils import get_today
 from genimage.utils import show_task_info
+from genimage.utils import yaml
+
 import genimage.constant as constant
 from genimage.constant import DEFAULT_MACHINE
 from genimage.constant import DEFAULT_LOCAL_PACKAGE_FEED
@@ -129,7 +129,7 @@ class GenXXX(object, metaclass=ABCMeta):
     def __init__(self, args):
         self.args = args
         self.today = get_today()
-        self.data = OrderedDict()
+        self.data = dict()
 
         self.pkg_type = self._get_pkg_type(args)
 
@@ -179,6 +179,7 @@ class GenXXX(object, metaclass=ABCMeta):
         logger.debug("Deploy Directory: %s" % self.outdir)
         logger.debug("Work Directory: %s" % self.workdir)
 
+
     def _get_pkg_type(self, args):
         pkg_type = DEFAULT_IMAGE_PKGTYPE
 
@@ -189,7 +190,7 @@ class GenXXX(object, metaclass=ABCMeta):
                     continue
                 for yaml_file in glob.glob(input_glob):
                     with open(yaml_file) as f:
-                        d = yaml.load(f, Loader=yaml.FullLoader) or dict()
+                        d = yaml.load(f) or dict()
                         if 'package_type' in d:
                             pkg_type = d['package_type']
 
@@ -235,7 +236,7 @@ class GenXXX(object, metaclass=ABCMeta):
             self._validate_inputyamls(yaml_file)
 
             with open(yaml_file) as f:
-                d = yaml.load(f, Loader=yaml.FullLoader) or dict()
+                d = yaml.load(f) or dict()
 
             for key in d:
                 if key == 'machine':
@@ -312,7 +313,7 @@ class GenXXX(object, metaclass=ABCMeta):
         # The output yaml does not require to include default packages
         self.data['include-default-packages'] = "0"
         with open(self.output_yaml, "w") as f:
-            utils.ordered_dump(self.data, f, Dumper=yaml.SafeDumper)
+            yaml.dump(self.data, f)
             logger.debug("Save Yaml FIle to : %s" % (self.output_yaml))
 
     def do_prepare(self):

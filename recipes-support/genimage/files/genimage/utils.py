@@ -24,8 +24,16 @@ import glob
 import stat
 import shutil
 import re
-import yaml
-from collections import OrderedDict
+from ruamel.yaml.representer import RoundTripRepresenter
+from ruamel.yaml import YAML
+
+def repr_str(dumper: RoundTripRepresenter, data: str):
+    if '\n' in data:
+        return dumper.represent_scalar('tag:yaml.org,2002:str', data, style='|')
+    return dumper.represent_scalar('tag:yaml.org,2002:str', data)
+
+yaml = YAML()
+yaml.representer.add_representer(str, repr_str)
 
 logger = logging.getLogger('appsdk')
 
@@ -131,16 +139,6 @@ def run_cmd_oneshot(cmd, shell=True, print_output=False, cwd=None):
 day_time = time.strftime("%Y%m%d%H%M%S")
 def get_today():
     return day_time
-
-def ordered_dump(data, stream=None, Dumper=yaml.Dumper, **kwds):
-    class OrderedDumper(Dumper):
-        pass
-    def _dict_representer(dumper, data):
-        return dumper.represent_mapping(
-            yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG,
-            data.items())
-    OrderedDumper.add_representer(OrderedDict, _dict_representer)
-    return yaml.dump(data, stream, OrderedDumper, **kwds)
 
 def fake_root(workdir = os.path.join(os.getcwd(),"workdir")):
     if os.getuid() == 0:
