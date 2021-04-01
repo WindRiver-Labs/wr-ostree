@@ -1245,7 +1245,7 @@ elif [ -d ${PHYS_SYSROOT}/ostree/1/var ] ; then
 fi
 umount /var1
 
-if [ "$INSTPOST" = "ishell" ] ; then
+if [ "$INSTPOST" = "shell" ] ; then
 	echo " Entering interactive install shell, please exit to contine when done"
 	shell_start
 fi
