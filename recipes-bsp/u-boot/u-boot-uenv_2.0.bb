@@ -237,7 +237,9 @@ do_compile() {
 
     build_date=`date -u +%s`
     sed -i -e  "s/instdate=BUILD_DATE/instdate=@$build_date/" ${WORKDIR}/uEnv.txt
-
+    if [ "${MACHINE}" = "xilinx-zynqmp" ] ; then
+	sed -i '3a\setenv loadaddr 0x10000000\nsetenv fdt_addr 0xE0000\nsetenv initrd_addr 0x40000000\nsetenv console  ttyPS0\nsetenv baudrate 115200' ${WORKDIR}/uEnv.txt
+    fi
     mkimage -A arm -T script -O linux -d ${WORKDIR}/uEnv.txt ${WORKDIR}/boot.scr
 }
 
