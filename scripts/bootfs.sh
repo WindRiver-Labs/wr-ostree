@@ -380,9 +380,13 @@ write_wic() {
 	mv out-tmp/*.direct ustart.img
 	mv out-tmp/*.bmap ustart.img.bmap
 	rm -rf out-tmp
+	if [ -n "$BOOTFS_EXTRA_CMD" ]; then
+		echo "Running BOOTFS_EXTRA_CMD..."
+		eval $BOOTFS_EXTRA_CMD
+	fi
 	if [ "$COMPRESS" = "1" ] ; then
 		echo "Compressing image and writing: ustart.img.gz"
-		gzip -f ustart.img
+		gzip -f ustart*.img
 	fi
 	echo "======================== SUCCESS ==============================="
 	echo "==== Write image to device with one of the command(s) below ===="
@@ -597,6 +601,7 @@ eval `grep ^STAGING_DIR= $ENVFILE`
 eval `grep ^OSTREE_ $ENVFILE | perl -p -e '($a,$b) = split(/=/,$_,2); $a =~ s/-/_/g; $_ = "$a=$b"'`
 eval `grep ^OSTREE_CONSOLE= $ENVFILE | sed -e 's:\\\\::g' -e "s:\":':g"`
 eval `grep ^DISTRO_FEATURES= $ENVFILE`
+eval `grep ^BOOTFS_EXTRA_CMD= $ENVFILE`
 
 grub=$(ls $DEPLOY_DIR_IMAGE/grubx64.efi 2> /dev/null)
 if [ "$grub" = "" ] ; then
