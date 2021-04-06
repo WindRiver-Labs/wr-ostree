@@ -19,6 +19,7 @@ import os.path
 import subprocess
 from collections import OrderedDict
 import logging
+from tempfile import NamedTemporaryFile
 
 from genimage.package_manager import get_pm_class
 from genimage.constant import DEFAULT_IMAGE_PKGTYPE
@@ -121,7 +122,13 @@ class Rootfs(object):
 
         for script in self.rootfs_pre_scripts:
             logger.debug("Executing '%s' preprocess rootfs..." % script)
-            res, output = utils.run_cmd(script, shell=True)
+            scriptFile = NamedTemporaryFile(delete=True, dir=".")
+            with open(scriptFile.name, 'w') as f:
+                f.write("#!/usr/bin/env bash\n")
+                f.write(script + "\n")
+            os.chmod(scriptFile.name, 0o777)
+            scriptFile.file.close()
+            res, output = utils.run_cmd(scriptFile.name, shell=True)
             if res:
                 raise Exception("Executing %s postprocess rootfs failed\nExit code %d. Output:\n%s"
                                    % (script, res, output))
@@ -129,7 +136,13 @@ class Rootfs(object):
     def _post_rootfs(self):
         for script in self.rootfs_post_scripts:
             logger.debug("Executing '%s' postprocess rootfs..." % script)
-            res, output = utils.run_cmd(script, shell=True)
+            scriptFile = NamedTemporaryFile(delete=True, dir=".")
+            with open(scriptFile.name, 'w') as f:
+                f.write("#!/usr/bin/env bash\n")
+                f.write(script + "\n")
+            os.chmod(scriptFile.name, 0o777)
+            scriptFile.file.close()
+            res, output = utils.run_cmd(scriptFile.name, shell=True)
             if res:
                 raise Exception("Executing %s postprocess rootfs failed\nExit code %d. Output:\n%s"
                                    % (script, res, output))
