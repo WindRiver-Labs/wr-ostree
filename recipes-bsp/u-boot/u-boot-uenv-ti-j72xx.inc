@@ -1,34 +1,12 @@
-SUMMARY = "U-Boot boot.scr SD boot environment generation for ARM targets"
-LICENSE = "MIT"
-LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/MIT;md5=0835ade698e0bcf8506ecda2f7b4f302"
-
-INHIBIT_DEFAULT_DEPS = "1"
-PACKAGE_ARCH = "${MACHINE_ARCH}"
-
-DEPENDS = "u-boot-mkimage-native"
-
-inherit deploy
-
-DEFAULT_DTB ??= ""
-OSTREE_UBOOT_CMD ??= "bootz"
-OSTREE_BOOTSCR ??= "fs_links"
-OSTREE_NET_INSTALL ??= "1"
-OSTREE_NETINST_ARGS ??= "instab=${OSTREE_USE_AB}"
-OSTREE_NETINST_BRANCH ??= "core-image-minimal"
-OSTREE_NETINST_DEV ??= "/dev/mmcblk0"
-
-require u-boot-uenv-ti-j72xx.inc
-
-FS_LINKS ?= "bootscr_fs_links"
-ENV_IMPORT ?= "bootscr_env_import"
-
-FS_LINKS_ti-j72xx = "bootscr_fs_links_ti_j72xx"
-ENV_IMPORT_ti-j72xx = "bootscr_env_import_ti_j72xx"
-
-bootscr_env_import() {
+bootscr_env_import_ti_j72xx() {
     cat <<EOF > ${WORKDIR}/uEnv.txt
 setenv machine_name ${MACHINE}
 setenv bretry 32
+setenv loadaddr 0x82000000
+setenv fdt_addr 0x88000000
+setenv initrd_addr 0x98000000
+setenv console ttyS2
+setenv baudrate 115200
 if test \${skip_script_fdt} != yes; then setenv fdt_file $default_dtb; fi
 setenv A 5
 setenv B 7
@@ -43,19 +21,19 @@ setenv mmcpart_r \$B
 setenv rootpart_r ostree_root=LABEL=otaroot\${ex}\${labelpre}
 setenv bootpart_r ostree_boot=LABEL=otaboot\${ex}\${labelpre}
 setenv bpart A
-if fatload mmc \${mmcdev}:1 \${loadaddr} boot_ab_flag;then setexpr.l bpartv *\${loadaddr} \& 0xffffffff; if test \${bpartv} = 42333231;then setenv bpart B;fi;fi
+if fatload mmc \${mmcdev}:1 \${loadaddr} boot_ab_flag;then setenv bpartv 0x82000000; if test \${bpartv} = 42333231;then setenv bpart B;fi;fi
 setenv obpart \${bpart}
-setexpr loadaddr1 \${loadaddr} + 1
-setexpr loadaddr2 \${loadaddr} + 2
-setexpr bct_addr \${loadaddr} + 200
-setexpr bct_addr1 \${loadaddr} + 201
+setenv loadaddr1 0x82000001
+setenv loadaddr2 0x82000002
+setenv bct_addr 0x82000200
+setenv bct_addr1 0x82000201
 mw.l \${bct_addr} 52573030
 setenv cntv 30
 setenv bdef 30
 setenv switchab if test \\\${bpart} = B\\;then setenv bpart A\\;else setenv bpart B\\;fi
-if fatload mmc \${mmcdev}:1 \${loadaddr} boot_cnt;then setexpr.w cntv0 *\${loadaddr2};if test \${cntv0} = 5257;then setexpr.b cntv *\${loadaddr};setexpr.b bdef *\${loadaddr1};fi;fi
+if fatload mmc \${mmcdev}:1 \${loadaddr} boot_cnt;then setenv cntv0 0x82000002;if test \${cntv0} = 5257;then setenv cntv 0x82000000;setenv bdef 0x82000001;fi;fi
 if test \${bdef} = 31;then run switchab;fi
-if test \${cntv} > \${bretry};then run switchab;setenv cntv 30;if test \${bdef} = 31; then setenv bdef 30;else setenv bdef 31;fi;else setexpr.b cntv \${cntv} + 1;fi
+if test \${cntv} > \${bretry};then run switchab;setenv cntv 30;if test \${bdef} = 31; then setenv bdef 30;else setenv bdef 31;fi;else setenv cntv 31;fi
 mw.b \${bct_addr} \${cntv}
 mw.b \${bct_addr1} \${bdef}
 fatwrite mmc \${mmcdev}:1 \${bct_addr} boot_cnt 4
@@ -97,13 +75,18 @@ ${OSTREE_UBOOT_CMD} \${loadaddr} \${initrd_addr} \${fdt_addr}
 EOF
 }
 
-bootscr_fs_links() {
+bootscr_fs_links_ti_j72xx() {
     NETINST_ARGS="${OSTREE_NETINST_ARGS}"
 
     cat <<EOF > ${WORKDIR}/uEnv.txt
 ${OSTREE_BOOTSCR_PRECMD}
 setenv machine_name ${MACHINE}
 setenv bretry 32
+setenv loadaddr 0x82000000
+setenv fdt_addr 0x88000000
+setenv initrd_addr 0x98000000
+setenv console ttyS2
+setenv baudrate 115200
 if test \${skip_script_fdt} != yes; then setenv fdt_file $default_dtb; fi
 setenv ninst ${OSTREE_NET_INSTALL}
 setenv A 5
@@ -112,7 +95,7 @@ setenv ex _b
 setenv filesize 99
 if test ! -n \${devtype}; then
  setenv devtype mmc
- setenv devnum 0
+ setenv devnum 1
 fi
 fatsize \${devtype} \${devnum}:1 no_ab
 if test \${filesize} = 1;then setenv ex;setenv B \$A;fi
@@ -123,19 +106,19 @@ setenv mmcpart_r \$B
 setenv rootpart_r ostree_root=LABEL=otaroot\${ex}\${labelpre}
 setenv bootpart_r ostree_boot=LABEL=otaboot\${ex}\${labelpre}
 setenv bpart A
-if fatload \${devtype} \${devnum}:1 \${loadaddr} boot_ab_flag;then setexpr.l bpartv *\${loadaddr} \& 0xffffffff; if test \${bpartv} = 42333231;then setenv bpart B;fi;fi
+if fatload \${devtype} \${devnum}:1 \${loadaddr} boot_ab_flag;then setenv bpartv 0x82000000; if test \${bpartv} = 42333231;then setenv bpart B;fi;fi
 setenv obpart \${bpart}
-setexpr loadaddr1 \${loadaddr} + 1
-setexpr loadaddr2 \${loadaddr} + 2
-setexpr bct_addr \${loadaddr} + 200
-setexpr bct_addr1 \${loadaddr} + 201
+setenv loadaddr1 0x82000001
+setenv loadaddr2 0x82000002
+setenv bct_addr 0x82000200
+setenv bct_addr1 0x82000201
 mw.l \${bct_addr} 52573030
 setenv cntv 30
 setenv bdef 30
 setenv switchab if test \\\${bpart} = B\\;then setenv bpart A\\;else setenv bpart B\\;fi
-if fatload \${devtype} \${devnum}:1 \${loadaddr} boot_cnt;then setexpr.w cntv0 *\${loadaddr2};if test \${cntv0} = 5257;then setexpr.b cntv *\${loadaddr};setexpr.b bdef *\${loadaddr1};fi;fi
+if fatload \${devtype} \${devnum}:1 \${loadaddr} boot_cnt;then setenv cntv0 0x82000002;if test \${cntv0} = 5257;then setenv cntv 0x82000000;setenv bdef 0x82000001;fi;fi
 if test \${bdef} = 31;then run switchab;fi
-if test \${cntv} -gt \${bretry};then run switchab;setenv cntv 30;if test \${bdef} = 31; then setenv bdef 30;else setenv bdef 31;fi;else setexpr.b cntv \${cntv} + 1;fi
+if test \${cntv} -gt \${bretry};then run switchab;setenv cntv 30;if test \${bdef} = 31; then setenv bdef 30;else setenv bdef 31;fi;else setenv cntv 31;fi
 mw.b \${bct_addr} \${cntv}
 mw.b \${bct_addr1} \${bdef}
 fatwrite \${devtype} \${devnum}:1 \${bct_addr} boot_cnt 4
@@ -225,42 +208,3 @@ ${OSTREE_UBOOT_CMD} \${loadaddr} \${initrd_addr} \${fdt_addr}
 fi
 EOF
 }
-
-do_compile() {
-
-    default_dtb="${DEFAULT_DTB}"
-    if [ "$default_dtb" = "" ] ; then
-        for k in `echo ${KERNEL_DEVICETREE} |grep -v dtbo`; do
-            default_dtb="$(basename $k)"
-            break;
-        done
-        bbwarn 'DEFAULT_DTB=""'
-        bbwarn "boot.scr set to DEFAULT_DTB=$default_dtb"
-    fi
-    if [ "${OSTREE_BOOTSCR}" = "fs_links" ] ; then
-        ${FS_LINKS}
-    else
-        ${ENV_IMPORT}
-    fi
-
-    build_date=`date -u +%s`
-    sed -i -e  "s/instdate=BUILD_DATE/instdate=@$build_date/" ${WORKDIR}/uEnv.txt
-    if [ "${MACHINE}" = "xilinx-zynqmp" ] ; then
-        sed -i '3a\setenv loadaddr 0x10000000\nsetenv fdt_addr 0xE0000\nsetenv initrd_addr 0x40000000\nsetenv console  ttyPS0\nsetenv baudrate 115200' ${WORKDIR}/uEnv.txt
-    fi
-    mkimage -A arm -T script -O linux -d ${WORKDIR}/uEnv.txt ${WORKDIR}/boot.scr
-}
-
-FILES_${PN} += "/boot/boot.scr"
-
-do_install() {
-    install -d  ${D}/boot
-    install -Dm 0644 ${WORKDIR}/boot.scr ${D}/boot/
-}
-
-do_deploy() {
-    install -Dm 0644 ${WORKDIR}/boot.scr ${DEPLOYDIR}/boot.scr
-}
-addtask do_deploy after do_compile before do_build
-
-COMPATIBLE_HOST = "(aarch64|arm).*-linux"
