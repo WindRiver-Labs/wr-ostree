@@ -135,7 +135,7 @@ python do_create_cross_cmd_wrapper () {
 }
 
 # Refer insert_feeds_uris in oe-core/meta/lib/oe/package_manager.py
-# https://www.yoctoproject.org/docs/2.2/ref-manual/ref-manual.html#var-PACKAGE_FEED_ARCHS
+# https://docs.yoctoproject.org/ref-manual/variables.html#term-PACKAGE_FEED_ARCHS
 def get_remote_uris(feed_uris, feed_base_paths, feed_archs):
     def _construct_uris(uris, base_paths):
         """
