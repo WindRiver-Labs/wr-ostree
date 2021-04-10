@@ -113,7 +113,7 @@ class CreateInitramfs(Image):
              (self.target_rootfs, self.deploydir, self.image_fullname)
         utils.run_cmd_oneshot(cmd)
 
-        cmd = "cd %s && gzip -f -9 -n -c --rsyncable %s.rootfs.cpio > %s.rootfs.cpio.gz && rm %s.rootfs.cpio" % \
+        cmd = "cd %s && pigz -f -9 -n -c --rsyncable %s.rootfs.cpio > %s.rootfs.cpio.gz && rm %s.rootfs.cpio" % \
             (self.deploydir, self.image_fullname, self.image_fullname, self.image_fullname)
         utils.run_cmd_oneshot(cmd)
 

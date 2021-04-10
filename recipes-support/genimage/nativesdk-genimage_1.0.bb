@@ -50,6 +50,7 @@ RDEPENDS_${PN} = " \
                   nativesdk-bmap-tools \
                   nativesdk-util-linux-uuidgen \
                   nativesdk-perl \
+                  nativesdk-pigz \
 "
 
 # Required by do_rootfs's intercept_scripts in sdk

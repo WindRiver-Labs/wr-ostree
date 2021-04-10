@@ -53,6 +53,7 @@ DEPENDS += " \
     bmap-tools-native \
     util-linux-native \
     perl-native \
+    pigz-native \
 "
 
 # Required by do_rootfs's intercept_scripts in sdk
