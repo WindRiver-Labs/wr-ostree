@@ -82,7 +82,7 @@ do_image_ostree() {
 	mkdir -p usr/homedirs
 	if [ -d "home" ] && [ ! -L "home" ]; then
 		mv home usr/homedirs/home
-		mkdir var/home
+		mkdir -p var/home
 		ln -sf var/home home
 		echo "d /var/home 0755 root root -" >>${tmpfiles_conf}
 	fi
