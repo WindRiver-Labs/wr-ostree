@@ -603,6 +603,26 @@ eval `grep ^OSTREE_CONSOLE= $ENVFILE | sed -e 's:\\\\::g' -e "s:\":':g"`
 eval `grep ^DISTRO_FEATURES= $ENVFILE`
 eval `grep ^BOOTFS_EXTRA_CMD= $ENVFILE`
 
+if [ -n "${OSTREE_FDISK_BLM}" ]; then
+    EXTRA_INST_ARGS="${EXTRA_INST_ARGS} BLM=${OSTREE_FDISK_BLM}"
+fi
+
+if [ -n "${OSTREE_FDISK_FSZ}" ]; then
+    EXTRA_INST_ARGS="${EXTRA_INST_ARGS} FSZ=${OSTREE_FDISK_FSZ}"
+fi
+
+if [ -n "${OSTREE_FDISK_BSZ}" ]; then
+    EXTRA_INST_ARGS="${EXTRA_INST_ARGS} BSZ=${OSTREE_FDISK_BSZ}"
+fi
+
+if [ -n "${OSTREE_FDISK_RSZ}" ]; then
+    EXTRA_INST_ARGS="${EXTRA_INST_ARGS} RSZ=${OSTREE_FDISK_RSZ}"
+fi
+
+if [ -n "${OSTREE_FDISK_VSZ}" ]; then
+    EXTRA_INST_ARGS="${EXTRA_INST_ARGS} VSZ=${OSTREE_FDISK_VSZ}"
+fi
+
 grub=$(ls $DEPLOY_DIR_IMAGE/grubx64.efi 2> /dev/null)
 if [ "$grub" = "" ] ; then
 	# Look for bootx variant
