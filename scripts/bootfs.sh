@@ -231,7 +231,10 @@ EOF
 
 build_efi_area() {
 	bzimage=$(ls ${DEPLOY_DIR_IMAGE}/bzImage)
-	initramfs=$(ls ${DEPLOY_DIR_IMAGE}/initramfs-ostree-image*.cpio.gz |grep -v rootfs)
+	if [ -z "${OSTREE_INITRD}" ]; then
+		OSTREE_INITRD="initramfs-ostree-image"
+	fi
+	initramfs=$(ls ${DEPLOY_DIR_IMAGE}/${OSTREE_INITRD}*.cpio.gz |grep -v rootfs)
 	bootx64=$(ls ${DEPLOY_DIR_IMAGE}/bootx64.efi 2> /dev/null)
 	lockdown=$(ls ${DEPLOY_DIR_IMAGE}/LockDown.efi 2> /dev/null)
 	mmx64=$(ls ${DEPLOY_DIR_IMAGE}/mmx64.efi 2> /dev/null)
