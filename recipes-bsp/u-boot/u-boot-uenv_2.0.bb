@@ -18,7 +18,7 @@ OSTREE_NETINST_BRANCH ??= "core-image-minimal"
 OSTREE_NETINST_DEV ??= "/dev/mmcblk0"
 
 bootscr_env_import() {
-	cat <<EOF > ${WORKDIR}/uEnv.txt
+    cat <<EOF > ${WORKDIR}/uEnv.txt
 setenv machine_name ${MACHINE}
 setenv bretry 32
 if test \${skip_script_fdt} != yes; then setenv fdt_file $default_dtb; fi
@@ -90,9 +90,9 @@ EOF
 }
 
 bootscr_fs_links() {
-	NETINST_ARGS="${OSTREE_NETINST_ARGS}"
+    NETINST_ARGS="${OSTREE_NETINST_ARGS}"
 
-	cat <<EOF > ${WORKDIR}/uEnv.txt
+    cat <<EOF > ${WORKDIR}/uEnv.txt
 ${OSTREE_BOOTSCR_PRECMD}
 setenv machine_name ${MACHINE}
 setenv bretry 32
@@ -224,21 +224,21 @@ do_compile() {
     if [ "$default_dtb" = "" ] ; then
         for k in `echo ${KERNEL_DEVICETREE} |grep -v dtbo`; do
             default_dtb="$(basename $k)"
-	    break;
-	done
+            break;
+        done
         bbwarn 'DEFAULT_DTB=""'
-	bbwarn "boot.scr set to DEFAULT_DTB=$default_dtb"
+        bbwarn "boot.scr set to DEFAULT_DTB=$default_dtb"
     fi
     if [ "${OSTREE_BOOTSCR}" = "fs_links" ] ; then
-	bootscr_fs_links
+        bootscr_fs_links
     else
-	bootscr_env_import
+        bootscr_env_import
     fi
 
     build_date=`date -u +%s`
     sed -i -e  "s/instdate=BUILD_DATE/instdate=@$build_date/" ${WORKDIR}/uEnv.txt
     if [ "${MACHINE}" = "xilinx-zynqmp" ] ; then
-	sed -i '3a\setenv loadaddr 0x10000000\nsetenv fdt_addr 0xE0000\nsetenv initrd_addr 0x40000000\nsetenv console  ttyPS0\nsetenv baudrate 115200' ${WORKDIR}/uEnv.txt
+        sed -i '3a\setenv loadaddr 0x10000000\nsetenv fdt_addr 0xE0000\nsetenv initrd_addr 0x40000000\nsetenv console  ttyPS0\nsetenv baudrate 115200' ${WORKDIR}/uEnv.txt
     fi
     mkimage -A arm -T script -O linux -d ${WORKDIR}/uEnv.txt ${WORKDIR}/boot.scr
 }
@@ -246,12 +246,12 @@ do_compile() {
 FILES_${PN} += "/boot/boot.scr"
 
 do_install() {
-        install -d  ${D}/boot
-	install -Dm 0644 ${WORKDIR}/boot.scr ${D}/boot/
+    install -d  ${D}/boot
+    install -Dm 0644 ${WORKDIR}/boot.scr ${D}/boot/
 }
 
 do_deploy() {
-	install -Dm 0644 ${WORKDIR}/boot.scr ${DEPLOYDIR}/boot.scr
+    install -Dm 0644 ${WORKDIR}/boot.scr ${DEPLOYDIR}/boot.scr
 }
 addtask do_deploy after do_compile before do_build
 
