@@ -10,6 +10,7 @@ set -e
 # OSTREE_GPGID
 # OSTREE_GPG_PASSPHRASE
 # GPGPATH
+# DEFAULT_INITRD_NAME
 OSTREE_REPO="${DEPLOY_DIR_IMAGE}/ostree_repo"
 OSTREE_BRANCHNAME="${IMAGE_NAME}"
 DATETIME="`date +"%Y%m%d%H%M%S"`"
@@ -161,16 +162,16 @@ do_image_ostree() {
 	#deploy the device tree file
 	mkdir -p usr/lib/ostree-boot
 	cp $DEPLOY_DIR_IMAGE/${OSTREE_KERNEL} usr/lib/ostree-boot/vmlinuz-${checksum}
-	cp $DEPLOY_DIR_IMAGE/initramfs-ostree-image-${MACHINE}${RAMDISK_EXT} usr/lib/ostree-boot/initramfs-${checksum}
+	cp $DEPLOY_DIR_IMAGE/${DEFAULT_INITRD_NAME}-${MACHINE}${RAMDISK_EXT} usr/lib/ostree-boot/initramfs-${checksum}
 
 	if [ -n "${EFI_SECURE_BOOT}" ]; then
 		if [ -f $DEPLOY_DIR_IMAGE/${OSTREE_KERNEL}.p7b ] ; then
 			cp $DEPLOY_DIR_IMAGE/${OSTREE_KERNEL}.p7b usr/lib/ostree-boot/vmlinuz.p7b
-			cp $DEPLOY_DIR_IMAGE/initramfs-ostree-image-${MACHINE}${RAMDISK_EXT}.p7b usr/lib/ostree-boot/initramfs.p7b
+			cp $DEPLOY_DIR_IMAGE/${DEFAULT_INITRD_NAME}-${MACHINE}${RAMDISK_EXT}.p7b usr/lib/ostree-boot/initramfs.p7b
 		fi
 		if [ -f $DEPLOY_DIR_IMAGE/${OSTREE_KERNEL}.sig ] ; then
 			cp $DEPLOY_DIR_IMAGE/${OSTREE_KERNEL}.sig usr/lib/ostree-boot/vmlinuz.sig
-			cp $DEPLOY_DIR_IMAGE/initramfs-ostree-image-${MACHINE}${RAMDISK_EXT}.sig usr/lib/ostree-boot/initramfs.sig
+			cp $DEPLOY_DIR_IMAGE/${DEFAULT_INITRD_NAME}-${MACHINE}${RAMDISK_EXT}.sig usr/lib/ostree-boot/initramfs.sig
 		fi
 	fi
 	if [ -d boot/efi ]; then

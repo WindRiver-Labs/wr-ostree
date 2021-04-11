@@ -42,6 +42,7 @@ from genimage.constant import DEFAULT_PACKAGES
 from genimage.constant import DEFAULT_MACHINE
 from genimage.constant import DEFAULT_IMAGE
 from genimage.constant import DEFAULT_IMAGE_FEATURES
+from genimage.constant import DEFAULT_INITRD_NAME
 
 import genimage.utils as utils
 import genimage.sysdef as sysdef
@@ -412,6 +413,7 @@ class GenYoctoImage(GenImage):
             self._sysdef_contains()
 
         super(GenYoctoImage, self).do_prepare()
+        os.environ['DEFAULT_INITRD_NAME'] = DEFAULT_INITRD_NAME
 
     @show_task_info("Create Initramfs")
     def do_ostree_initramfs(self):
