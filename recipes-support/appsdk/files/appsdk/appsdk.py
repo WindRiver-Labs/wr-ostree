@@ -31,6 +31,7 @@ from genimage.utils import set_logger
 from genimage.utils import run_cmd
 from genimage.constant import DEFAULT_PACKAGE_FEED
 from genimage.constant import DEFAULT_REMOTE_PKGDATADIR
+from genimage.constant import DEFAULT_IMAGE_PKGTYPE
 from genimage.constant import DEFAULT_PACKAGES
 from genimage.constant import DEFAULT_MACHINE
 from genimage.constant import DEFAULT_IMAGE
@@ -161,8 +162,8 @@ class AppSDK(object):
             else:
                 self.external_packages = []
 
-            self.pkg_feeds = data['package_feeds'] if 'package_feeds' in data else DEFAULT_PACKAGE_FEED
-            self.remote_pkgdatadir = data['remote_pkgdatadir'] if 'remote_pkgdatadir' in data else DEFAULT_REMOTE_PKGDATADIR
+            self.pkg_feeds = data['package_feeds'] if 'package_feeds' in data else DEFAULT_PACKAGE_FEED[DEFAULT_IMAGE_PKGTYPE]
+            self.remote_pkgdatadir = data['remote_pkgdatadir'] if 'remote_pkgdatadir' in data else DEFAULT_REMOTE_PKGDATADIR[DEFAULT_IMAGE_PKGTYPE]
             self.image_features = data['features'] if 'features' in data else DEFAULT_IMAGE_FEATURES
 
         # qemuwrapper-cross is always needed
