@@ -142,7 +142,8 @@ def get_today():
 
 def fake_root(workdir = os.path.join(os.getcwd(),"workdir")):
     if os.getuid() == 0:
-        raise Exception("Do not use appsdk as root.")
+        logger.info("Already root, do not use fake root")
+        return
 
     native_sysroot = os.environ['OECORE_NATIVE_SYSROOT']
     os.environ['PSEUDO_PREFIX'] = os.path.join(native_sysroot, 'usr')
@@ -151,6 +152,12 @@ def fake_root(workdir = os.path.join(os.getcwd(),"workdir")):
     os.environ['LD_PRELOAD'] = os.path.join(native_sysroot, 'usr/lib/pseudo/lib64/libpseudo.so')
     os.environ['LC_ALL'] = "en_US.UTF-8"
     os.environ['libexecdir'] = '/usr/libexec'
+
+def exit_fake_root():
+    pseudo_vars = ['PSEUDO_PREFIX', 'PSEUDO_LOCALSTATEDIR', 'PSEUDO_NOSYMLINKEXP', 'LD_PRELOAD']
+    for pv in pseudo_vars:
+        if pv in os.environ:
+            del os.environ[pv]
 
 def fake_root_set_passwd(rootfs=None):
     if rootfs is None:

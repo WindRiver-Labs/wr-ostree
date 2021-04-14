@@ -83,9 +83,6 @@ def set_subparser(subparsers=None):
     parser_publishrpm.set_defaults(func=publishrpm)
 
 def main():
-    if os.getuid() == 0:
-        raise Exception("Do not use appsdk as root.")
-
     parser = argparse.ArgumentParser(
         description='Wind River Linux Assembly Tool',
         epilog='Use %(prog)s <subcommand> --help to get help')
