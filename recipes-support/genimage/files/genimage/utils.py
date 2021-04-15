@@ -407,3 +407,11 @@ def is_build():
     if os.path.exists(os.path.join(sysroot_dir, "x86_64")):
         return True
     return False
+
+def cleanup(image_workdir, ostree_osname="wrlinux"):
+    rootfs_ota = os.path.join(image_workdir, "rootfs_ota/ostree/deploy/%s/deploy" % ostree_osname)
+    if os.path.exists(rootfs_ota):
+        run_cmd_oneshot("chattr -i %s/*" % rootfs_ota)
+
+    run_cmd_oneshot("rm -rf %s/rootfs*" % image_workdir)
+

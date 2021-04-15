@@ -22,6 +22,7 @@ import subprocess
 import logging
 import argcomplete
 from texttable import Texttable
+import atexit
 
 from genimage.utils import set_logger
 from genimage.utils import show_task_info
@@ -253,6 +254,10 @@ class GenImage(GenXXX):
         super(GenImage, self).do_prepare()
         gpg_data = self.data["gpg"]
         utils.check_gpg_keys(gpg_data)
+
+        # Cleanup all generated available rootfs, pseudo, rootfs_ota dir by default
+        if not self.args.no_clean:
+            atexit.register(utils.cleanup, image_workdir, ostree_osname=self.data['ostree']['ostree_osname'])
 
     def do_post(self):
         for f in ["qemu-u-boot-bcm-2xxx-rpi4.bin", "ovmf.qcow2"]:

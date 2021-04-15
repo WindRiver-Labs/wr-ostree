@@ -323,7 +323,7 @@ class GenXXX(object, metaclass=ABCMeta):
         os.environ['PSEUDO_IGNORE_PATHS'] = self.deploydir
         # Cleanup all generated rootfs dir by default
         if not self.args.no_clean:
-            cmd = "rm -rf ./rootfs* ./pseudo"
+            cmd = "rm -rf ./rootfs ./pseudo"
             atexit.register(utils.run_cmd_oneshot, cmd=cmd, cwd=image_workdir)
 
     def do_post(self):
