@@ -56,7 +56,6 @@ class GenInitramfs(GenXXX):
 
     def __init__(self, args):
         super(GenInitramfs, self).__init__(args)
-        self.exclude_packages = ['busybox-syslog']
         logger.debug("GPG Path: %s" % self.data["gpg"]["gpg_path"])
 
     def _parse_default(self):
@@ -65,8 +64,6 @@ class GenInitramfs(GenXXX):
         self.data['image_type'] = ['initramfs']
         self.data['package_feeds'] = DEFAULT_PACKAGE_FEED[self.pkg_type]
         self.data['package_type'] = self.pkg_type
-        self.data['remote_pkgdatadir'] = DEFAULT_REMOTE_PKGDATADIR[self.pkg_type]
-        self.data['features'] =  DEFAULT_IMAGE_FEATURES
         self.data["gpg"] = constant.DEFAULT_GPG_DATA
         self.data['packages'] = OSTREE_INITRD_PACKAGES
         self.data['external-packages'] = []
@@ -139,8 +136,21 @@ class GenInitramfs(GenXXX):
 
         logger.info("Deploy Directory: %s\n%s", self.deploydir, table.draw())
 
+class GenYoctoInitramfs(GenInitramfs):
+    def __init__(self, args):
+        super(GenYoctoInitramfs, self).__init__(args)
+        self.exclude_packages = ['busybox-syslog']
+
+    def _parse_default(self):
+        super(GenYoctoInitramfs, self)._parse_default()
+        self.data['remote_pkgdatadir'] = DEFAULT_REMOTE_PKGDATADIR[self.pkg_type]
+        self.data['features'] =  DEFAULT_IMAGE_FEATURES
+        self.data['environments'] = ['NO_RECOMMENDATIONS="1"']
+
+
+
 def _main_run_internal(args):
-    create = GenInitramfs(args)
+    create = GenYoctoInitramfs(args)
     create.do_prepare()
     create.do_rootfs()
     if create.target_rootfs is None:
