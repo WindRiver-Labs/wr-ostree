@@ -73,13 +73,8 @@ def set_parser_genimage(parser=None):
 def complete_url(**kwargs):
     return ["http://", "https://"]
 
-class GenImage(GenXXX):
-    """
-    * Create the following images in order:
-        - ostree repository
-        - wic image
-    """
 
+class GenImage(GenXXX):
     def __init__(self, args):
         super(GenImage, self).__init__(args)
         logger.debug("GPG Path: %s" % self.data["gpg"]["gpg_path"])
@@ -90,10 +85,7 @@ class GenImage(GenXXX):
         self.data['image_type'] = ['ustart', 'ostree-repo']
         self.data['package_feeds'] = DEFAULT_PACKAGE_FEED[self.pkg_type]
         self.data['package_type'] = self.pkg_type
-        self.data["ostree"] = constant.DEFAULT_OSTREE_DATA
         self.data["wic"] = constant.DEFAULT_WIC_DATA
-        self.data['remote_pkgdatadir'] = DEFAULT_REMOTE_PKGDATADIR[self.pkg_type]
-        self.data['features'] =  DEFAULT_IMAGE_FEATURES
         self.data["gpg"] = constant.DEFAULT_GPG_DATA
         self.data['packages'] = DEFAULT_PACKAGES[DEFAULT_MACHINE]
         self.data['external-packages'] = []
@@ -109,6 +101,14 @@ class GenImage(GenXXX):
 
         super(GenImage, self)._parse_inputyamls()
 
+    def _parse_amend(self):
+        super(GenImage, self)._parse_amend()
+
+        # Use default to fill missing params of "wic" section
+        for wic_param in constant.DEFAULT_WIC_DATA:
+            if wic_param not in self.data["wic"]:
+                self.data["wic"][wic_param] = constant.DEFAULT_WIC_DATA[wic_param]
+
     def _parse_options(self):
         super(GenImage, self)._parse_options()
 
@@ -121,136 +121,7 @@ class GenImage(GenXXX):
         if self.args.ostree_remote_url:
             self.data["ostree"]["ostree_remote_url"] = self.args.ostree_remote_url
 
-    def _parse_amend(self):
-        super(GenImage, self)._parse_amend()
-
-        # Use default to fill missing params of "ostree" section
-        for ostree_param in constant.DEFAULT_OSTREE_DATA:
-            if ostree_param not in self.data["ostree"]:
-                self.data["ostree"][ostree_param] = constant.DEFAULT_OSTREE_DATA[ostree_param]
-
-        # Use default to fill missing params of "wic" section
-        for wic_param in constant.DEFAULT_WIC_DATA:
-            if wic_param not in self.data["wic"]:
-                self.data["wic"][wic_param] = constant.DEFAULT_WIC_DATA[wic_param]
-
-        if 'all' in self.data['image_type']:
-            self.data['image_type'] = ['ostree-repo', 'wic', 'ustart', 'vmdk', 'vdi']
-
-    def _do_rootfs_pre(self, rootfs=None):
-        if rootfs is None:
-            return
-
-        super(GenImage, self)._do_rootfs_pre(rootfs)
-
-        if self.machine == "bcm-2xxx-rpi4":
-            os.environ['OSTREE_CONSOLE'] = self.data["ostree"]['OSTREE_CONSOLE']
-            script_cmd = os.path.join(self.data_dir, 'post_rootfs', 'update_boot_scr.sh')
-            script_cmd = "{0} {1} {2} {3} {4}".format(script_cmd,
-                                                      rootfs.target_rootfs,
-                                                      self.image_name,
-                                                      self.data["ostree"]['ostree_use_ab'],
-                                                      self.data["ostree"]['ostree_remote_url'])
-            rootfs.add_rootfs_post_scripts(script_cmd)
-        elif self.machine == "intel-x86-64":
-            os.environ['OSTREE_CONSOLE'] = self.data["ostree"]['OSTREE_CONSOLE']
-            script_cmd = os.path.join(self.data_dir, 'post_rootfs', 'update_grub_cfg.sh')
-            script_cmd = "{0} {1}".format(script_cmd, rootfs.target_rootfs)
-            rootfs.add_rootfs_post_scripts(script_cmd)
-
-        if 'systemd' in self.packages or 'systemd' in self.external_packages:
-            script_cmd = os.path.join(self.data_dir, 'post_rootfs', 'set_systemd_default_target.sh')
-            if 'packagegroup-core-x11-xserver' in self.packages:
-                script_cmd = "{0} {1} graphical.target".format(script_cmd, rootfs.target_rootfs)
-            else:
-                script_cmd = "{0} {1} multi-user.target".format(script_cmd, rootfs.target_rootfs)
-            rootfs.add_rootfs_post_scripts(script_cmd)
-
-        if "system" in self.data:
-            script_cmd = os.path.join(self.data_dir, 'post_rootfs', 'add_sysdef_support.sh')
-            script_cmd = "{0} {1}".format(script_cmd, rootfs.target_rootfs)
-            rootfs.add_rootfs_post_scripts(script_cmd)
-            self._sysdef_rootfs(rootfs.target_rootfs)
-
-    def _do_rootfs_post(self, rootfs=None):
-        if rootfs is None:
-            return
-
-        super(GenImage, self)._do_rootfs_post(rootfs)
-
-        # Copy kernel image, boot files, device tree files to deploy dir
-        if self.machine == "intel-x86-64":
-            for files in ["boot/bzImage*", "boot/efi/EFI/BOOT/*"]:
-                cmd = "cp -rf {0}/{1} {2}".format(self.target_rootfs, files, self.deploydir)
-                utils.run_cmd_oneshot(cmd)
-
-                cmd = "ln -snf -r {0} {1}".format(os.path.join(self.deploydir, "bootx64.efi"),
-                                                  os.path.join(self.deploydir, "grub-efi-bootx64.efi"))
-                utils.run_cmd_oneshot(cmd)
-
-        else:
-            cmd = "cp -rf {0}/boot/* {1}".format(self.target_rootfs, self.deploydir)
-            utils.run_cmd_oneshot(cmd)
-
-    def _sysdef_rootfs(self, target_rootfs):
-        runonce_scripts = list()
-        runalways_scripts = list()
-        runupgrade_scripts = list()
-        files = list()
-        for element in self.data["system"]:
-            if "run_once" in element:
-                for script in element["run_once"]:
-                    if script not in runonce_scripts:
-                        runonce_scripts.append(script)
-
-            if "run_always" in element:
-                for script in element["run_always"]:
-                    if script not in runalways_scripts:
-                        runalways_scripts.append(script)
-
-            if "run_on_upgrade" in element:
-                for script in element["run_on_upgrade"]:
-                    if script not in runupgrade_scripts:
-                        runupgrade_scripts.append(script)
-
-            if "files" in element:
-                files += [file_d["file"] for file_d in element["files"] if "file" in file_d]
-
-        logger.info("sysdef runonce:\n%s", '\n'.join(runonce_scripts))
-        logger.info("sysdef runalways:\n%s", '\n'.join(runalways_scripts))
-        logger.info("sysdef run on upgrades:\n%s", '\n'.join(runupgrade_scripts))
-        logger.info("sysdef files:")
-        for f in files:
-            out = "src: %s -> dst: %s" % (f['src'], f['dst'])
-            out += ", mode: %s" % f['mode'] if 'mode' in f else ""
-            logger.info(out)
-
-        dst = os.path.join(target_rootfs, "etc/sysdef/run_once.d")
-        sysdef.install_scripts(runonce_scripts, dst)
-
-        dst = os.path.join(target_rootfs, "etc/sysdef/run_always.d")
-        sysdef.install_scripts(runalways_scripts, dst)
-
-        dst = os.path.join(target_rootfs, "etc/sysdef/run_on_upgrade.d/%s" % utils.get_today())
-        sysdef.install_scripts(runupgrade_scripts, dst)
-
-        sysdef.install_files(files, target_rootfs)
-
-    def _sysdef_contains(self):
-        guest_yamls = list()
-        for element in self.data["system"]:
-            if "contains" in element:
-                for yaml in element["contains"]:
-                    if yaml not in guest_yamls:
-                        guest_yamls.append(yaml)
-
-        logger.info("sysdef contains:\n%s", '\n'.join(guest_yamls))
-        sysdef.install_contains(guest_yamls, self.args)
-
     def do_prepare(self):
-        if "system" in self.data:
-            self._sysdef_contains()
-
         super(GenImage, self).do_prepare()
         gpg_data = self.data["gpg"]
         utils.check_gpg_keys(gpg_data)
@@ -266,27 +137,6 @@ class GenImage(GenXXX):
                 logger.debug("Deploy %s", f)
                 cmd = "cp -f {0} {1}".format(qemu_data, self.deploydir)
                 utils.run_cmd_oneshot(cmd)
-
-    @show_task_info("Create Initramfs")
-    def do_ostree_initramfs(self):
-        # If the Initramfs exists, reuse it
-        image_name = "initramfs-ostree-image-{0}.cpio.gz".format(self.machine)
-        if self.machine == "bcm-2xxx-rpi4":
-            image_name += ".u-boot"
-
-        image = os.path.join(self.deploydir, image_name)
-        if os.path.exists(os.path.realpath(image)):
-            logger.info("Reuse existed Initramfs")
-            return
-
-        image_back = os.path.join(self.native_sysroot, "usr/share/genimage/data/initramfs", image_name)
-        if not os.path.exists(image_back):
-            logger.error("The initramfs does not exist, please call `appsdk geninitramfs' to build it")
-            sys.exit(1)
-
-        logger.info("Reuse existed Initramfs of SDK")
-        cmd = "cp -f {0} {1}".format(image_back, self.deploydir)
-        utils.run_cmd_oneshot(cmd)
 
     @show_task_info("Create Wic Image")
     def do_image_wic(self):
@@ -424,8 +274,169 @@ class GenImage(GenXXX):
 
         logger.info("Deploy Directory: %s\n%s", self.deploydir, table.draw())
 
+
+class GenYoctoImage(GenImage):
+    """
+    * Create the following Yocto based images in order:
+        - ostree repository
+        - wic image
+    """
+    def _parse_default(self):
+        super(GenYoctoImage, self)._parse_default()
+        self.data['remote_pkgdatadir'] = DEFAULT_REMOTE_PKGDATADIR[self.pkg_type]
+        self.data['features'] =  DEFAULT_IMAGE_FEATURES
+        self.data["ostree"] = constant.DEFAULT_OSTREE_DATA
+
+    def _parse_amend(self):
+        super(GenYoctoImage, self)._parse_amend()
+        # Use default to fill missing params of "ostree" section
+        for ostree_param in constant.DEFAULT_OSTREE_DATA:
+            if ostree_param not in self.data["ostree"]:
+                self.data["ostree"][ostree_param] = constant.DEFAULT_OSTREE_DATA[ostree_param]
+
+        if 'all' in self.data['image_type']:
+            self.data['image_type'] = ['ostree-repo', 'wic', 'ustart', 'vmdk', 'vdi']
+
+    def _do_rootfs_pre(self, rootfs=None):
+        if rootfs is None:
+            return
+
+        super(GenYoctoImage, self)._do_rootfs_pre(rootfs)
+
+        if self.machine == "bcm-2xxx-rpi4":
+            os.environ['OSTREE_CONSOLE'] = self.data["ostree"]['OSTREE_CONSOLE']
+            script_cmd = os.path.join(self.data_dir, 'post_rootfs', 'update_boot_scr.sh')
+            script_cmd = "{0} {1} {2} {3} {4}".format(script_cmd,
+                                                      rootfs.target_rootfs,
+                                                      self.image_name,
+                                                      self.data["ostree"]['ostree_use_ab'],
+                                                      self.data["ostree"]['ostree_remote_url'])
+            rootfs.add_rootfs_post_scripts(script_cmd)
+        elif self.machine == "intel-x86-64":
+            os.environ['OSTREE_CONSOLE'] = self.data["ostree"]['OSTREE_CONSOLE']
+            script_cmd = os.path.join(self.data_dir, 'post_rootfs', 'update_grub_cfg.sh')
+            script_cmd = "{0} {1}".format(script_cmd, rootfs.target_rootfs)
+            rootfs.add_rootfs_post_scripts(script_cmd)
+
+        if 'systemd' in self.packages or 'systemd' in self.external_packages:
+            script_cmd = os.path.join(self.data_dir, 'post_rootfs', 'set_systemd_default_target.sh')
+            if 'packagegroup-core-x11-xserver' in self.packages:
+                script_cmd = "{0} {1} graphical.target".format(script_cmd, rootfs.target_rootfs)
+            else:
+                script_cmd = "{0} {1} multi-user.target".format(script_cmd, rootfs.target_rootfs)
+            rootfs.add_rootfs_post_scripts(script_cmd)
+
+        if "system" in self.data:
+            script_cmd = os.path.join(self.data_dir, 'post_rootfs', 'add_sysdef_support.sh')
+            script_cmd = "{0} {1}".format(script_cmd, rootfs.target_rootfs)
+            rootfs.add_rootfs_post_scripts(script_cmd)
+            self._sysdef_rootfs(rootfs.target_rootfs)
+
+    def _do_rootfs_post(self, rootfs=None):
+        if rootfs is None:
+            return
+
+        super(GenYoctoImage, self)._do_rootfs_post(rootfs)
+
+        # Copy kernel image, boot files, device tree files to deploy dir
+        if self.machine == "intel-x86-64":
+            for files in ["boot/bzImage*", "boot/efi/EFI/BOOT/*"]:
+                cmd = "cp -rf {0}/{1} {2}".format(self.target_rootfs, files, self.deploydir)
+                utils.run_cmd_oneshot(cmd)
+
+                cmd = "ln -snf -r {0} {1}".format(os.path.join(self.deploydir, "bootx64.efi"),
+                                                  os.path.join(self.deploydir, "grub-efi-bootx64.efi"))
+                utils.run_cmd_oneshot(cmd)
+
+        else:
+            cmd = "cp -rf {0}/boot/* {1}".format(self.target_rootfs, self.deploydir)
+            utils.run_cmd_oneshot(cmd)
+
+    def _sysdef_rootfs(self, target_rootfs):
+        runonce_scripts = list()
+        runalways_scripts = list()
+        runupgrade_scripts = list()
+        files = list()
+        for element in self.data["system"]:
+            if "run_once" in element:
+                for script in element["run_once"]:
+                    if script not in runonce_scripts:
+                        runonce_scripts.append(script)
+
+            if "run_always" in element:
+                for script in element["run_always"]:
+                    if script not in runalways_scripts:
+                        runalways_scripts.append(script)
+
+            if "run_on_upgrade" in element:
+                for script in element["run_on_upgrade"]:
+                    if script not in runupgrade_scripts:
+                        runupgrade_scripts.append(script)
+
+            if "files" in element:
+                files += [file_d["file"] for file_d in element["files"] if "file" in file_d]
+
+        logger.info("sysdef runonce:\n%s", '\n'.join(runonce_scripts))
+        logger.info("sysdef runalways:\n%s", '\n'.join(runalways_scripts))
+        logger.info("sysdef run on upgrades:\n%s", '\n'.join(runupgrade_scripts))
+        logger.info("sysdef files:")
+        for f in files:
+            out = "src: %s -> dst: %s" % (f['src'], f['dst'])
+            out += ", mode: %s" % f['mode'] if 'mode' in f else ""
+            logger.info(out)
+
+        dst = os.path.join(target_rootfs, "etc/sysdef/run_once.d")
+        sysdef.install_scripts(runonce_scripts, dst)
+
+        dst = os.path.join(target_rootfs, "etc/sysdef/run_always.d")
+        sysdef.install_scripts(runalways_scripts, dst)
+
+        dst = os.path.join(target_rootfs, "etc/sysdef/run_on_upgrade.d/%s" % utils.get_today())
+        sysdef.install_scripts(runupgrade_scripts, dst)
+
+        sysdef.install_files(files, target_rootfs)
+
+    def _sysdef_contains(self):
+        guest_yamls = list()
+        for element in self.data["system"]:
+            if "contains" in element:
+                for yaml in element["contains"]:
+                    if yaml not in guest_yamls:
+                        guest_yamls.append(yaml)
+
+        logger.info("sysdef contains:\n%s", '\n'.join(guest_yamls))
+        sysdef.install_contains(guest_yamls, self.args)
+
+    def do_prepare(self):
+        if "system" in self.data:
+            self._sysdef_contains()
+
+        super(GenYoctoImage, self).do_prepare()
+
+    @show_task_info("Create Initramfs")
+    def do_ostree_initramfs(self):
+        # If the Initramfs exists, reuse it
+        image_name = "initramfs-ostree-image-{0}.cpio.gz".format(self.machine)
+        if self.machine == "bcm-2xxx-rpi4":
+            image_name += ".u-boot"
+
+        image = os.path.join(self.deploydir, image_name)
+        if os.path.exists(os.path.realpath(image)):
+            logger.info("Reuse existed Initramfs")
+            return
+
+        image_back = os.path.join(self.native_sysroot, "usr/share/genimage/data/initramfs", image_name)
+        if not os.path.exists(image_back):
+            logger.error("The initramfs does not exist, please call `appsdk geninitramfs' to build it")
+            sys.exit(1)
+
+        logger.info("Reuse existed Initramfs of SDK")
+        cmd = "cp -f {0} {1}".format(image_back, self.deploydir)
+        utils.run_cmd_oneshot(cmd)
+
+
 def _main_run_internal(args):
-    create = GenImage(args)
+    create = GenYoctoImage(args)
     create.do_prepare()
     create.do_rootfs()
     if create.target_rootfs is None:
