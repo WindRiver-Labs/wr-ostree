@@ -64,8 +64,6 @@ class GenContainer(GenXXX):
         self.data['image_type'] = ['container']
         self.data['package_feeds'] = DEFAULT_PACKAGE_FEED[self.pkg_type]
         self.data['package_type'] = self.pkg_type
-        self.data['remote_pkgdatadir'] = DEFAULT_REMOTE_PKGDATADIR[self.pkg_type]
-        self.data['features'] =  DEFAULT_IMAGE_FEATURES
         self.data['packages'] = DEFAULT_CONTAINER_PACKAGES
         self.data['external-packages'] = []
         self.data['include-default-packages'] = "1"
@@ -73,10 +71,6 @@ class GenContainer(GenXXX):
         self.data['rootfs-post-scripts'] = ['echo "run script after do_rootfs in $IMAGE_ROOTFS"']
         self.data['environments'] = ['NO_RECOMMENDATIONS="1"']
         self.data['container_oci'] = DEFAULT_OCI_CONTAINER_DATA
-        if DEFAULT_MACHINE == 'intel-x86-64':
-            self.data['container_oci']['OCI_IMAGE_ARCH'] = 'x86-64'
-        elif DEFAULT_MACHINE == 'bcm-2xxx-rpi4':
-            self.data['container_oci']['OCI_IMAGE_ARCH'] = 'aarch64'
         self.data['container_upload_cmd'] = ""
 
     def _parse_inputyamls(self):
@@ -134,8 +128,23 @@ class GenContainer(GenXXX):
 
         logger.info("Deploy Directory: %s\n%s", self.deploydir, table.draw())
 
+
+class GenYoctoContainer(GenContainer):
+    """
+    Generate Yocto Container Image
+    """
+    def _parse_default(self):
+        super(GenYoctoContainer, self)._parse_default()
+        self.data['remote_pkgdatadir'] = DEFAULT_REMOTE_PKGDATADIR[self.pkg_type]
+        self.data['features'] =  DEFAULT_IMAGE_FEATURES
+        if DEFAULT_MACHINE == 'intel-x86-64':
+            self.data['container_oci']['OCI_IMAGE_ARCH'] = 'x86-64'
+        elif DEFAULT_MACHINE == 'bcm-2xxx-rpi4':
+            self.data['container_oci']['OCI_IMAGE_ARCH'] = 'aarch64'
+
+
 def _main_run_internal(args):
-    create = GenContainer(args)
+    create = GenYoctoContainer(args)
     create.do_prepare()
     create.do_rootfs()
     if create.target_rootfs is None:
