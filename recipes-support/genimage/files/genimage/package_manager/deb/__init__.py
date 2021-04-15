@@ -8,13 +8,14 @@ import re
 import tempfile
 
 from genimage.utils import set_logger
-from genimage.constant import FEED_ARCHS_DICT
 from genimage.constant import DEFAULT_LOCAL_DEB_PACKAGE_FEED
 from genimage.constant import DEFAULT_MACHINE
 from genimage.constant import DEB_PACKAGE_FEED_ARCHS
 from genimage.package_manager import PackageManager
 from genimage.package_manager import failed_postinsts_abort
 import genimage.utils as utils
+import genimage.debian_constant as debian_constant
+
 logger = logging.getLogger('appsdk')
 
 def debian_arch_map(machine):
@@ -411,6 +412,185 @@ class AptDeb(PackageManager):
         logger.debug("_handle_intercept_failure")
         self._mark_packages("unpacked", registered_pkgs.split())
 
+
+class ExternalDebian(object):
+    def __init__(self,
+                 bootstrap_tar,
+                 bootstrap_mirror,
+                 bootstrap_distro,
+                 apt_sources,
+                 apt_preference,
+                 workdir = os.path.join(os.getcwd(),"workdir"),
+                 target_rootfs = os.path.join(os.getcwd(), "workdir/rootfs"),
+                 machine = 'intel-x86-64'):
+
+        self.workdir = workdir
+        self.target_rootfs = target_rootfs
+        self.apt_sources = apt_sources
+        self.apt_preference = apt_preference
+        self.bootstrap_tar = bootstrap_tar
+        self.bootstrap_mirror = bootstrap_mirror
+        self.bootstrap_distro = bootstrap_distro
+
+        self.temp_dir = os.path.join(workdir, "temp")
+        utils.mkdirhier(self.target_rootfs)
+        utils.mkdirhier(self.temp_dir)
+
+        self.package_seed_sign = False
+
+        self.bad_recommendations = []
+        self.package_exclude = []
+        self.primary_arch = machine.replace('-', '_')
+        self.machine = machine
+
+
+        self.apt_preference_conf = os.path.join(self.target_rootfs, "etc/apt/preferences")
+        self.apt_sources_conf = os.path.join(self.target_rootfs, "etc/apt/sources.list")
+
+        self.apt_conf_dir = os.path.join(self.target_rootfs, "etc/apt")
+        self.apt_conf_file = os.path.join(self.apt_conf_dir, "apt.conf")
+
+        self.chroot_path = debian_constant.CHROOT_PATH
+
+    def create_configs(self):
+        logger.debug("create_configs")
+
+        self._debootstrap()
+
+        with open(self.apt_sources_conf, "w") as f:
+            f.write(self.apt_sources)
+
+        with open(self.apt_preference_conf, "w") as f:
+            f.write(self.apt_preference)
+
+    def set_exclude(self, package_exclude = None):
+        if not package_exclude:
+            return
+
+        self.package_exclude.extend(package_exclude)
+        self.package_exclude = list(set(self.package_exclude))
+        logger.debug("Set Exclude Packages: %s", self.package_exclude)
+        for pkg in self.package_exclude:
+            with open(self.apt_preference_conf, "a+") as f:
+                f.write("\nPackage: %s\n" % pkg)
+                f.write("Pin: release *\n")
+                f.write("Pin-Priority: -1\n\n")
+
+    def _debootstrap(self):
+        apt_conf_dir = os.path.join(self.temp_dir, "apt")
+        apt_conf_file = os.path.join(apt_conf_dir, "apt.conf")
+        utils.mkdirhier(apt_conf_dir)
+        utils.mkdirhier(apt_conf_dir + "/apt.conf.d/")
+        apt_conf_sample_dir = os.path.join(os.environ['OECORE_NATIVE_SYSROOT'], "etc/apt/apt.conf.sample")
+        with open(apt_conf_sample_dir) as apt_conf_sample:
+            for line in apt_conf_sample.read().split("\n"):
+                match_arch = re.match(r"  Architecture \".*\";$", line)
+                architectures = ""
+                if match_arch:
+                    utils.write(apt_conf_file, "w+", "  Architectures amd64;")
+                    utils.write(apt_conf_file, "w+", "  Architecture \"amd64\";")
+                    utils.write(apt_conf_file, "w+", "  System \"Debian APT solver interface\";")
+                else:
+                    line = re.sub(r"#ROOTFS#", self.target_rootfs, line)
+                    line = re.sub(r"#APTCONF#", apt_conf_dir, line)
+                    utils.write(apt_conf_file, "w+", line)
+
+        os.environ['APT_CONFIG'] = apt_conf_file
+        os.environ['ARCH_TEST'] = "do-not-arch-test"
+        os.environ['DEBOOTSTRAP_DIR'] = os.path.join(os.environ['OECORE_NATIVE_SYSROOT'],"usr/share/debootstrap")
+
+        if not os.path.exists(self.bootstrap_tar):
+            with tempfile.TemporaryDirectory(dir=os.path.dirname(self.bootstrap_tar)) as tmpdirname:
+                cmd = "debootstrap --no-check-gpg --arch=amd64 --include=gpg,gpg-agent --make-tarball={0} {1} {2} {3}".format(self.bootstrap_tar,
+                                                                                       self.bootstrap_distro,
+                                                                                       tmpdirname,
+                                                                                       self.bootstrap_mirror)
+                utils.run_cmd(cmd, shell=True)
+
+        cmd = "debootstrap --no-check-gpg --arch=amd64 --unpack-tarball={0} {1} {2} {3}".format(self.bootstrap_tar,
+                                                                             self.bootstrap_distro,
+                                                                             self.target_rootfs,
+                                                                             self.bootstrap_mirror)
+        utils.run_cmd(cmd, shell=True)
+
+        del os.environ['APT_CONFIG']
+        utils.remove(os.path.join(self.target_rootfs, "var/cache/apt/archives/*.deb"))
+
+    def list_installed(self):
+        cmd = [shutil.which("dpkg-query", path=os.getenv('PATH')),
+               "--admindir=%s/var/lib/dpkg" % self.target_rootfs,
+               "-W"]
+
+        cmd.append("-f=Package: ${Package}\nArchitecture: ${PackageArch}\nVersion: ${Version}\nFile: ${Package}_${Version}_${Architecture}.deb\nDepends: ${Depends}\nRecommends: ${Recommends}\nProvides: ${Provides}\n\n")
+        try:
+            cmd_output = subprocess.check_output(cmd, stderr=subprocess.STDOUT).strip().decode("utf-8")
+        except subprocess.CalledProcessError as e:
+            Exception("Cannot get the installed packages list. Command '%s' "
+                     "returned %d:\n%s" % (' '.join(cmd), e.returncode, e.output.decode("utf-8")))
+        return dpkg_query(cmd_output)
+
+    def update(self):
+        cmd = "PATH=%s " % self.chroot_path
+        cmd += "chroot %s apt update" % self.target_rootfs
+        try:
+            utils.run_cmd_oneshot(cmd, print_output=True)
+        except subprocess.CalledProcessError as e:
+            raise Exception("Unable to update the package index files. Command '%s' "
+                     "returned %d:\n%s" % (e.cmd, e.returncode, e.output.decode("utf-8")))
+
+    def install(self, pkgs, attempt_only=False):
+        logger.debug("apt install: %s, attemplt %s" % (pkgs, attempt_only))
+        if len(pkgs) == 0:
+            return
+
+        logger.debug("Installing the following packages: %s" % ' '.join(pkgs))
+
+        subcmd_args = "--no-install-recommends " if os.environ.get('NO_RECOMMENDATIONS', '0') == '1' else ""
+        subcmd_args += "-y --allow-downgrades --allow-remove-essential --allow-change-held-packages --allow-unauthenticated %s" % \
+              (' '.join(pkgs))
+        cmd = "PATH=%s " % self.chroot_path
+        cmd += "chroot %s apt install %s" % (self.target_rootfs, subcmd_args)
+        logger.debug('Running %s' % cmd)
+        try:
+            utils.run_cmd_oneshot(cmd, print_output=True)
+        except subprocess.CalledProcessError as e:
+            if attempt_only:
+                logger.debug("Could not invoke apt. Command '%s' "
+                             "returned %d:\n%s" % (e.cmd, e.returncode, e.output.decode("utf-8")))
+            else:
+                raise Exception("Could not invoke apt. Command '%s' "
+                         "returned %d:\n%s" % (e.cmd, e.returncode, e.output.decode("utf-8")))
+        return
+
+    def remove(self, pkgs, with_dependencies=True):
+        logger.debug("remove: %s" % (pkgs))
+        if not pkgs:
+            return
+
+        if with_dependencies:
+            cmd = "PATH=%s " % self.chroot_path
+            cmd += "chroot %s apt purge %s" % (self.target_rootfs, ' '.join(pkgs))
+        else:
+            cmd = "%s --admindir=%s/var/lib/dpkg --instdir=%s" \
+                  " -P --force-depends %s" % \
+                  (shutil.which("dpkg", path=os.getenv('PATH')),
+                   self.target_rootfs, self.target_rootfs, ' '.join(pkgs))
+
+        try:
+            output = subprocess.check_output(cmd.split(), stderr=subprocess.STDOUT).decode("utf-8")
+            logger.debug(output)
+        except subprocess.CalledProcessError as e:
+            raise Exception("Unable to remove packages. Command '%s' "
+                     "returned %d:\n%s" % (e.cmd, e.returncode, e.output.decode("utf-8")))
+
+    def post_install(self):
+        rmfiles= "/root/.profile /root/.bashrc /dev /proc /root/.bash_history /etc/grub.d/05_debian_theme /etc/grub.d/30_uefi-firmware"
+        for f in rmfiles.split():
+            utils.remove("%s%s" % (self.target_rootfs, f), recurse=True)
+
+        ctfiles="/dev /proc /sys"
+        for f in ctfiles.split():
+            utils.mkdirhier("%s%s" % (self.target_rootfs, f))
 
 def test():
     from genimage.constant import DEFAULT_RPM_PACKAGE_FEED

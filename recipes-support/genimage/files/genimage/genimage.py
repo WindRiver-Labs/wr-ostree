@@ -43,6 +43,9 @@ from genimage.constant import DEFAULT_MACHINE
 from genimage.constant import DEFAULT_IMAGE
 from genimage.constant import DEFAULT_IMAGE_FEATURES
 from genimage.constant import DEFAULT_INITRD_NAME
+import genimage.debian_constant as deb_constant
+from genimage.rootfs import ExtDebRootfs
+from genimage.image import CreateExtDebOstreeRepo
 
 import genimage.utils as utils
 import genimage.sysdef as sysdef
@@ -126,6 +129,7 @@ class GenImage(GenXXX):
         super(GenImage, self).do_prepare()
         gpg_data = self.data["gpg"]
         utils.check_gpg_keys(gpg_data)
+        image_workdir = os.path.join(self.workdir, self.image_name)
 
         # Cleanup all generated available rootfs, pseudo, rootfs_ota dir by default
         if not self.args.no_clean:
@@ -437,8 +441,119 @@ class GenYoctoImage(GenImage):
         utils.run_cmd_oneshot(cmd)
 
 
+class GenExtDebImage(GenImage):
+    def __init__(self, args):
+        super(GenExtDebImage, self).__init__(args)
+        self.debian_mirror, self.debian_distro = utils.get_debootstrap_input(self.data['package_feeds'],
+                                                                             deb_constant.DEFAULT_DEBIAN_DISTROS)
+        self.bootstrap_tar = os.path.join(self.deploydir, "debian-%s-base.tar" % self.debian_distro)
+        self.apt_sources = "\n".join(self.data['package_feeds'])
+        self.apt_preference = deb_constant.DEFAULT_APT_PREFERENCE
+
+    def _parse_default(self):
+        super(GenExtDebImage, self)._parse_default()
+        self.data['name'] = deb_constant.DEFAULT_IMAGE
+        self.data['image_type'] = ['ustart', 'ostree-repo']
+        self.data['packages'] = deb_constant.DEFAULT_PACKAGES
+        self.data['include-default-packages'] = "0"
+        self.data['rootfs-pre-scripts'] = [deb_constant.SCRIPT_STX_CUSTOMIZE_INSTALL]
+        self.data['rootfs-post-scripts'] = [deb_constant.SCRIPT_STX_ADD_ADMIN,
+                                            deb_constant.SCRIPT_STX_SET_ROOT_PASSWORD,
+                                            deb_constant.SCRIPT_STX_SET_BASH,
+                                            deb_constant.SCRIPT_STX_SSH_ROOT_LOGIN]
+        if utils.is_build():
+            self.data['rootfs-post-scripts'].append(deb_constant.SCRIPT_DEPLOY_KERNEL_GRUB_LOCAL)
+        elif utils.is_sdk():
+            self.data['rootfs-post-scripts'].append(deb_constant.SCRIPT_DEPLOY_KERNEL_GRUB_SDK)
+
+        self.data["ostree"] = deb_constant.DEFAULT_OSTREE_DATA
+
+        self.data['environments'] = ['NO_RECOMMENDATIONS="1"', 'DEBIAN_FRONTEND=noninteractive']
+
+    def _parse_amend(self):
+        super(GenExtDebImage, self)._parse_amend()
+        # Use default to fill missing params of "ostree" section
+        for ostree_param in deb_constant.DEFAULT_OSTREE_DATA:
+            if ostree_param not in self.data["ostree"]:
+                self.data["ostree"][ostree_param] = deb_constant.DEFAULT_OSTREE_DATA[ostree_param]
+
+        if 'all' in self.data['image_type']:
+            self.data['image_type'] = ['ostree-repo', 'wic', 'ustart', 'vmdk', 'vdi']
+
+    def do_prepare(self):
+        super(GenExtDebImage, self).do_prepare()
+        os.environ['DEPLOY_DIR'] = self.deploydir
+        os.environ['DEFAULT_INITRD_NAME'] = deb_constant.DEFAULT_INITRD_NAME
+
+    @show_task_info("Create External Debian Rootfs")
+    def do_rootfs(self):
+        workdir = os.path.join(self.workdir, self.image_name)
+
+        rootfs = ExtDebRootfs(workdir,
+                        self.data_dir,
+                        self.machine,
+                        self.bootstrap_tar,
+                        self.debian_mirror,
+                        self.debian_distro,
+                        self.apt_sources,
+                        self.apt_preference,
+                        self.packages,
+                        self.image_type,
+                        external_packages=self.external_packages,
+                        exclude_packages=self.exclude_packages)
+
+        self._do_rootfs_pre(rootfs)
+
+        rootfs.create()
+
+        self._do_rootfs_post(rootfs)
+
+    @show_task_info("Create External Debian Ostree Repo")
+    def do_ostree_repo(self):
+        workdir = os.path.join(self.workdir, self.image_name)
+        ostree_repo = CreateExtDebOstreeRepo(
+                        image_name=self.image_name,
+                        workdir=workdir,
+                        machine=self.machine,
+                        target_rootfs=self.target_rootfs,
+                        deploydir=self.deploydir,
+                        gpg_path=self.data['gpg']['gpg_path'],
+                        gpgid=self.data['gpg']['ostree']['gpgid'],
+                        gpg_password=self.data['gpg']['ostree']['gpg_password'])
+
+        ostree_repo.create()
+
+        ostree_repo.gen_env(self.data)
+
+    @show_task_info("Create External Debian Initramfs")
+    def do_ostree_initramfs(self):
+        # If the Initramfs exists, reuse it
+        image_name = "{0}-{1}.cpio.gz".format(deb_constant.DEFAULT_INITRD_NAME, self.machine)
+
+        image = os.path.join(self.deploydir, image_name)
+        if os.path.exists(os.path.realpath(image)):
+            logger.info("Reuse existed Initramfs")
+            return
+
+        logger.info("External Debian Initramfs was not found, create one")
+        cmd = "geninitramfs --debug --pkg-type external-debian"
+        if self.args.no_validate:
+            cmd += " --no-validate"
+        if self.args.no_clean:
+            cmd += " --no-clean"
+        utils.run_cmd(cmd, shell=True)
+
+
 def _main_run_internal(args):
-    create = GenYoctoImage(args)
+
+    pkg_type = GenImage._get_pkg_type(args)
+    if pkg_type == "external-debian":
+        if os.getuid() != 0:
+            logger.info("The external debian image generation requires root privilege")
+            sys.exit(1)
+        create = GenExtDebImage(args)
+    else:
+        create = GenYoctoImage(args)
     create.do_prepare()
     create.do_rootfs()
     if create.target_rootfs is None:

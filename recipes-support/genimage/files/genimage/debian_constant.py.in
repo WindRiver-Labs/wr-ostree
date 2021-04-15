@@ -1,0 +1,142 @@
+DEFAULT_IMAGE = "stx-image-base"
+
+DEFAULT_INITRD_NAME = "stx-initramfs-ostree-image"
+
+DEFAULT_CONTAINER_NAME = "stx-container-base"
+
+DEFAULT_DEBIAN_DISTROS = "bullseye buster".split()
+
+CHROOT_PATH = "/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin"
+
+SCRIPT_STX_CUSTOMIZE_INSTALL = '''\
+# The StarlingX customize pacakges includes:
+# - ostree 2019.1
+export PATH={0}
+chroot $IMAGE_ROOTFS bash << SCRIPT_ENDOF
+set -e
+apt update
+apt install -y --no-install-recommends linux-image-amd64 grub-common
+apt install -y --allow-downgrades --allow-unauthenticated --no-install-recommends ostree ostree-boot libostree-1-1 ostree-upgrade-mgr
+apt install --no-install-recommends -y network-manager
+SCRIPT_ENDOF
+'''.format(CHROOT_PATH)
+
+SCRIPT_STX_ADD_ADMIN = '''\
+# Remove user admin whether it exists or not
+# Add a new user and create user's home directory
+# Add the user to sudo group
+# Username: admin
+# Password: 123456
+export PATH={0}
+chroot $IMAGE_ROOTFS deluser admin
+chroot $IMAGE_ROOTFS useradd admin -m --shell /bin/bash -G sudo --password '$6$YcX9PtwnWDeeZfLG$NO64/Frq0xXcMVLKFXqdKxdwBBF42I5TpEiaWfnuj6u6V5GMb0XCASZE7bG4Iiof8QtttCAN4F6xpdNhldIJl/'\
+'''.format(CHROOT_PATH)
+
+SCRIPT_STX_SET_ROOT_PASSWORD = '''\
+# Set password 'root' to root"
+export PATH={0}
+chroot $IMAGE_ROOTFS usermod -p '$6$hEv/K.fPeg/$ezIWhJPrMG3WtdEwqQRdyBwdYmPZkqW2PONFAcDd6TqWliYc9dHAwW4MFTlLanVH3/clE0/34FheDMpbAqZVG.' root;\
+'''.format(CHROOT_PATH)
+
+SCRIPT_STX_SSH_ROOT_LOGIN = '''\
+# Allow root ssh login
+export PATH={0}
+chroot $IMAGE_ROOTFS sed -i 's/^[#[:space:]]*PermitRootLogin.*/PermitRootLogin yes/' /etc/ssh/sshd_config\
+'''.format(CHROOT_PATH)
+
+SCRIPT_DEPLOY_KERNEL_GRUB_SDK = '''\
+# From appsdk
+# Copy kernel images and grub-efi to deploydir
+# Copy efi to rootfs
+set -x
+set -e
+cp -rf $OECORE_TARGET_SYSROOT/boot/efi/EFI/BOOT/grub.cfg $DEPLOY_DIR/grub.cfg
+cp -rf $OECORE_TARGET_SYSROOT/boot/efi/EFI/BOOT/bootx64.efi $DEPLOY_DIR/bootx64.efi
+cp -rf $OECORE_TARGET_SYSROOT/boot/efi/EFI/BOOT/bootx64.efi $DEPLOY_DIR/grub-efi-bootx64.efi
+cp -rf $OECORE_TARGET_SYSROOT/boot/efi $IMAGE_ROOTFS/boot/
+cp -rf $IMAGE_ROOTFS/boot/*-amd64 $DEPLOY_DIR
+KERNEL=`ls $DEPLOY_DIR/vmlinuz-*-amd64`
+ln -snf --relative $KERNEL  $DEPLOY_DIR/bzImage\
+'''
+
+SCRIPT_DEPLOY_KERNEL_GRUB_LOCAL = '''\
+# From local build
+# Copy kernel images and grub-efi to deploydir
+# Copy efi to rootfs
+set -x
+set -e
+cp -rf ${DEPLOY_DIR_IMAGE}/grub.cfg $DEPLOY_DIR/grub.cfg
+cp -rf ${DEPLOY_DIR_IMAGE}/grub-efi-bootx64.efi $DEPLOY_DIR/bootx64.efi
+cp -rf ${DEPLOY_DIR_IMAGE}/grub-efi-bootx64.efi $DEPLOY_DIR/grub-efi-bootx64.efi
+mkdir -p $IMAGE_ROOTFS/boot/efi/EFI/BOOT
+cp -rf ${DEPLOY_DIR_IMAGE}/grub-efi-bootx64.efi $IMAGE_ROOTFS/boot/efi/EFI/BOOT/
+cp -rf ${DEPLOY_DIR_IMAGE}/grub.cfg $IMAGE_ROOTFS/boot/efi/EFI/BOOT/
+cp -rf $IMAGE_ROOTFS/boot/*-amd64 $DEPLOY_DIR
+KERNEL=`ls $DEPLOY_DIR/vmlinuz-*-amd64`
+ln -snf --relative $KERNEL  $DEPLOY_DIR/bzImage\
+'''
+
+SCRIPT_STX_SET_BASH = '''\
+# Set bash as default shell
+ln -snf --relative $IMAGE_ROOTFS/bin/bash $IMAGE_ROOTFS/bin/sh\
+'''
+
+DEFAULT_PACKAGES = '''
+    openssh-client
+    openssh-server
+    net-tools
+    vim
+'''.split()
+
+DEFAULT_APT_PREFERENCE = '''\
+Package: *
+Pin: origin {0}
+Pin-Priority: 1024\
+'''.format("${DEBIAN_CUSTOMIZE_FEED_URI}".replace("http://", "").split("/")[0])
+
+SCRIPT_STX_INITRD_REDUCE_SIZE = '''\
+# Reduce rootfs size AMAP
+export PATH={0}
+chroot $IMAGE_ROOTFS bash << SCRIPT_ENDOF
+set -x
+rm -rf /boot/*
+rm -rf /var/lib/* /var/cache/*
+rm -rf /usr/share/locale /usr/share/man /usr/share/doc /usr/share/zoneinfo /usr/share/vim
+SCRIPT_ENDOF\
+'''.format(CHROOT_PATH)
+
+OSTREE_INITRD_PACKAGES = '''
+    base-passwd bash busybox
+    udhcpc bzip2 ca-certificates
+    curl dosfstools e2fsprogs
+    findutils gawk glib-networking
+    gnupg grep gzip  initramfs-ostree
+    kbd kmod mdadm mttyexec watchdog
+    pv rng-tools sed
+    ostree ostree-boot libostree-1-1
+    tar udev util-linux fdisk mount
+    linux-image-amd64
+'''.split()
+
+DEFAULT_CONTAINER_PACKAGES = '''
+    openssh-client
+    openssh-server
+    net-tools
+    vim
+    debootstrap
+'''.split()
+
+DEFAULT_OSTREE_DATA = {
+  'ostree_use_ab': '1',
+  'ostree_osname': 'wrlinux',
+  'ostree_skip_boot_diff': '2',
+  'ostree_remote_url': '',
+  'OSTREE_GRUB_USER': 'root',
+  'OSTREE_GRUB_PW_FILE': '$OECORE_NATIVE_SYSROOT/usr/share/bootfs/boot_keys/ostree_grub_pw',
+  'OSTREE_FDISK_BLM': int('2506'),
+  'OSTREE_FDISK_BSZ': int('512'),
+  'OSTREE_FDISK_RSZ': int('4096'),
+  'OSTREE_FDISK_VSZ': int('0'),
+  'OSTREE_FDISK_FSZ': int('32'),
+  'OSTREE_CONSOLE': 'console=ttyS0,115200 console=tty1',
+}

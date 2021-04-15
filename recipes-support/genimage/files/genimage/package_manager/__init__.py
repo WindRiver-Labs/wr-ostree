@@ -205,10 +205,14 @@ class PackageManager(object, metaclass=ABCMeta):
 
 
 def get_pm_class(pkgtype="rpm"):
-    mod = importlib.import_module('genimage.package_manager.' + pkgtype)
     if pkgtype == "rpm":
+        mod = importlib.import_module('genimage.package_manager.' + pkgtype)
         return mod.DnfRpm
     elif pkgtype == "deb":
+        mod = importlib.import_module('genimage.package_manager.' + pkgtype)
         return mod.AptDeb
+    elif pkgtype == "external-debian":
+        mod = importlib.import_module('genimage.package_manager.deb')
+        return mod.ExternalDebian
 
     sys.exit(1)

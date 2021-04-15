@@ -77,7 +77,7 @@ def set_parser(parser=None, supported_types=None):
         help='Specify extra urls of rpm package feeds',
         action='append')
     parser.add_argument('--pkg-type',
-        choices=['rpm', 'deb'],
+        choices=['rpm', 'deb', 'external-debian'],
         help='Specify package type, it overrides \'package_type\' in Yaml',
         action='store')
     parser.add_argument('-p', '--pkg',
@@ -145,8 +145,8 @@ class GenXXX(object, metaclass=ABCMeta):
         self.external_packages = self.data['external-packages']
         self.exclude_packages = []
         self.pkg_feeds = self.data['package_feeds']
-        self.remote_pkgdatadir = self.data['remote_pkgdatadir']
-        self.features = self.data['features']
+        self.remote_pkgdatadir = self.data.get('remote_pkgdatadir', "")
+        self.features = self.data.get('features', "")
 
         self.rootfs_post_scripts = self.data['rootfs-post-scripts']
         self.rootfs_pre_scripts = self.data['rootfs-pre-scripts']
@@ -179,8 +179,8 @@ class GenXXX(object, metaclass=ABCMeta):
         logger.debug("Deploy Directory: %s" % self.outdir)
         logger.debug("Work Directory: %s" % self.workdir)
 
-
-    def _get_pkg_type(self, args):
+    @staticmethod
+    def _get_pkg_type(args):
         pkg_type = DEFAULT_IMAGE_PKGTYPE
 
         # Collect package_type from input yamls

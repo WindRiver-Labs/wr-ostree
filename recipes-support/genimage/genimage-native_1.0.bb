@@ -21,10 +21,10 @@ SRC_URI += " \
 "
 
 DEPENDS += " \
-    ${@bb.utils.contains('PACKAGE_CLASSES','package_rpm','dnf-native','',d)} \
-    ${@bb.utils.contains('PACKAGE_CLASSES','package_rpm','rpm-native','',d)} \
-    ${@bb.utils.contains('PACKAGE_CLASSES','package_deb','apt-native','',d)} \
-    ${@bb.utils.contains('PACKAGE_CLASSES','package_deb','dpkg-native','',d)} \
+    dnf-native \
+    rpm-native \
+    apt-native \
+    dpkg-native \
     createrepo-c-native \
     gnupg-native \
     ostree-native \
@@ -54,6 +54,7 @@ DEPENDS += " \
     util-linux-native \
     perl-native \
     pigz-native \
+    debootstrap-native \
 "
 
 # Required by do_rootfs's intercept_scripts in sdk

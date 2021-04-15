@@ -22,6 +22,7 @@ import logging
 
 from genimage import utils
 from genimage import constant
+import genimage.debian_constant as deb_constant
 
 logger = logging.getLogger('appsdk')
 
@@ -274,6 +275,34 @@ class CreateOstreeRepo(Image):
             'OSTREE_USE_AB': data['ostree']['ostree_use_ab'],
             'OSTREE_REMOTE_URL': data['ostree']['ostree_remote_url'],
             'OSTREE_FLUX_PART': data['wic']['OSTREE_FLUX_PART'],
+            'OSTREE_GRUB_USER': data['ostree']['OSTREE_GRUB_USER'],
+            'OSTREE_GRUB_PW_FILE': data['ostree']['OSTREE_GRUB_PW_FILE'],
+            'OSTREE_FDISK_BLM': data['ostree']['OSTREE_FDISK_BLM'],
+            'OSTREE_FDISK_FSZ': data['ostree']['OSTREE_FDISK_FSZ'],
+            'OSTREE_FDISK_BSZ': data['ostree']['OSTREE_FDISK_BSZ'],
+            'OSTREE_FDISK_RSZ': data['ostree']['OSTREE_FDISK_RSZ'],
+            'OSTREE_FDISK_VSZ': data['ostree']['OSTREE_FDISK_VSZ'],
+            'OSTREE_CONSOLE': data['ostree']['OSTREE_CONSOLE'],
+            'IMAGE_BOOT_FILES': '{0} {1}'.format(constant.IMAGE_BOOT_FILES, constant.EXTRA_IMAGE_BOOT_FILES[self.machine]),
+            'IMAGE_BASENAME': self.image_name,
+            'BOOT_GPG_NAME': data['gpg']['grub']['BOOT_GPG_NAME'],
+            'BOOT_GPG_PASSPHRASE': data['gpg']['grub']['BOOT_GPG_PASSPHRASE'],
+            'BOOT_KEYS_DIR': data['gpg']['grub']['BOOT_KEYS_DIR'],
+        }
+        env_file = os.path.join(self.deploydir, '{0}-{1}.env'.format(self.image_name, self.machine))
+        with open(env_file, 'w') as f:
+            f.writelines('{}="{}"\n'.format(k,v) for k, v in env.items())
+
+
+class CreateExtDebOstreeRepo(CreateOstreeRepo):
+    def gen_env(self, data):
+        env = {
+            'RECIPE_SYSROOT_NATIVE': '$OECORE_NATIVE_SYSROOT',
+            'DEPLOY_DIR_IMAGE': self.deploydir,
+            'OSTREE_USE_AB': data['ostree']['ostree_use_ab'],
+            'OSTREE_REMOTE_URL': data['ostree']['ostree_remote_url'],
+            'OSTREE_FLUX_PART': data['wic']['OSTREE_FLUX_PART'],
+            'OSTREE_INITRD': deb_constant.DEFAULT_INITRD_NAME,
             'OSTREE_GRUB_USER': data['ostree']['OSTREE_GRUB_USER'],
             'OSTREE_GRUB_PW_FILE': data['ostree']['OSTREE_GRUB_PW_FILE'],
             'OSTREE_FDISK_BLM': data['ostree']['OSTREE_FDISK_BLM'],

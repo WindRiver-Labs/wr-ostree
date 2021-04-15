@@ -17,6 +17,7 @@ SRC_URI = "\
            file://genimage/gencontainer.py \
            file://genimage/utils.py \
            file://genimage/constant.py.in \
+           file://genimage/debian_constant.py.in \
            file://genimage/package_manager/__init__.py \
            file://genimage/package_manager/rpm/__init__.py \
            file://genimage/package_manager/deb/__init__.py \
@@ -189,7 +190,8 @@ do_copy_src() {
 
 python do_write_py_template () {
     # constant.py.in -> constant.py and expand variables
-    py_templates = [os.path.join(d.getVar("WORKDIR"),"genimage","constant.py.in")]
+    py_templates = [os.path.join(d.getVar("WORKDIR"),"genimage","constant.py.in"),
+                    os.path.join(d.getVar("WORKDIR"),"genimage","debian_constant.py.in")]
     for py_t in py_templates:
         body = "null"
         with open(py_t, "r") as pytf:

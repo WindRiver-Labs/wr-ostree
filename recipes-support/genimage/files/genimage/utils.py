@@ -415,3 +415,17 @@ def cleanup(image_workdir, ostree_osname="wrlinux"):
 
     run_cmd_oneshot("rm -rf %s/rootfs*" % image_workdir)
 
+def get_debootstrap_input(package_feeds, debian_distros):
+    debian_mirror = ""
+    debian_distro = ""
+    for url in package_feeds:
+        apt_source = url.split()
+        for distro in debian_distros:
+            if distro in apt_source:
+                i = apt_source.index(distro)
+                mirror = apt_source[i-1]
+                logger.info("Mirror: %s, Distro %s", mirror, distro)
+                return mirror, distro
+
+    logger.info("Mirror: %s, Distro %s", mirror, distro)
+    return None, None

@@ -35,6 +35,8 @@ from genimage.constant import DEFAULT_IMAGE_FEATURES
 from genimage.container import CreateContainer
 from genimage.genXXX import set_parser
 from genimage.genXXX import GenXXX
+from genimage.rootfs import ExtDebRootfs
+import genimage.debian_constant as deb_constant
 
 import genimage.utils as utils
 
@@ -143,8 +145,56 @@ class GenYoctoContainer(GenContainer):
             self.data['container_oci']['OCI_IMAGE_ARCH'] = 'aarch64'
 
 
+class GenExtDebContainer(GenContainer):
+    def __init__(self, args):
+        super(GenExtDebContainer, self).__init__(args)
+        self.debian_mirror, self.debian_distro = utils.get_debootstrap_input(self.data['package_feeds'],
+                                                                             deb_constant.DEFAULT_DEBIAN_DISTROS)
+        self.bootstrap_tar = os.path.join(self.deploydir, "debian-%s-base.tar" % self.debian_distro)
+        self.apt_sources = "\n".join(self.data['package_feeds'])
+        self.apt_preference = deb_constant.DEFAULT_APT_PREFERENCE
+
+    def _parse_default(self):
+        super(GenExtDebContainer, self)._parse_default()
+        self.data['name'] = deb_constant.DEFAULT_CONTAINER_NAME
+        self.data['packages'] = deb_constant.DEFAULT_CONTAINER_PACKAGES
+        self.data['include-default-packages'] = "1"
+        self.data['rootfs-post-scripts'] = [deb_constant.SCRIPT_STX_SSH_ROOT_LOGIN]
+        self.data['environments'] = ['NO_RECOMMENDATIONS="1"', 'DEBIAN_FRONTEND=noninteractive']
+        self.data['container_oci']['OCI_IMAGE_ARCH'] = 'x86-64'
+
+    @show_task_info("Create External Debian Rootfs")
+    def do_rootfs(self):
+        workdir = os.path.join(self.workdir, self.image_name)
+
+        rootfs = ExtDebRootfs(workdir,
+                        self.data_dir,
+                        self.machine,
+                        self.bootstrap_tar,
+                        self.debian_mirror,
+                        self.debian_distro,
+                        self.apt_sources,
+                        self.apt_preference,
+                        self.packages,
+                        self.image_type,
+                        external_packages=self.external_packages,
+                        exclude_packages=self.exclude_packages)
+
+        self._do_rootfs_pre(rootfs)
+
+        rootfs.create()
+
+        self._do_rootfs_post(rootfs)
+
 def _main_run_internal(args):
-    create = GenYoctoContainer(args)
+    pkg_type = GenContainer._get_pkg_type(args)
+    if pkg_type == "external-debian":
+        if os.getuid() != 0:
+            logger.info("The external debian image generation requires root privilege")
+            sys.exit(1)
+        create = GenExtDebContainer(args)
+    else:
+        create = GenYoctoContainer(args)
     create.do_prepare()
     create.do_rootfs()
     if create.target_rootfs is None:

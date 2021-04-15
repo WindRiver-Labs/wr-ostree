@@ -208,3 +208,78 @@ class Rootfs(object):
         for kernel_ver in os.listdir(modules_dir):
             if os.path.isdir(os.path.join(modules_dir, kernel_ver)):
                 utils.run_cmd_oneshot("depmodwrapper -a -b {0} {1}".format(self.target_rootfs, kernel_ver))
+
+
+class ExtDebRootfs(Rootfs):
+    def __init__(self,
+                 workdir,
+                 data_dir,
+                 machine,
+                 bootstrap_tar,
+                 bootstrap_mirror,
+                 bootstrap_distro,
+                 apt_sources,
+                 apt_preference,
+                 packages,
+                 image_type,
+                 external_packages=[],
+                 exclude_packages=[],
+                 target_rootfs=None):
+
+        self.workdir = workdir
+        self.data_dir = data_dir
+        self.machine = machine
+        self.packages = packages
+        self.image_type = image_type
+        self.external_packages = external_packages
+        self.exclude_packages = exclude_packages
+
+        if target_rootfs:
+            self.target_rootfs = target_rootfs
+        else:
+            self.target_rootfs = os.path.join(self.workdir, "rootfs")
+        self.packages_yaml = os.path.join(self.workdir, "packages.yaml")
+
+        self.rootfs_pre_scripts = []
+
+        PackageManager = get_pm_class(pkgtype="external-debian")
+        self.pm = PackageManager(bootstrap_tar,
+                                 bootstrap_mirror,
+                                 bootstrap_distro,
+                                 apt_sources,
+                                 apt_preference,
+                                 self.workdir,
+                                 self.target_rootfs,
+                                 self.machine)
+
+        self.installed_pkgs = dict()
+
+        self.rootfs_post_scripts = []
+
+    def create(self):
+        self.pm.create_configs()
+        self._pre_rootfs()
+        self.pm.set_exclude(self.exclude_packages)
+        self.pm.update()
+
+        self.pm.install(self.packages)
+
+        #
+        # We install external packages after packages been installed,
+        # because we don't want complementary package logic apply to it.
+        #
+        duplicate_pkgs = set(self.pm.list_installed().keys()) & set(self.external_packages)
+        explicit_duplicate_pkgs = set(self.packages) & set(self.external_packages)
+        implicit_duplicate_pkgs = duplicate_pkgs - explicit_duplicate_pkgs
+        if explicit_duplicate_pkgs:
+            logger.warning("The following packages are specfied both in external-packages and packages: \n\t%s" % '\n\t'.join(sorted(explicit_duplicate_pkgs)))
+        if implicit_duplicate_pkgs:
+            logger.warning("The following packages are specfied in external-packages, but are brought in by dependencies of packages: \n\t%s" % '\n\t'.join(sorted(implicit_duplicate_pkgs)))
+        self.pm.install(self.external_packages)
+        self._save_installed()
+
+        self.pm.post_install()
+
+        self._post_rootfs()
+
+        self._generate_kernel_module_deps()

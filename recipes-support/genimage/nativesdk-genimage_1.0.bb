@@ -17,10 +17,10 @@
 include genimage.inc
 
 RDEPENDS_${PN} = " \
-                  ${@bb.utils.contains('PACKAGE_CLASSES','package_rpm','nativesdk-dnf','',d)} \
-                  ${@bb.utils.contains('PACKAGE_CLASSES','package_rpm','nativesdk-rpm','',d)} \
-                  ${@bb.utils.contains('PACKAGE_CLASSES','package_deb','nativesdk-apt','',d)} \
-                  ${@bb.utils.contains('PACKAGE_CLASSES','package_deb','nativesdk-dpkg','',d)} \
+                  nativesdk-dnf \
+                  nativesdk-rpm \
+                  nativesdk-apt \
+                  nativesdk-dpkg \
                   nativesdk-createrepo-c \
                   nativesdk-dosfstools \
                   nativesdk-syslinux \
@@ -51,6 +51,7 @@ RDEPENDS_${PN} = " \
                   nativesdk-util-linux-uuidgen \
                   nativesdk-perl \
                   nativesdk-pigz \
+                  nativesdk-debootstrap \
 "
 
 # Required by do_rootfs's intercept_scripts in sdk
