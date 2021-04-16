@@ -50,6 +50,12 @@ def set_parser_exampleyamls(parser=None):
             help='Specify dir to save debug messages as log.appsdk regardless of the logging level',
             action='store')
 
+    parser.add_argument('--pkg-type',
+        choices=['rpm', 'deb', 'external-debian'],
+        default="rpm",
+        help='Specify package type',
+        action='store')
+
     parser.add_argument('-o', '--outdir',
         default=os.getcwd(),
         help='Specify output dir, default is current working directory',
@@ -79,29 +85,42 @@ def _exampleyamls_sysdef(args):
                 logger.debug("%s -> %s", src, dst)
 
 def _main_run_internal(args):
-    outdir = os.path.join(args.outdir, 'exampleyamls')
+    if args.pkg_type ==  "external-debian" and DEFAULT_MACHINE == "bcm-2xxx-rpi4":
+        logger.error("The external debian image generation does not support bcm-2xxx-rpi4")
+        sys.exit(1)
 
+    outdir = os.path.join(args.outdir, 'exampleyamls')
     native_sysroot = os.environ['OECORE_NATIVE_SYSROOT']
     yamlexample_dir = os.path.join(native_sysroot, 'usr/share/genimage/data/yaml_example')
     machine_yaml = os.path.join(yamlexample_dir, 'machine', '{0}.yaml'.format(DEFAULT_MACHINE))
     image_yamls = glob.glob(os.path.join(yamlexample_dir, 'images', '*.yaml'))
-    for image_yaml in image_yamls:
-        if image_yaml.endswith('container-base.yaml'):
-            cmd = "genyaml -d -o {0} --type container {1}".format(outdir, image_yaml)
-        elif image_yaml.endswith('initramfs-ostree-image.yaml'):
-            cmd = "genyaml -d -o {0} --type initramfs {1}".format(outdir, image_yaml)
-        else:
-            cmd = "genyaml -d -o {0} {1} {2}".format(outdir, machine_yaml, image_yaml)
+
+    utils.remove(os.path.join(outdir, "*"), recurse=True)
+    if args.pkg_type == "rpm":
+        for image_yaml in image_yamls:
+            if image_yaml.endswith('container-base.yaml'):
+                cmd = "genyaml -d -o {0} --type container --pkg-type rpm {1}".format(outdir, image_yaml)
+            elif image_yaml.endswith('initramfs-ostree-image.yaml'):
+                cmd = "genyaml -d -o {0} --type initramfs --pkg-type rpm {1}".format(outdir, image_yaml)
+            else:
+                cmd = "genyaml -d -o {0} --pkg-type rpm {1} {2}".format(outdir, machine_yaml, image_yaml)
+            utils.run_cmd_oneshot(cmd)
+
+            cmd = "cp -rf {0}/feature {1}/".format(yamlexample_dir, outdir)
+            utils.run_cmd_oneshot(cmd)
+
+        if DEFAULT_MACHINE == "bcm-2xxx-rpi4":
+            utils.remove(os.path.join(outdir, "feature/vboxguestdrivers.yaml"))
+            utils.remove(os.path.join(outdir, "feature/startup-container.yaml"))
+
+        _exampleyamls_sysdef(args)
+    else:
+        cmd = "genyaml -d -o {0} --type container --pkg-type {1}".format(outdir, args.pkg_type)
         utils.run_cmd_oneshot(cmd)
-
-    cmd = "cp -rf {0}/feature {1}/".format(yamlexample_dir, outdir)
-    utils.run_cmd_oneshot(cmd)
-
-    if DEFAULT_MACHINE == "bcm-2xxx-rpi4":
-        utils.remove(os.path.join(outdir, "feature/vboxguestdrivers.yaml"))
-        utils.remove(os.path.join(outdir, "feature/startup-container.yaml"))
-
-    _exampleyamls_sysdef(args)
+        cmd = "genyaml -d -o {0} --type initramfs --pkg-type {1}".format(outdir, args.pkg_type)
+        utils.run_cmd_oneshot(cmd)
+        cmd = "genyaml -d -o {0} --pkg-type {1}".format(outdir, args.pkg_type)
+        utils.run_cmd_oneshot(cmd)
 
     table = Texttable()
     table.set_cols_align(["l", "l"])
@@ -111,11 +130,12 @@ def _main_run_internal(args):
     output = subprocess.check_output("ls *.yaml", shell=True, cwd=outdir)
     table.add_row(["Image", output])
 
-    output = subprocess.check_output("ls feature/*.yaml", shell=True, cwd=outdir)
-    table.add_row(["Feature", output])
+    if args.pkg_type == "rpm":
+        output = subprocess.check_output("ls feature/*.yaml", shell=True, cwd=outdir)
+        table.add_row(["Feature", output])
 
-    output = subprocess.check_output("ls sysdef/*.yaml", shell=True, cwd=outdir)
-    table.add_row(["System Definition\n Yamls", output])
+        output = subprocess.check_output("ls sysdef/*.yaml", shell=True, cwd=outdir)
+        table.add_row(["System Definition\n Yamls", output])
 
     logger.info("Deploy Directory: %s\n%s", outdir, table.draw())
 
