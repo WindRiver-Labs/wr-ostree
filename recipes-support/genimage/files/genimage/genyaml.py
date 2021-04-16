@@ -39,8 +39,12 @@ from genimage.constant import DEFAULT_OCI_CONTAINER_DATA
 from genimage.constant import DEFAULT_IMAGE_FEATURES
 
 from genimage.genimage import GenImage
-from genimage.geninitramfs import GenInitramfs
-from genimage.gencontainer import  GenContainer
+from genimage.genimage import GenYoctoImage
+from genimage.genimage import GenExtDebImage
+from genimage.geninitramfs import GenYoctoInitramfs
+from genimage.geninitramfs import GenExtDebInitramfs
+from genimage.gencontainer import  GenYoctoContainer
+from genimage.gencontainer import  GenExtDebContainer
 
 import genimage.utils as utils
 
@@ -74,9 +78,9 @@ def complete_url(**kwargs):
     return ["http://", "https://"]
 
 genclass = {
-    "genimage": GenImage,
-    "gencontainer": GenContainer,
-    "geninitramfs": GenInitramfs
+    "genimage": {"rpm": GenYoctoImage, "deb":GenYoctoImage, "external-debian":GenExtDebImage},
+    "gencontainer": {"rpm": GenYoctoContainer, "deb":GenYoctoContainer, "external-debian":GenExtDebContainer},
+    "geninitramfs": {"rpm": GenYoctoInitramfs, "deb":GenYoctoInitramfs, "external-debian":GenExtDebInitramfs}
 }
 
 class GenYaml():
@@ -85,13 +89,12 @@ class GenYaml():
     """
     def __init__(self, args):
         self.gen_type = self._get_gen_type(args)
-        self.generator = genclass[self.gen_type](args)
+        self.pkg_type = GenImage._get_pkg_type(args)
+        self.generator = genclass[self.gen_type][self.pkg_type](args)
 
         self.generator.output_yaml = os.path.join(
              self.generator.outdir, "%s-%s.yaml" % (self.generator.data['name'],
                                                     self.generator.data['machine']))
-
-        utils.remove(self.generator.deploydir, recurse=True)
 
     def _get_gen_type(self, args):
         '''
