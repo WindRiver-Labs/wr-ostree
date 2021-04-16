@@ -119,6 +119,7 @@ class GenInitramfs(GenXXX):
                         workdir = workdir,
                         machine = self.machine,
                         target_rootfs = self.target_rootfs,
+                        pkg_type = self.pkg_type,
                         deploydir = self.deploydir)
         initrd.create()
 

@@ -69,10 +69,10 @@ This should result in a system booted to the u-boot menu.
 
 
 ### On Qemu: Way 1 - Use qemu in SDK
-Create a 14G disk image
+Create a disk image
     $ qemu-img create -f raw boot-image-qemu.hddimg 14G
 
-Burn the image onto 14G disk image:
+Burn the image onto disk image:
     $ dd if=@IMAGE_NAME@.wic of=boot-image-qemu.hddimg conv=notrunc
 
 For Qemu No Graphic:
@@ -161,29 +161,7 @@ when kernel is upgraded in the repo.
 Note, the previous action is only needed when kernel is upgraded in the repo,
 otherwise it is not needed.
 
-### Dnf/Rpm
-Prerequisite: The dnf and rpm are installed on image
-
-#### Install a normal package
-The images are locked by default, so need unlock firstly:
-    $ ostree admin unlock --hotfix
-
-To install a package
-    $ dnf install <package>
-
-To remove a package
-    $ dnf remove <package>
-
-#### Install Graphic Desktop (XFCE)
-To install packages by following steps:
-    $ ostree admin unlock --hotfix
-    $ dnf install -y packagegroup-xfce-base \
-                     packagegroup-core-x11-base \
-                     gsettings-desktop-schemas \
-                     wr-themes
-    $ systemctl set-default graphical.target
-    $ reboot
-
+@PACKAGE_MANAGER_SECTION@
 ## License
 The image is provided under the GPL-2.0 license.
 

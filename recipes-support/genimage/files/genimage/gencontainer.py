@@ -91,6 +91,7 @@ class GenContainer(GenXXX):
                         machine=self.machine,
                         target_rootfs=self.target_rootfs,
                         deploydir=self.deploydir,
+                        pkg_type = self.pkg_type,
                         container_oci=self.data['container_oci'])
         container.create()
 

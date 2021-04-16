@@ -191,3 +191,49 @@ DEFAULT_WIC_DATA = {
   'OSTREE_WKS_FLUX_SIZE': '${OSTREE_WKS_FLUX_SIZE}',
   'OSTREE_FLUX_PART': '${OSTREE_FLUX_PART}'
 }
+
+PACKAGE_MANAGER_SECTION_RPM = '''\
+### Dnf/Rpm
+Prerequisite: The dnf and rpm are installed on image
+
+#### Install a normal package
+The images are locked by default, so need unlock firstly:
+    $ ostree admin unlock --hotfix
+
+To install a package
+    $ dnf install <package>
+
+To remove a package
+    $ dnf remove <package>
+
+#### Install Graphic Desktop (XFCE)
+To install packages by following steps:
+    $ ostree admin unlock --hotfix
+    $ dnf install -y packagegroup-xfce-base \
+                     packagegroup-core-x11-base \
+                     gsettings-desktop-schemas \
+                     wr-themes
+    $ systemctl set-default graphical.target
+    $ reboot
+'''
+
+PACKAGE_MANAGER_SECTION_DEB = '''\
+### Apt/Dpkg
+Prerequisite: The apt and dpkg are installed on image
+
+#### Install a normal package
+The images are locked by default, so need unlock firstly:
+    $ ostree admin unlock --hotfix
+
+To install a package
+    $ apt install <package>
+
+To remove a package
+    $ apt remove <package>
+'''
+
+PACKAGE_MANAGER_SECTION = {
+    'rpm': PACKAGE_MANAGER_SECTION_RPM,
+    'deb': PACKAGE_MANAGER_SECTION_DEB,
+    'external-debian': PACKAGE_MANAGER_SECTION_DEB
+}

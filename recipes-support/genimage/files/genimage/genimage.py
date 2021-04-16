@@ -155,6 +155,7 @@ class GenImage(GenXXX):
                         machine = self.machine,
                         target_rootfs = self.target_rootfs,
                         deploydir = self.deploydir,
+                        pkg_type = self.pkg_type,
                         wks_file = wks_file)
 
         env = self.data['wic'].copy()
@@ -174,6 +175,7 @@ class GenImage(GenXXX):
         vmdk = CreateVMImage(image_name=self.image_name,
                              machine=self.machine,
                              deploydir=self.deploydir,
+                             pkg_type = self.pkg_type,
                              vm_type="vmdk")
         vmdk.create()
 
@@ -194,6 +196,7 @@ class GenImage(GenXXX):
                         machine=self.machine,
                         target_rootfs=self.target_rootfs,
                         deploydir=self.deploydir,
+                        pkg_type = self.pkg_type,
                         gpg_path=self.data['gpg']['gpg_path'],
                         gpgid=self.data['gpg']['ostree']['gpgid'],
                         gpg_password=self.data['gpg']['ostree']['gpg_password'])
@@ -210,6 +213,7 @@ class GenImage(GenXXX):
                         workdir=workdir,
                         machine=self.machine,
                         deploydir=self.deploydir,
+                        pkg_type = self.pkg_type,
                         ostree_use_ab=self.data["ostree"]['ostree_use_ab'],
                         ostree_osname=self.data["ostree"]['ostree_osname'],
                         ostree_skip_boot_diff=self.data["ostree"]['ostree_skip_boot_diff'],
@@ -225,6 +229,7 @@ class GenImage(GenXXX):
                         image_name=self.image_name,
                         workdir=workdir,
                         machine=self.machine,
+                        pkg_type = self.pkg_type,
                         deploydir=self.deploydir)
         ustart.create()
 

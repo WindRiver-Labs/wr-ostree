@@ -32,7 +32,7 @@ class Image(object, metaclass=ABCMeta):
     This is an abstract class. Do not instantiate this directly.
     """
     def __init__(self, **kwargs):
-        self.allowed_keys = {'image_name', 'workdir', 'machine', 'target_rootfs', 'deploydir'}
+        self.allowed_keys = {'image_name', 'workdir', 'machine', 'target_rootfs', 'deploydir', 'pkg_type'}
         self._set_allow_keys()
 
         for k, v in kwargs.items():
@@ -84,6 +84,7 @@ class Image(object, metaclass=ABCMeta):
         with open(src, "r") as src_f:
             content = src_f.read()
             content = content.replace("@IMAGE_NAME@", image_name)
+            content = content.replace("@PACKAGE_MANAGER_SECTION@", constant.PACKAGE_MANAGER_SECTION[self.pkg_type])
 
         with open(readme, "w") as readme_f:
             readme_f.write(content)
@@ -218,7 +219,7 @@ class CreateWicImage(Image):
 
 class CreateVMImage(Image):
     def _set_allow_keys(self):
-        self.allowed_keys = {'image_name', 'machine', 'deploydir', 'vm_type'}
+        self.allowed_keys = {'image_name', 'machine', 'deploydir', 'vm_type', 'pkg_type'}
 
     def _add_keys(self):
         self.date = utils.get_today()

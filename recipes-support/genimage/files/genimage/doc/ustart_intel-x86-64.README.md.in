@@ -67,15 +67,15 @@ into a bootable USB socket on the target, and power on.  This should
 result in a system booted to the Grub boot menuo.
 
 ### On Qemu
-Create a 14G disk image
-    $ qemu-img create -f raw boot-image-qemu.hddimg 14G
+Create a disk image
+    $ qemu-img create -f raw boot-image-qemu.hddimg 16G
 
-Burn the image onto 14G disk image:
+Burn the image onto disk image:
     $ zcat @IMAGE_NAME@.ustart.img.gz | dd of=boot-image-qemu.hddimg conv=notrunc
 
 For qemu x86_64 with KVM:
 
-    $ qemu-system-x86_64 -net nic -net user -m 512 \
+    $ qemu-system-x86_64 -net nic -net user -m 1200 \
         -drive if=none,id=hd,file=boot-image-qemu.hddimg,format=raw \
         -device virtio-scsi-pci,id=scsi -device scsi-hd,drive=hd \
         -cpu kvm64 -enable-kvm \
@@ -83,7 +83,7 @@ For qemu x86_64 with KVM:
 
 For qemu x86_64 without KVM:
 
-    $ qemu-system-x86_64 -net nic -net user -m 512 \
+    $ qemu-system-x86_64 -net nic -net user -m 1200 \
         -drive if=none,id=hd,file=boot-image-qemu.hddimg,format=raw \
         -device virtio-scsi-pci,id=scsi -device scsi-hd,drive=hd \
         -cpu Nehalem \
@@ -97,8 +97,8 @@ Create a SLiRP user network
 `-net nic -net user`
 
 #### Qemu Memory
-Set guest startup RAM size, 512MB
-`-m 512`
+Set guest startup RAM size, 1200MB
+`-m 1200
 
 #### Qemu Image
 Use virtio-scsi-pci to load image
@@ -138,29 +138,7 @@ when kernel is upgraded in the repo.
 Note, the previous action is only needed when kernel is upgraded in the repo,
 otherwise it is not needed.
 
-### Dnf/Rpm
-Prerequisite: The dnf and rpm are installed on image
-
-#### Install a normal package
-The images are locked by default, so need unlock firstly:
-    $ ostree admin unlock --hotfix
-
-To install a package
-    $ dnf install <package>
-
-To remove a package
-    $ dnf remove <package>
-
-#### Install Graphic Desktop (XFCE)
-To install packages by following steps:
-    $ ostree admin unlock --hotfix
-    $ dnf install -y packagegroup-xfce-base \
-                     packagegroup-core-x11-base \
-                     gsettings-desktop-schemas \
-                     wr-themes
-    $ systemctl set-default graphical.target
-    $ reboot
-
+@PACKAGE_MANAGER_SECTION@
 ## License
 The image is provided under the GPL-2.0 license.
 
