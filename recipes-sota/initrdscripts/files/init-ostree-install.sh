@@ -1245,6 +1245,13 @@ elif [ -d ${PHYS_SYSROOT}/ostree/1/var ] ; then
 	tar -C ${PHYS_SYSROOT}/ostree/1/var/ --xattrs --xattrs-include='*' -cf - . | \
 	tar --xattrs --xattrs-include='*' -xf - -C /var1 2> /dev/null
 fi
+if [ -d ${PHYS_SYSROOT}/boot/0/ostree/usr/homedirs/home ] ; then
+	tar -C ${PHYS_SYSROOT}/boot/0/ostree/usr/homedirs/home --xattrs --xattrs-include='*' -cf - . | \
+	tar --xattrs --xattrs-include='*' -xf - -C /var1/home 2> /dev/null
+elif [ -d ${PHYS_SYSROOT}/boot/1/ostree/usr/homedirs/home ] ; then
+	tar -C ${PHYS_SYSROOT}/boot/1/ostree/usr/homedirs/home --xattrs --xattrs-include='*' -cf - . | \
+	tar --xattrs --xattrs-include='*' -xf - -C /var1/home 2> /dev/null
+fi
 umount /var1
 
 if [ "$INSTPOST" = "shell" ] ; then

@@ -258,7 +258,7 @@ IMAGE_CMD_ostree () {
 		ln -s ../init.d/tmpfiles.sh usr/etc/rcS.d/S20tmpfiles.sh
 	fi
 
-	# Preserve data in /home to be later copied to /sysroot/home by
+	# Preserve data in /home to be later copied to /var/home by
 	#   sysroot generating procedure
 	mkdir -p usr/homedirs
 	if [ -d "home" ] && [ ! -L "home" ]; then

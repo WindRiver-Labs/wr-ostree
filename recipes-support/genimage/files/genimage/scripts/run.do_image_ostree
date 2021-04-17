@@ -78,7 +78,7 @@ do_image_ostree() {
 	# disable the annoying logs on the console
 	echo "w /proc/sys/kernel/printk - - - - 3" >> ${tmpfiles_conf}
 
-	# Preserve data in /home to be later copied to /sysroot/home by
+	# Preserve data in /home to be later copied to /var/home by
 	#   sysroot generating procedure
 	mkdir -p usr/homedirs
 	if [ -d "home" ] && [ ! -L "home" ]; then
