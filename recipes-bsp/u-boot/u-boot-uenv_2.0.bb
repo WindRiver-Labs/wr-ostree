@@ -172,6 +172,9 @@ else
 fi
 setenv fdtargs
 setenv netinstpre
+if test -n \${fdt_file}; then
+  fatload \${devtype} \${devnum}:1 \${fdt_addr} \${fdt_file}
+fi
 if test -n \${use_fdtdtb} && test \${use_fdtdtb} -ge 1; then
  fdt addr \${fdt_addr}
  if test \${use_fdtdtb} -ge 2; then
