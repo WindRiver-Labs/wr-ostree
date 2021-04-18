@@ -17,14 +17,6 @@ OSTREE_NETINST_ARGS ??= "instab=${OSTREE_USE_AB}"
 OSTREE_NETINST_BRANCH ??= "core-image-minimal"
 OSTREE_NETINST_DEV ??= "/dev/mmcblk0"
 
-require u-boot-uenv-ti-j72xx.inc
-
-FS_LINKS ?= "bootscr_fs_links"
-ENV_IMPORT ?= "bootscr_env_import"
-
-FS_LINKS_ti-j72xx = "bootscr_fs_links_ti_j72xx"
-ENV_IMPORT_ti-j72xx = "bootscr_env_import_ti_j72xx"
-
 bootscr_env_import() {
     cat <<EOF > ${WORKDIR}/uEnv.txt
 setenv machine_name ${MACHINE}
@@ -264,9 +256,9 @@ do_compile() {
         bbwarn "boot.scr set to DEFAULT_DTB=$default_dtb"
     fi
     if [ "${OSTREE_BOOTSCR}" = "fs_links" ] ; then
-        ${FS_LINKS}
+        bootscr_fs_links
     else
-        ${ENV_IMPORT}
+        bootscr_env_import
     fi
 
     build_date=`date -u +%s`
