@@ -122,6 +122,8 @@ setenv ex _b
 setenv filesize 99
 if test ! -n \${devtype}; then
  setenv devtype mmc
+fi
+if test ! -n \${devnum}; then
  setenv devnum 0
 fi
 fatsize \${devtype} \${devnum}:1 no_ab
