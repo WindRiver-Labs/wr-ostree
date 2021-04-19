@@ -14,6 +14,8 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 #
+import getpass
+
 DEFAULT_MACHINE = "${MACHINE}"
 
 DEFAULT_MULTIMACH_TARGET_SYS_DICT = {
@@ -137,7 +139,7 @@ DEFAULT_CONTAINER_PACKAGES = '''
 '''.split()
 
 DEFAULT_GPG_DATA = {
-  'gpg_path':'/tmp/.lat_gnupg',
+  'gpg_path':'/tmp/.lat_gnupg_%s'%getpass.getuser(),
   'ostree': {
     'gpgid': '${OSTREE_GPGID}',
     'gpgkey': '$OECORE_NATIVE_SYSROOT/usr/share/genimage/rpm_keys/RPM-GPG-PRIVKEY-${OSTREE_GPGID}',
