@@ -27,6 +27,7 @@ from texttable import Texttable
 
 from genimage.utils import set_logger
 from genimage.constant import DEFAULT_MACHINE
+from genimage.constant import SUPPORTED_PKGTYPES
 
 import genimage.utils as utils
 
@@ -51,7 +52,7 @@ def set_parser_exampleyamls(parser=None):
             action='store')
 
     parser.add_argument('--pkg-type',
-        choices=['rpm', 'deb', 'external-debian'],
+        choices=SUPPORTED_PKGTYPES,
         default="rpm",
         help='Specify package type',
         action='store')

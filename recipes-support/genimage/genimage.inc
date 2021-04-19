@@ -218,6 +218,16 @@ do_install_append() {
 	install -m 0755 ${WORKDIR}/crossscripts/* ${D}${bindir}/crossscripts
 }
 
+DEFAULT_DEBIAN_MIRROR ??= "http://ftp.us.debian.org/debian"
+DEFAULT_DEBIAN_DISTRO ??= "bullseye"
+DEBIAN_CUSTOMIZE_FEED_URI ??= "not_set"
+DEFAULT_EXTERNAL_DEB_PACKAGE_FEED ?= "deb ${DEFAULT_DEBIAN_MIRROR} ${DEFAULT_DEBIAN_DISTRO} main contrib;"
+
+SUPPORTED_PKGTYPES ?= " \
+    ${@bb.utils.contains('PACKAGE_CLASSES','package_rpm','rpm','',d)} \
+    ${@bb.utils.contains('PACKAGE_CLASSES','package_deb','deb','',d)} \
+"
+
 PACKAGE_FEED_URIS ??= ""
 PACKAGE_FEED_BASE_PATHS ??= ""
 RPM_PACKAGE_FEED_URIS ??= ""
@@ -234,6 +244,10 @@ python __anonymous () {
     elif machine == 'intel-x86-64':
         d.setVar('RPM_PACKAGE_FEED_ARCHS', 'corei7_64 intel_x86_64 noarch')
         d.setVar('DEB_PACKAGE_FEED_ARCHS', 'corei7-64 intel_x86_64 all')
+
+        if d.getVar('DEBIAN_CUSTOMIZE_FEED_URI') != 'not_set':
+            d.appendVar("SUPPORTED_PKGTYPES", " external-debian")
+            d.appendVar("DEFAULT_EXTERNAL_DEB_PACKAGE_FEED", d.expand("deb [trusted=yes] ${DEBIAN_CUSTOMIZE_FEED_URI} ./"))
 
     # If PACKAGE_FEED_URIS is available, use it as default rpm and deb feed uris
     if d.getVar('PACKAGE_FEED_URIS'):

@@ -32,6 +32,7 @@ import genimage.constant as constant
 from genimage.constant import DEFAULT_MACHINE
 from genimage.constant import DEFAULT_LOCAL_PACKAGE_FEED
 from genimage.constant import DEFAULT_IMAGE_PKGTYPE
+from genimage.constant import SUPPORTED_PKGTYPES
 from genimage.rootfs import Rootfs
 
 import genimage.utils as utils
@@ -77,7 +78,7 @@ def set_parser(parser=None, supported_types=None):
         help='Specify extra urls of rpm package feeds',
         action='append')
     parser.add_argument('--pkg-type',
-        choices=['rpm', 'deb', 'external-debian'],
+        choices=SUPPORTED_PKGTYPES,
         help='Specify package type, it overrides \'package_type\' in Yaml',
         action='store')
     parser.add_argument('-p', '--pkg',
