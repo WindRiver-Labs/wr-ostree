@@ -35,7 +35,7 @@ setenv mmcpart_r \$B
 setenv rootpart_r ostree_root=LABEL=otaroot\${ex}\${labelpre}
 setenv bootpart_r ostree_boot=LABEL=otaboot\${ex}\${labelpre}
 setenv bpart A
-if test \${no_setexpr} = yes; then
+if test "\${no_setexpr}" = "yes"; then
   if fatload mmc \${mmcdev}:1 \${loadaddr} boot_ab_flag;then setenv bpartv \${loadaddr}; if test \${bpartv} = 42333231;then setenv bpart B;fi;fi
 else
   if fatload mmc \${mmcdev}:1 \${loadaddr} boot_ab_flag;then setexpr.l bpartv *\${loadaddr} \& 0xffffffff; if test \${bpartv} = 42333231;then setenv bpart B;fi;fi
@@ -49,7 +49,7 @@ mw.l \${bct_addr} 52573030
 setenv cntv 30
 setenv bdef 30
 setenv switchab if test \\\${bpart} = B\\;then setenv bpart A\\;else setenv bpart B\\;fi
-if test \${no_setexpr} = yes; then
+if test "\${no_setexpr}" = "yes"; then
   if fatload mmc \${mmcdev}:1 \${loadaddr} boot_cnt;then setenv cntv0 \${loadaddr2};if test \${cntv0} = 5257;then setenv cntv \${loadaddr};setenv bdef \${loadaddr1};fi;fi
   if test \${bdef} = 31;then run switchab;fi
   if test \${cntv} > \${bretry};then run switchab;setenv cntv 30;if test \${bdef} = 31; then setenv bdef 30;else setenv bdef 31;fi;else setenv cntv 31;fi
@@ -128,7 +128,7 @@ setenv rootpart_r ostree_root=LABEL=otaroot\${ex}\${labelpre}
 setenv bootpart_r ostree_boot=LABEL=otaboot\${ex}\${labelpre}
 setenv bpart A
 
-if test \${no_setexpr} = yes; then
+if test "\${no_setexpr}" = "yes"; then
   if fatload \${devtype} \${devnum}:1 \${loadaddr} boot_ab_flag;then setenv bpartv \${loadaddr}; if test \${bpartv} = 42333231;then setenv bpart B;fi;fi
 else
   if fatload \${devtype} \${devnum}:1 \${loadaddr} boot_ab_flag;then setexpr.l bpartv *\${loadaddr} \& 0xffffffff; if test \${bpartv} = 42333231;then setenv bpart B;fi;fi
@@ -142,7 +142,7 @@ mw.l \${bct_addr} 52573030
 setenv cntv 30
 setenv bdef 30
 setenv switchab if test \\\${bpart} = B\\;then setenv bpart A\\;else setenv bpart B\\;fi
-if test \${no_setexpr} = yes; then
+if test "\${no_setexpr}" = "yes"; then
   if fatload \${devtype} \${devnum}:1 \${loadaddr} boot_cnt;then setenv cntv0 ${loadaddr2};if test \${cntv0} = 5257;then setenv cntv \${loadaddr} ;setenv bdef ${loadaddr1};fi;fi
   if test \${bdef} = 31;then run switchab;fi
   if test \${cntv} -gt \${bretry};then run switchab;setenv cntv 30;if test \${bdef} = 31; then setenv bdef 30;else setenv bdef 31;fi;else setenv cntv 31;fi
