@@ -143,7 +143,7 @@ setenv cntv 30
 setenv bdef 30
 setenv switchab if test \\\${bpart} = B\\;then setenv bpart A\\;else setenv bpart B\\;fi
 if test "\${no_setexpr}" = "yes"; then
-  if fatload \${devtype} \${devnum}:1 \${loadaddr} boot_cnt;then setenv cntv0 ${loadaddr2};if test \${cntv0} = 5257;then setenv cntv \${loadaddr} ;setenv bdef ${loadaddr1};fi;fi
+  if fatload \${devtype} \${devnum}:1 \${loadaddr} boot_cnt;then setenv cntv0 ${loadaddr2};if test \${cntv0} = 5257;then setenv cntv \${loadaddr} ;setenv bdef \${loadaddr1};fi;fi
   if test \${bdef} = 31;then run switchab;fi
   if test \${cntv} -gt \${bretry};then run switchab;setenv cntv 30;if test \${bdef} = 31; then setenv bdef 30;else setenv bdef 31;fi;else setenv cntv 31;fi
 else
