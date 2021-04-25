@@ -360,10 +360,16 @@ write_wic() {
 		PARTSZ="--fixed-size=$PARTSIZE"
 	fi
 
-	if [ ${UUID} != "" ]; then
-		echo "part / --source rootfs --rootfs-dir=$OUTDIR --ondisk sda --fstype=vfat --uuid ${UUID} --fsuuid $(echo ${UUID:0:8}|sed 's/[a-z]/\U&/g') --label instboot --active --align 2048 $PARTSZ" >> ustart.wks
+	if [ -n "$OSTREE_FDISK_BLM" ]; then
+		ALIGNSZ="--align $OSTREE_FDISK_BLM"
 	else
-		echo "part / --source rootfs --rootfs-dir=$OUTDIR --ondisk sda --fstype=vfat --label instboot --active --align 2048 $PARTSZ" >> ustart.wks
+		ALIGNSZ="--align 2048"
+	fi
+
+	if [ ${UUID} != "" ]; then
+		echo "part / --source rootfs --rootfs-dir=$OUTDIR --ondisk sda --fstype=vfat --uuid ${UUID} --fsuuid $(echo ${UUID:0:8}|sed 's/[a-z]/\U&/g') --label instboot --active $ALIGNSZ $PARTSZ" >> ustart.wks
+	else
+		echo "part / --source rootfs --rootfs-dir=$OUTDIR --ondisk sda --fstype=vfat --label instboot --active $ALIGNSZ $PARTSZ" >> ustart.wks
 	fi
 
 	echo "Writing: ustart.img and ustart.img.bmap"
@@ -609,6 +615,7 @@ eval `grep ^OSTREE_ $ENVFILE | perl -p -e '($a,$b) = split(/=/,$_,2); $a =~ s/-/
 eval `grep ^OSTREE_CONSOLE= $ENVFILE | sed -e 's:\\\\::g' -e "s:\":':g"`
 eval `grep ^DISTRO_FEATURES= $ENVFILE`
 eval `grep ^BOOTFS_EXTRA_CMD= $ENVFILE`
+eval `grep ^OSTREE_FDISK_BLM= $ENVFILE`
 
 if [ -n "${OSTREE_FDISK_BLM}" ]; then
     EXTRA_INST_ARGS="${EXTRA_INST_ARGS} BLM=${OSTREE_FDISK_BLM}"
