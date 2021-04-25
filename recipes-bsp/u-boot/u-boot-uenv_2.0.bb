@@ -175,7 +175,9 @@ if test -n \${use_fdtdtb} && test \${use_fdtdtb} -ge 1; then
   fdt get value fdtargs /chosen bootargs
  fi
 else
- setenv netinstpre "fatload \${devtype} \${devnum}:1 \${fdt_addr} \${fdt_file};"
+ if test -n \${fdt_file}; then
+  setenv netinstpre "fatload \${devtype} \${devnum}:1 \${fdt_addr} \${fdt_file};"
+ fi
 fi
 setenv exinargs
 setenv instdef "$NETINST_ARGS"
