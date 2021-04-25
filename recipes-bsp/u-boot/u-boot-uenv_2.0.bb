@@ -247,6 +247,7 @@ EOF
 }
 
 BOOT_SCR_FIT ??= "${@bb.utils.contains('IMAGE_BOOT_FILES', 'boot.itb', 'true', 'false', d)}"
+SKIP_SCRIPT_FDT ??= "no"
 
 do_compile() {
 
@@ -256,8 +257,10 @@ do_compile() {
             default_dtb="$(basename $k)"
             break;
         done
-        bbwarn 'DEFAULT_DTB=""'
-        bbwarn "boot.scr set to DEFAULT_DTB=$default_dtb"
+        if [ "${SKIP_SCRIPT_FDT}" = "no" ]; then
+            bbwarn 'DEFAULT_DTB=""'
+            bbwarn "boot.scr set to DEFAULT_DTB=$default_dtb"
+        fi
     fi
     if [ "${OSTREE_BOOTSCR}" = "fs_links" ] ; then
         bootscr_fs_links
