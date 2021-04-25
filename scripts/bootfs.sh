@@ -132,6 +132,10 @@ modify_boot_scr() {
 		fatal "ERROR: Could not locate mkimage utility"
 	fi
 	mkimage -A arm -T script -O linux -d $OUTDIR/boot.scr.raw $OUTDIR/boot.scr || fatal "ERROR: mkimage failed"
+	# Update the existing FIT image as boot.scr
+	if [ -e $OUTDIR/boot.itb ]; then
+		mkimage -A arm -T script -O linux -f auto -C none -d $OUTDIR/boot.scr.raw $OUTDIR/boot.itb
+	fi
 	rm -f $OUTDIR/boot.scr.raw
 }
 

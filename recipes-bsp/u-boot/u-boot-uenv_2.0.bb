@@ -246,6 +246,8 @@ fi
 EOF
 }
 
+BOOT_SCR_FIT ??= "${@bb.utils.contains('IMAGE_BOOT_FILES', 'boot.itb', 'true', 'false', d)}"
+
 do_compile() {
 
     default_dtb="${DEFAULT_DTB}"
@@ -269,17 +271,32 @@ do_compile() {
         sed -i '3a\setenv loadaddr 0x10000000\nsetenv fdt_addr 0xE0000\nsetenv initrd_addr 0x40000000\nsetenv console  ttyPS0\nsetenv baudrate 115200' ${WORKDIR}/uEnv.txt
     fi
     mkimage -A arm -T script -O linux -d ${WORKDIR}/uEnv.txt ${WORKDIR}/boot.scr
+    if ${BOOT_SCR_FIT}; then
+        mkimage -A arm -T script -O linux -f auto -C none -d ${WORKDIR}/uEnv.txt ${WORKDIR}/boot.itb
+    fi
 }
 
-FILES_${PN} += "/boot/boot.scr"
+FILES_${PN} += "/boot/boot.scr \
+    /boot/boot.itb \
+"
 
 do_install() {
     install -d  ${D}/boot
-    install -Dm 0644 ${WORKDIR}/boot.scr ${D}/boot/
+    for f in boot.scr boot.itb; do
+        bs=${WORKDIR}/$f
+        if [ -e $bs ]; then
+            install -Dm 0644 $bs ${D}/boot/
+        fi
+    done
 }
 
 do_deploy() {
-    install -Dm 0644 ${WORKDIR}/boot.scr ${DEPLOYDIR}/boot.scr
+    for f in boot.scr boot.itb; do
+        bs=${WORKDIR}/$f
+        if [ -e $bs ]; then
+            install -Dm 0644 $bs ${DEPLOYDIR}/
+        fi
+    done
 }
 addtask do_deploy after do_compile before do_build
 
