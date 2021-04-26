@@ -178,9 +178,9 @@ class AptDeb(PackageManager):
         utils.mkdirhier(os.path.join(target_dpkg_dir, "updates"))
 
         if not os.path.exists(os.path.join(target_dpkg_dir, "status")):
-            utils.write(os.path.join(target_dpkg_dir, "status"))
+            utils.write(os.path.join(target_dpkg_dir, "status"), content="")
         if not os.path.exists(os.path.join(target_dpkg_dir, "available")):
-            utils.write(os.path.join(target_dpkg_dir, "available"))
+            utils.write(os.path.join(target_dpkg_dir, "available"), content="")
 
         utils.mkdirhier(os.path.join("%s/etc/apt" % self.target_rootfs))
 
