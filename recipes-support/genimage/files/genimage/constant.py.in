@@ -93,8 +93,6 @@ DEFAULT_PACKAGES_bcm_2xxx_rpi4 = '''
     u-boot
     kernel-devicetree
     kernel-image-image
-    bcm2835-bootfiles
-    boot-config
 '''.split()
 
 DEFAULT_PACKAGES_intel_x86_64 = '''

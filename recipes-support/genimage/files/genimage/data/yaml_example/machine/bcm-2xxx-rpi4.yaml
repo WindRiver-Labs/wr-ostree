@@ -1,7 +1,5 @@
 machine: bcm-2xxx-rpi4
 packages:
-- bcm2835-bootfiles
-- boot-config
 - crda
 - kernel-devicetree
 - kernel-image-image
