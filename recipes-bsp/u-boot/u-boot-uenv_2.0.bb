@@ -70,6 +70,34 @@ if test \${no_menu} != yes; then
   setenv bootmenu_1 Boot Primary volume=setenv bdef 30\;run switchab
  fi
  bootmenu \${menutimeout}
+else
+  echo
+  echo
+  echo "  *** U-Boot Boot Menu ***"
+  echo
+  echo "     * Boot Primary volume \${bpart}"
+  echo "     * Boot Rollback"
+  echo "     * U-Boot console"
+  echo
+  echo
+  echo "*** Booting Primary volume \${bpart} in 3 seconds, press Ctrl-C to boot next menu"
+  echo
+  echo
+  if sleep 3; then
+    setenv bdef 30
+  else
+    echo
+    echo
+    echo "*** Booting Rollback in 3 seconds, press Ctrl-C to U-boot console"
+    echo
+    echo
+    if sleep 3; then
+      setenv bdef 31
+      run switchab
+    else
+      exit
+    fi
+  fi
 fi
 if test \${bdef} = 30;then echo "==Booting default \${bpart}==";else echo "==Booting Rollback \${bpart}==";fi
 if test \${bpart} = B; then
@@ -198,8 +226,8 @@ if test "\${no_autonetinst}" != 1 && test -n \${URL} ; then
   fi
  fi
 fi
+setenv go 0
 if test \${no_menu} != yes; then
- setenv go 0
  if test \${bdef} = 30;then
   setenv bootmenu_0 Boot Primary volume \${bpart}=setenv go 1
   setenv bootmenu_1 Boot Rollback=setenv bdef 31\;run switchab\;setenv go 1
@@ -212,9 +240,49 @@ if test \${no_menu} != yes; then
  else
   setenv bootmenu_2
  fi
- if bootmenu \${menutimeout}; then echo ""; else setenv go 1; fi
+ if bootmenu \${menutimeout}; then echo; else setenv go 1; fi
 else
- setenv go 1
+  echo
+  echo
+  echo "  *** U-Boot Boot Menu ***"
+  echo
+  echo "     * Boot Primary volume \${bpart}"
+  echo "     * Boot Rollback"
+  if test -n \${URL} && test \${ninst} = 1; then
+    echo "     * Re-install from ostree_repo"
+  fi
+  echo "     * U-Boot console"
+  echo
+  echo
+  echo "*** Booting Primary volume \${bpart} in 3 seconds, press Ctrl-C to boot next menu"
+  echo
+  echo
+  if sleep 3; then
+    setenv bdef 30
+    setenv go 1
+  else
+    echo
+    echo
+    echo "*** Booting Rollback in 3 seconds, press Ctrl-C to boot next menu"
+    echo
+    echo
+    if sleep 3; then
+      setenv bdef 31
+      setenv go 1
+    fi
+  fi
+  if test \${go} = 0 && test -n \${URL} && test \${ninst} = 1; then
+    echo
+    echo
+    echo "*** Re-installing from ostree_repo in 3 seconds, press Ctrl-C to U-boot console"
+    echo
+    echo
+    if sleep 3; then
+      run netinst
+    else
+      exit
+    fi
+  fi
 fi
 if test \${go} = 1; then
 if test \${bdef} = 30;then echo "==Booting default \${bpart}==";else echo "==Booting Rollback \${bpart}==";fi
