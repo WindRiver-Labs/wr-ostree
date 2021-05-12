@@ -89,7 +89,6 @@ DEFAULT_PACKAGES_bcm_2xxx_rpi4 = '''
     alsa-utils
     pm-utils
     linux-firmware
-    boot-config
     u-boot
     kernel-devicetree
     kernel-image-image
