@@ -163,6 +163,14 @@ copy_qemu_data() {
                 ${D}${datadir}/qemu_data/qemuboot.conf.in
 }
 
+do_install[postfuncs] += "copy_bootfile"
+copy_bootfile() {
+    if [ -n "${BOOTFILES_DIR_NAME}" -a -d "${DEPLOY_DIR_IMAGE}/${BOOTFILES_DIR_NAME}" ]; then
+        install -d ${D}${datadir}/bootfiles
+        cp -rf ${DEPLOY_DIR_IMAGE}/${BOOTFILES_DIR_NAME} ${D}${datadir}/bootfiles/
+    fi
+}
+
 do_install[nostamp] = "1"
 
 SYSROOT_DIRS_NATIVE += "${base_prefix}/environment-setup.d ${base_prefix}/"

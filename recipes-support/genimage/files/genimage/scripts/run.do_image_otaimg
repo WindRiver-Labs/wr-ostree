@@ -2,6 +2,8 @@
 set -x
 set -e
 ## Require environments
+# IMAGE_BOOT_FILES
+# OSTREE_COPY_IMAGE_BOOT_FILES
 # DEPLOY_DIR_IMAGE
 # WORKDIR
 # OSTREE_GPGID
@@ -21,11 +23,8 @@ DISTRO="wrlinux"
 OSTREE_GRUB2_EXEC="$OECORE_NATIVE_SYSROOT/usr/lib/ostree/ostree-grub-generator"
 if [ $MACHINE = "intel-x86-64" ]; then
   OSTREE_BOOTLOADER="grub"
-  OSTREE_COPY_IMAGE_BOOT_FILES="0"
 else
   OSTREE_BOOTLOADER="u-boot"
-  OSTREE_COPY_IMAGE_BOOT_FILES="1"
-  IMAGE_BOOT_FILES="bcm2835-bootfiles/*                     Image bcm2711-rpi-4-b.dtb bcm2710-rpi-3-b.dtb bcm2710-rpi-3-b-plus.dtb at86rf233.dtbo;overlays/at86rf233.dtbo disable-bt.dtbo;overlays/disable-bt.dtbo dwc2.dtbo;overlays/dwc2.dtbo gpio-key.dtbo;overlays/gpio-key.dtbo hifiberry-amp.dtbo;overlays/hifiberry-amp.dtbo hifiberry-dac.dtbo;overlays/hifiberry-dac.dtbo hifiberry-dacplus.dtbo;overlays/hifiberry-dacplus.dtbo hifiberry-digi.dtbo;overlays/hifiberry-digi.dtbo i2c-rtc.dtbo;overlays/i2c-rtc.dtbo iqaudio-dac.dtbo;overlays/iqaudio-dac.dtbo iqaudio-dacplus.dtbo;overlays/iqaudio-dacplus.dtbo miniuart-bt.dtbo;overlays/miniuart-bt.dtbo mcp2515-can0.dtbo;overlays/mcp2515-can0.dtbo pitft22.dtbo;overlays/pitft22.dtbo pitft28-resistive.dtbo;overlays/pitft28-resistive.dtbo pitft28-capacitive.dtbo;overlays/pitft28-capacitive.dtbo pitft35-resistive.dtbo;overlays/pitft35-resistive.dtbo pps-gpio.dtbo;overlays/pps-gpio.dtbo rpi-ft5406.dtbo;overlays/rpi-ft5406.dtbo rpi-poe.dtbo;overlays/rpi-poe.dtbo vc4-kms-v3d.dtbo;overlays/vc4-kms-v3d.dtbo vc4-fkms-v3d.dtbo;overlays/vc4-fkms-v3d.dtbo w1-gpio-pullup.dtbo;overlays/w1-gpio-pullup.dtbo w1-gpio.dtbo;overlays/w1-gpio.dtbo gpio-ir.dtbo;overlays/gpio-ir.dtbo gpio-ir-tx.dtbo;overlays/gpio-ir-tx.dtbo             u-boot.bin;kernel8.img boot.scr cmdline.txt config.txt initramfs-ostree-image-bcm-2xxx-rpi4.cpio.gz.u-boot;initramfs"
 fi
 
 do_image_otaimg() {

@@ -362,6 +362,11 @@ class GenYoctoImage(GenImage):
             cmd = "cp -rf {0}/boot/* {1}".format(self.target_rootfs, self.deploydir)
             utils.run_cmd_oneshot(cmd)
 
+            if constant.OSTREE_COPY_IMAGE_BOOT_FILES == "1":
+                bootfiles = os.path.join(os.environ['OECORE_NATIVE_SYSROOT'], 'usr/share/bootfiles')
+                cmd = "cp -rf {0}/* {1}".format(bootfiles, self.deploydir)
+                utils.run_cmd_oneshot(cmd)
+
     def _sysdef_rootfs(self, target_rootfs):
         runonce_scripts = list()
         runalways_scripts = list()

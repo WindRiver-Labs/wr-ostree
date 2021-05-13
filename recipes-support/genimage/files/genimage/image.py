@@ -345,7 +345,8 @@ class CreateOstreeOTA(Image):
         ota_env['OSTREE_OSNAME'] = self.ostree_osname
         ota_env['OSTREE_SKIP_BOOT_DIFF'] = self.ostree_skip_boot_diff
         ota_env['OSTREE_REMOTE_URL'] = self.ostree_remote_url
-
+        ota_env['IMAGE_BOOT_FILES'] = constant.IMAGE_BOOT_FILES
+        ota_env['OSTREE_COPY_IMAGE_BOOT_FILES'] = constant.OSTREE_COPY_IMAGE_BOOT_FILES
         cmd = os.path.expandvars("$OECORE_NATIVE_SYSROOT/usr/share/genimage/scripts/run.do_image_otaimg")
         res, output = utils.run_cmd(cmd, env=ota_env)
         if res:
