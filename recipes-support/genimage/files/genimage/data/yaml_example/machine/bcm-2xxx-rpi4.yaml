@@ -1,3 +1,8 @@
+#
+# Copyright (c) 2021 Wind River Systems, Inc.
+#
+# SPDX-License-Identifier: GPL-2.0-only
+#
 machine: bcm-2xxx-rpi4
 packages:
 - crda

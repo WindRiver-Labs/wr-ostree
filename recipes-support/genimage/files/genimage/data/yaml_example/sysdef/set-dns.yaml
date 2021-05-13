@@ -1,4 +1,9 @@
 # Set Wind River DNS
+#
+# Copyright (c) 2021 Wind River Systems, Inc.
+#
+# SPDX-License-Identifier: GPL-2.0-only
+#
 image_type:
 - ostree-repo
 - ustart
