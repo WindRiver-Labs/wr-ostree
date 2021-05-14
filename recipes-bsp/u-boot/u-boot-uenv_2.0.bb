@@ -156,32 +156,24 @@ setenv rootpart_r ostree_root=LABEL=otaroot\${ex}\${labelpre}
 setenv bootpart_r ostree_boot=LABEL=otaboot\${ex}\${labelpre}
 setenv bpart A
 
-if test "\${no_setexpr}" = "yes"; then
-  if fatload \${devtype} \${devnum}:1 \${loadaddr} boot_ab_flag;then setenv bpartv \${loadaddr}; if test \${bpartv} = 42333231;then setenv bpart B;fi;fi
-else
-  if fatload \${devtype} \${devnum}:1 \${loadaddr} boot_ab_flag;then setexpr.l bpartv *\${loadaddr} \& 0xffffffff; if test \${bpartv} = 42333231;then setenv bpart B;fi;fi
-  setexpr loadaddr1 \${loadaddr} + 1
-  setexpr loadaddr2 \${loadaddr} + 2
-  setexpr bct_addr \${loadaddr} + 200
-  setexpr bct_addr1 \${loadaddr} + 201
-fi
+if fatload \${devtype} \${devnum}:1 \${loadaddr} boot_ab_flag;then setenv bpartv \${loadaddr}; if itest.l 42333231 == *\${loadaddr};then setenv bpart B; fi; fi
 setenv obpart \${bpart}
-mw.l \${bct_addr} 52573030
 setenv cntv 30
 setenv bdef 30
 setenv switchab if test \\\${bpart} = B\\;then setenv bpart A\\;else setenv bpart B\\;fi
-if test "\${no_setexpr}" = "yes"; then
-  if fatload \${devtype} \${devnum}:1 \${loadaddr} boot_cnt;then setenv cntv0 ${loadaddr2};if test \${cntv0} = 5257;then setenv cntv \${loadaddr} ;setenv bdef \${loadaddr1};fi;fi
-  if test \${bdef} = 31;then run switchab;fi
-  if test \${cntv} -gt \${bretry};then run switchab;setenv cntv 30;if test \${bdef} = 31; then setenv bdef 30;else setenv bdef 31;fi;else setenv cntv 31;fi
+if fatload \${devtype} \${devnum}:1 \$loadaddr boot_cnt 4;then
+ if itest.l 52573030 == *\$loadaddr;then setenv cntv 31
+ elif itest.l 52573031 == *\$loadaddr;then setenv cntv 32
+ elif itest.l 52573032 == *\$loadaddr;then setenv cntv 33
+ elif itest.l 52573033 == *\$loadaddr;then setenv cntv 30;setenv bdef 31;run switchab
+ elif itest.l 52573130 == *\$loadaddr;then setenv cntv 31;setenv bdef 31;run switchab
+ elif itest.l 52573131 == *\$loadaddr;then setenv cntv 32;setenv bdef 31;run switchab
+ elif itest.l 52573132 == *\$loadaddr;then setenv cntv 33;setenv bdef 31;run switchab;fi
 else
-  if fatload \${devtype} \${devnum}:1 \${loadaddr} boot_cnt;then setexpr.w cntv0 *\${loadaddr2};if test \${cntv0} = 5257;then setexpr.b cntv *\${loadaddr};setexpr.b bdef *\${loadaddr1};fi;fi
-  if test \${bdef} = 31;then run switchab;fi
-  if test \${cntv} -gt \${bretry};then run switchab;setenv cntv 30;if test \${bdef} = 31; then setenv bdef 30;else setenv bdef 31;fi;else setexpr.b cntv \${cntv} + 1;fi
+ setenv cntv 31
 fi
-mw.b \${bct_addr} \${cntv}
-mw.b \${bct_addr1} \${bdef}
-fatwrite \${devtype} \${devnum}:1 \${bct_addr} boot_cnt 4
+mw.l \${initrd_addr} 5257\${bdef}\${cntv}
+fatwrite \${devtype} \${devnum}:1 \${initrd_addr} boot_cnt 4
 if test -n \${oURL}; then
  setenv URL "\${oURL}"
 else
