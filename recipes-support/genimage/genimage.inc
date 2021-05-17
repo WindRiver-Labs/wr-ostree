@@ -29,6 +29,7 @@ SRC_URI = "\
            file://genimage/data/pre_rootfs/update_pkgdata.sh \
            file://genimage/data/post_rootfs/add_gpg_key.sh \
            file://genimage/data/post_rootfs/add_sysdef_support.sh \
+           file://genimage/data/post_rootfs/enable_dhcpcd_service.sh \
            file://genimage/data/post_rootfs/update_boot_scr.sh \
            file://genimage/data/post_rootfs/update_grub_cfg.sh \
            file://genimage/data/post_rootfs/set_systemd_default_target.sh \

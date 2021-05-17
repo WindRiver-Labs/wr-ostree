@@ -9,6 +9,7 @@ image_type:
 packages:
 - lxdm
 - packagegroup-xfce-base
+- packagegroup-xfce-extended
 - wr-themes
 - gsettings-desktop-schemas
 - packagegroup-core-x11-base

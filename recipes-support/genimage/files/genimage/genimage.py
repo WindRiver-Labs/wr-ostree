@@ -336,6 +336,9 @@ class GenYoctoImage(GenImage):
                 script_cmd = "{0} {1} multi-user.target".format(script_cmd, rootfs.target_rootfs)
             rootfs.add_rootfs_post_scripts(script_cmd)
 
+            script_cmd = os.path.join(self.data_dir, 'post_rootfs', 'enable_dhcpcd_service.sh')
+            rootfs.add_rootfs_post_scripts(script_cmd)
+
         if "system" in self.data:
             script_cmd = os.path.join(self.data_dir, 'post_rootfs', 'add_sysdef_support.sh')
             script_cmd = "{0} {1}".format(script_cmd, rootfs.target_rootfs)
