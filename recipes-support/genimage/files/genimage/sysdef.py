@@ -33,6 +33,7 @@ def install_contains(guest_yamls, args):
         extra_options += " --no-validate"
 
     for yaml_file in guest_yamls:
+        yaml_file = os.path.expandvars(yaml_file)
         with open(yaml_file) as f:
             d = yaml.load(f, Loader=yaml.FullLoader) or dict()
 
