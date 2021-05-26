@@ -8,9 +8,6 @@ packages:
 - docker
 rootfs-post-scripts:
 - echo "container-base load=/var/docker-images/container-base-intel-x86-64.docker-image.tar.bz2 image=container-base-intel-x86-64"  >> $IMAGE_ROOTFS/etc/sysdef/run_on_upgrade.d/containers.dat
-- echo "ubuntu-tar load=/var/docker-images/ubuntu.docker-image.tar.bz2" >> $IMAGE_ROOTFS/etc/sysdef/run_on_upgrade.d/containers.dat
-- echo "wrlinux-image-full import=/var/docker-images/wrlinux-image-full-intel-x86-64.tar.bz2 run-cmd=/bin/sh" >> $IMAGE_ROOTFS/etc/sysdef/run_on_upgrade.d/containers.dat
-- skopeo copy --src-tls-verify=false --insecure-policy docker://pek-lpdfs01:5000/ubuntu docker-archive:$IMAGE_ROOTFS/var/docker-images/ubuntu.docker-image.tar.bz2:ubuntu-tar
 system:
 - run_on_upgrade:
   - exampleyamls/sysdef/run_on_upgrade.d/10_update_containers.sh
@@ -21,8 +18,3 @@ system:
       src: deploy/container-base-intel-x86-64.docker-image.tar.bz2
       dst: /var/docker-images/
       mode: 644
-  - file:
-      src: http://pek-lpgtest7302.wrs.com/buildarea1/SharedImage/LINCD_STD_BINARY/intel-x86-64/latest/WRLinux-CD-Images/intel-x86-64/container-full-intel-x86-64/wrlinux-image-full-intel-x86-64.tar.bz2
-      dst: /var/docker-images/
-      mode: 644
-

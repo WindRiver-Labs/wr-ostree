@@ -57,7 +57,7 @@ class GenContainer(GenXXX):
         if not self.data['container_upload_cmd'] or self.data['container_upload_cmd'].startswith('#'):
             skopeo_opt = "--dest-tls-verify=false --insecure-policy"
             src_image = "docker-archive:{0}/{1}-{2}.docker-image.tar.bz2".format(os.path.relpath(self.deploydir), self.image_name, self.machine)
-            dest_image = "docker://pek-lpdfs01:5000/{0}-{1}".format(self.image_name, self.machine)
+            dest_image = "docker://<PRIVATE-DOCKER-REGISTRY-SITE>:<PORT>/{0}-{1}".format(self.image_name, self.machine)
             self.data['container_upload_cmd'] = "#skopeo copy {0} {1} {2}".format(skopeo_opt, src_image, dest_image)
 
     def _parse_default(self):
