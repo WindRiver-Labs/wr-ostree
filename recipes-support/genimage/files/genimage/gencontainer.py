@@ -64,7 +64,7 @@ class GenContainer(GenXXX):
         self.data['name'] = DEFAULT_CONTAINER_NAME
         self.data['machine'] = DEFAULT_MACHINE
         self.data['image_type'] = ['container']
-        self.data['package_feeds'] = DEFAULT_PACKAGE_FEED[self.pkg_type]
+        self.data['package_feeds'] = DEFAULT_PACKAGE_FEED[self.pkg_type] if utils.is_sdk() or self.pkg_type == "external-debian" else []
         self.data['package_type'] = self.pkg_type
         self.data['packages'] = DEFAULT_CONTAINER_PACKAGES
         self.data['external-packages'] = []

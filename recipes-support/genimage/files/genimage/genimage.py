@@ -87,7 +87,7 @@ class GenImage(GenXXX):
         self.data['name'] = DEFAULT_IMAGE
         self.data['machine'] = DEFAULT_MACHINE
         self.data['image_type'] = ['ustart', 'ostree-repo']
-        self.data['package_feeds'] = DEFAULT_PACKAGE_FEED[self.pkg_type]
+        self.data['package_feeds'] = DEFAULT_PACKAGE_FEED[self.pkg_type] if utils.is_sdk() or self.pkg_type == "external-debian" else []
         self.data['package_type'] = self.pkg_type
         self.data["wic"] = constant.DEFAULT_WIC_DATA
         self.data["gpg"] = constant.DEFAULT_GPG_DATA
