@@ -124,6 +124,9 @@ def _main_run_internal(args):
         cmd = "genyaml -d -o {0} --pkg-type {1}".format(outdir, args.pkg_type)
         utils.run_cmd_oneshot(cmd)
 
+
+    utils.remove(os.path.join(outdir, "deploy"), recurse=True)
+
     table = Texttable()
     table.set_cols_align(["l", "l"])
     table.set_cols_valign(["t", "t"])
