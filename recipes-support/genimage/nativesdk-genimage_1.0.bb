@@ -77,8 +77,10 @@ FILES_${PN} = "${SDKPATHNATIVE}"
 python __anonymous () {
     override = d.getVar('OVERRIDE')
     machine = d.getVar('MACHINE')
-    if machine == 'bcm-2xxx-rpi4':
+    if machine in (d.getVar('OSTREE_SUPPORTED_ARM64_MACHINES') or "").split():
         d.appendVar('OVERRIDES', ':{0}:aarch64'.format(machine))
+    elif machine in (d.getVar('OSTREE_SUPPORTED_ARM32_MACHINES') or "").split():
+        d.appendVar('OVERRIDES', ':{0}:arm'.format(machine))
     elif machine == 'intel-x86-64':
         d.appendVar('OVERRIDES', ':{0}:x86-64'.format(machine))
 
