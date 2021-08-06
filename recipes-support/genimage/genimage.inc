@@ -81,6 +81,8 @@ SRC_URI = "\
            file://genimage/doc/wic_intel-x86-64.README.md.in \
            file://genimage/doc/ustart_intel-x86-64.README.md.in \
            file://genimage/doc/container.README.md.in \
+           file://genimage/doc/target_xilinx-zynq.README.md.in \
+           file://genimage/doc/target_xilinx-zynqmp.README.md.in \
            file://METADATA.in \
            file://README.md \
            file://setup.py \
