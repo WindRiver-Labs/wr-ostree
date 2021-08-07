@@ -92,3 +92,6 @@ extract_pkgdata_postinst() {
     mkdir $target_sdk_dir/sysroots/pkgdata;
     tar xf pkgdata.tar.bz2 -C $target_sdk_dir/sysroots/pkgdata;
 }
+
+# Make sure the existence of Yocto var file in pkgdata
+do_populate_sdk[depends] += "initramfs-ostree:do_export_yocto_vars"
