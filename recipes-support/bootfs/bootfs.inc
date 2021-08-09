@@ -8,6 +8,7 @@ S = "${WORKDIR}"
 SRC_URI = "file://COPYING \
            file://bootfs.sh \
            file://bootfs_wrapper.sh \
+           file://marvell-cn96xx-sd.sh \
           "
 FILESEXTRAPATHS_prepend := "${LAYER_PATH_ostree-layer}/scripts:"
 
@@ -23,5 +24,6 @@ do_install() {
     cp -rf  ${BOOT_KEYS_DIR}/* ${D}${datadir}/bootfs/boot_keys/
 
     install -d ${D}${bindir}
+    install -m 0755 ${S}/marvell-cn96xx-sd.sh ${D}${bindir}/marvell-cn96xx-sd.sh
     install -m 0755 ${S}/bootfs_wrapper.sh ${D}${bindir}/bootfs.sh
 }
