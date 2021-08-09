@@ -197,6 +197,7 @@ OSTREE_SUPPORTED_ARM64_MACHINES ??= " \
     xilinx-zynqmp \
     nxp-imx8 \
     marvell-cn96xx \
+    nxp-s32g2xx \
 "
 
 OSTREE_SUPPORTED_ARM32_MACHINES ??= " \
