@@ -55,12 +55,15 @@ logger = logging.getLogger('appsdk')
 def set_parser_genimage(parser=None):
     supported_types = [
         'wic',
-        'vmdk',
-        'vdi',
         'ostree-repo',
         'ustart',
         'all',
     ]
+
+    if DEFAULT_MACHINE == "intel-x86-64":
+        supported_types.append('vmdk')
+        supported_types.append('vdi')
+
     parser = set_parser(parser, supported_types)
     parser.add_argument('-g', '--gpgpath',
         default=None,
@@ -299,7 +302,10 @@ class GenYoctoImage(GenImage):
                 self.data["ostree"][ostree_param] = constant.DEFAULT_OSTREE_DATA[ostree_param]
 
         if 'all' in self.data['image_type']:
-            self.data['image_type'] = ['ostree-repo', 'wic', 'ustart', 'vmdk', 'vdi']
+            self.data['image_type'] = ['ostree-repo', 'wic', 'ustart']
+            if DEFAULT_MACHINE == "intel-x86-64":
+                self.data['image_type'].append('vmdk')
+                self.data['image_type'].append('vdi')
 
     def _do_rootfs_pre(self, rootfs=None):
         if rootfs is None:
