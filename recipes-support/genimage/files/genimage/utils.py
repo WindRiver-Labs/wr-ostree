@@ -434,7 +434,10 @@ def get_debootstrap_input(package_feeds, debian_distros):
     return None, None
 
 def get_yocto_var(key):
-    yocto_env = os.path.join(sysroot_dir, "pkgdata", DEFAULT_MACHINE, ".yocto_vars.env")
+    if is_sdk():
+        yocto_env = os.path.join(sysroot_dir, "pkgdata", DEFAULT_MACHINE, ".yocto_vars.env")
+    elif is_build():
+        yocto_env = os.path.join(sysroot_dir, "../pkgdata", DEFAULT_MACHINE, ".yocto_vars.env")
     if not os.path.join(yocto_env):
         logger.error("Yocto Env File '%s' not found", yocto_env)
         return None
