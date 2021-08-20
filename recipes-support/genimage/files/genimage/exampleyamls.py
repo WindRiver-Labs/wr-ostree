@@ -30,6 +30,7 @@ from genimage.constant import DEFAULT_MACHINE
 from genimage.constant import SUPPORTED_PKGTYPES
 from genimage.constant import SUPPORTED_ARM_MACHINES
 
+import genimage.constant as constant
 import genimage.utils as utils
 
 logger = logging.getLogger('appsdk')
@@ -106,6 +107,8 @@ def _main_run_internal(args):
                 cmd = "genyaml -d -o {0} --type initramfs --pkg-type rpm {1}".format(outdir, image_yaml)
             else:
                 cmd = "genyaml -d -o {0} --pkg-type rpm {1} {2}".format(outdir, machine_yaml, image_yaml)
+                for pkg in  set(constant.DEFAULT_PACKAGES[DEFAULT_MACHINE]) - set(constant.DEFAULT_PACKAGES_COMMON):
+                    cmd += " --pkg %s" % pkg
             utils.run_cmd_oneshot(cmd)
 
             cmd = "cp -rf {0}/feature {1}/".format(yamlexample_dir, outdir)
