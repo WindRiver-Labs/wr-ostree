@@ -16,6 +16,7 @@ set -e
 # KERNEL_DEVICETREE
 OSTREE_REPO="${DEPLOY_DIR_IMAGE}/ostree_repo"
 OSTREE_BRANCHNAME="${IMAGE_NAME}"
+export TZ='UTC'
 DATETIME="`date +"%Y%m%d%H%M%S"`"
 
 SELINUX=""
