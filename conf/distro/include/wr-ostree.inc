@@ -205,6 +205,7 @@ OSTREE_SUPPORTED_ARM64_MACHINES ??= " \
 OSTREE_SUPPORTED_ARM32_MACHINES ??= " \
     xilinx-zynq \
     nxp-imx6 \
+    nxp-ls1028 \
 "
 
 OSTREE_SUPPORTED_ARM_MACHINES ?= " \
