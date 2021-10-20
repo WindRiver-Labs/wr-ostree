@@ -200,12 +200,13 @@ OSTREE_SUPPORTED_ARM64_MACHINES ??= " \
     nxp-s32g2xx \
     intel-socfpga-64 \
     ti-j72xx \
+    nxp-ls1028 \
+    nxp-lx2xxx \
 "
 
 OSTREE_SUPPORTED_ARM32_MACHINES ??= " \
     xilinx-zynq \
     nxp-imx6 \
-    nxp-ls1028 \
 "
 
 OSTREE_SUPPORTED_ARM_MACHINES ?= " \
