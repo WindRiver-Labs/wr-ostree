@@ -202,6 +202,7 @@ OSTREE_SUPPORTED_ARM64_MACHINES ??= " \
     ti-j72xx \
     nxp-ls1028 \
     nxp-lx2xxx \
+    axxiaarm64 \
 "
 
 OSTREE_SUPPORTED_ARM32_MACHINES ??= " \
