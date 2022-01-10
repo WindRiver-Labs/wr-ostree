@@ -470,25 +470,6 @@ IMAGE_CMD_ostree () {
 	rm -rf ${OSTREE_ROOTFS}
 }
 
-IMAGE_TYPEDEP_ostreepush = "ostree"
-do_image_ostreepush[depends] = "sota-tools-native:do_populate_sysroot"
-
-IMAGE_CMD_ostreepush () {
-	if [ -n "${OSTREE_PUSH_CREDENTIALS}" ]; then
-		garage-push --repo=${OSTREE_REPO} \
-			    --ref=${OSTREE_BRANCHNAME} \
-			    --credentials=${OSTREE_PUSH_CREDENTIALS} \
-			    --cacert=${STAGING_ETCDIR_NATIVE}/ssl/certs/ca-certificates.crt
-
-		if [ "${OSTREE_COMMIT_DEV}" = "1" ] ; then
-			garage-push --repo=${OSTREE_REPO} \
-				    --ref=${OSTREE_BRANCHNAME}-dev \
-				    --credentials=${OSTREE_PUSH_CREDENTIALS} \
-				    --cacert=${STAGING_ETCDIR_NATIVE}/ssl/certs/ca-certificates.crt
-		fi
-	fi
-}
-
 python __anonymous() {
     gpg_path = d.getVar('GPG_PATH', True)
     if not gpg_path:
