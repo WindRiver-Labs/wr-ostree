@@ -23,6 +23,7 @@ import logging
 import argcomplete
 from texttable import Texttable
 import atexit
+import datetime
 
 from genimage.utils import set_logger
 from genimage.utils import show_task_info
@@ -170,6 +171,22 @@ class GenImage(GenXXX):
 
         image_wic.create()
 
+    def _get_boot_params(self, data_ostree):
+        date_since_epoch = datetime.datetime.now().strftime('%s')
+        boot_params = "instdate=@%s instw=60 " % date_since_epoch
+
+        if data_ostree.get('install_net_mode') == "dhcp":
+            boot_params += "instnet=dhcp "
+            if data_ostree.get('install_net_params'):
+                boot_params += "dhcpargs=%s " % data_ostree['install_net_params']
+        elif data_ostree.get('install_net_mode') == "static-ipv4":
+            boot_params += "instnet=0 "
+            if data_ostree.get('install_net_params'):
+                boot_params += "%s " % data_ostree['install_net_params']
+
+        return boot_params
+
+
     @show_task_info("Create Vmdk Image")
     def do_image_vmdk(self):
         vmdk = CreateVMImage(image_name=self.image_name,
@@ -224,6 +241,7 @@ class GenImage(GenXXX):
 
     @show_task_info("Create Ustart Image")
     def do_ustart_img(self):
+        boot_params = self._get_boot_params(self.data["ostree"])
         workdir = os.path.join(self.workdir, self.image_name)
         ustart = CreateBootfs(
                         image_name=self.image_name,
@@ -231,6 +249,7 @@ class GenImage(GenXXX):
                         machine=self.machine,
                         pkg_type = self.pkg_type,
                         post_script = self.data['ustart-post-script'],
+                        boot_params = boot_params,
                         deploydir=self.deploydir)
         ustart.create()
 

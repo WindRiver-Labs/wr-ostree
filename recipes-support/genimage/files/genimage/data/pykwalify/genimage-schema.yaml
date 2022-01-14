@@ -148,6 +148,13 @@ schema;ostree_map:
       enum: ['0', '1']
       nullable: False
       desc: 1 = Use the A/B partition, 0 = single partition image
+    install_net_params:
+      type: str
+      desc: "Specify network params during installation. For dhcp, it is interface name, such as eth0; For static-ipv4, use the kernel arg: ip=<client-ip>::<gw-ip>:<netmask>:<hostname>:<device>:off:<dns0-ip>:<dns1-ip>, such as ip=10.0.2.15::10.0.2.1:255.255.255.0:tgt:eth0:off:10.0.2.3:8.8.8.8"
+    install_net_mode:
+      type: str
+      enum: ['dhcp', 'static-ipv4']
+      desc: Specify network dhcp or static-ipv4 during installation
 
 schema;wic_map:
   type: map

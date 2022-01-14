@@ -404,6 +404,7 @@ class CreateBootfs(Image):
     def _set_allow_keys(self):
         self.allowed_keys.remove('target_rootfs')
         self.allowed_keys.update({'post_script'})
+        self.allowed_keys.update({'boot_params'})
 
     def _add_keys(self):
         self.date = utils.get_today()
@@ -417,7 +418,8 @@ class CreateBootfs(Image):
         if 'LD_PRELOAD' in ustart_env:
             del ustart_env['LD_PRELOAD']
         cmd = os.path.expandvars("$OECORE_NATIVE_SYSROOT/usr/bin/bootfs.sh")
-        cmd = "{0} -L -a 'instdate=BUILD_DATE instw=60' -s 0 -e {1}/{2}-{3}.env".format(cmd, self.deploydir, self.image_name, self.machine)
+        cmd = "{0} -L -s 0 -e {1}/{2}-{3}.env -a '{4}'".format(cmd, self.deploydir, self.image_name, self.machine, self.boot_params)
+
         res, output = utils.run_cmd(cmd, shell=True, cwd=self.workdir, env=ustart_env)
         if res:
             raise Exception("Executing %s failed\nExit code %d. Output:\n%s"
