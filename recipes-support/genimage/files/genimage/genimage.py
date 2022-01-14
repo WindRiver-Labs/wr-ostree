@@ -186,6 +186,16 @@ class GenImage(GenXXX):
 
         return boot_params
 
+    def _get_bootfs_params(self, data_ostree):
+        bootfs_params = "-s 0 "
+        # If install net mode and remote ostree url is set, enable install over network
+        if data_ostree.get('install_net_mode')and data_ostree.get('ostree_remote_url'):
+            bootfs_params += "-u {0} ".format(data_ostree['ostree_remote_url'])
+        # Otherwise install from local repo as normal
+        else:
+            bootfs_params += "-L "
+
+        return bootfs_params
 
     @show_task_info("Create Vmdk Image")
     def do_image_vmdk(self):
@@ -242,6 +252,7 @@ class GenImage(GenXXX):
     @show_task_info("Create Ustart Image")
     def do_ustart_img(self):
         boot_params = self._get_boot_params(self.data["ostree"])
+        bootfs_params = self._get_bootfs_params(self.data["ostree"])
         workdir = os.path.join(self.workdir, self.image_name)
         ustart = CreateBootfs(
                         image_name=self.image_name,
@@ -250,6 +261,7 @@ class GenImage(GenXXX):
                         pkg_type = self.pkg_type,
                         post_script = self.data['ustart-post-script'],
                         boot_params = boot_params,
+                        bootfs_params = bootfs_params,
                         deploydir=self.deploydir)
         ustart.create()
 
