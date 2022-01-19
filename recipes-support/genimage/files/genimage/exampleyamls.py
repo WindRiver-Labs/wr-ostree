@@ -132,8 +132,8 @@ def _main_run_internal(args):
                     cmd += " --pkg %s" % pkg
             utils.run_cmd_oneshot(cmd)
 
-            cmd = "cp -rf {0}/feature {1}/".format(yamlexample_dir, outdir)
-            utils.run_cmd_oneshot(cmd)
+        cmd = "cp -rf {0}/feature {1}/".format(yamlexample_dir, outdir)
+        utils.run_cmd_oneshot(cmd)
 
         if DEFAULT_MACHINE in SUPPORTED_ARM_MACHINES:
             utils.remove(os.path.join(outdir, "feature/vboxguestdrivers.yaml"))
