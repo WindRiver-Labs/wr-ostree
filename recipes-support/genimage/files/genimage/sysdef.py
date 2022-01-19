@@ -20,27 +20,39 @@ import os
 import shlex
 import subprocess
 import yaml
+import glob
 
 import genimage.utils as utils
 
 logger = logging.getLogger('appsdk')
 
 def install_contains(guest_yamls, args):
-    extra_options = "-w %s/sub_workdir -o %s/sub_deploy" % (args.workdir, args.outdir)
+    extra_options = "-w %s/sub_workdir -o %s" % (args.workdir, args.outdir)
     if args.no_clean:
         extra_options += " --no-clean"
     if args.no_validate:
         extra_options += " --no-validate"
 
-    for yaml_file in guest_yamls:
-        yaml_file = os.path.expandvars(yaml_file)
-        with open(yaml_file) as f:
-            d = yaml.load(f, Loader=yaml.FullLoader) or dict()
+    for yaml_files in guest_yamls:
+        yaml_files = os.path.expandvars(yaml_files)
 
-        if "image_type" not in d:
-            logger.error("The %s does not has an image_type section", yaml_file)
+        # Colloect image_type from yaml_files
+        image_type = []
+        for input_glob in yaml_files.split():
+            if not glob.glob(input_glob):
+                logger.error("sysdef contains: Input yaml file '%s' does not exist" % input_glob)
+                sys.exit(1)
+            for yaml_file in glob.glob(input_glob):
+                logger.debug("sysdef contains, parse %s", yaml_file)
+                with open(yaml_file) as f:
+                    d = yaml.load(f, Loader=yaml.FullLoader) or dict()
+                    if 'image_type' in d:
+                        image_type.extend(d['image_type'])
+
+        if not image_type:
+            logger.error("The %s does not has an image_type section", yaml_files)
             sys.exit(1)
-        image_type = d['image_type']
+
         if "vmdk" in image_type or \
            "vdi" in image_type or \
            "ostree_repo" in image_type or \
@@ -50,16 +62,22 @@ def install_contains(guest_yamls, args):
             if args.gpgpath:
                 extra_options += " -g %s" % self.args.gpgpath
 
-            rc, output = utils.run_cmd("genimage -d %s %s" % (yaml_file, extra_options), shell=True)
+            rc, output = utils.run_cmd("genimage -d %s %s" % (yaml_files, extra_options), shell=True)
             if rc != 0:
                 logger.error(output)
                 logger.error("Generate sub image failed")
                 sys.exit(1)
         elif "container" in image_type:
-            rc, output = utils.run_cmd("gencontainer -d %s %s" % (yaml_file, extra_options), shell=True)
+            rc, output = utils.run_cmd("gencontainer -d %s %s" % (yaml_files, extra_options), shell=True)
             if rc != 0:
                 logger.error(output)
                 logger.error("Generate sub container failed")
+                sys.exit(1)
+        elif "initramfs" in image_type:
+            rc, output = utils.run_cmd("geninitramfs -d %s %s" % (yaml_files, extra_options), shell=True)
+            if rc != 0:
+                logger.error(output)
+                logger.error("Generate sub initramfs failed")
                 sys.exit(1)
         else:
             logger.error("The contains section does not support %s", image_type)
