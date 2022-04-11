@@ -197,7 +197,7 @@ OSTREE_SUPPORTED_ARM64_MACHINES ??= " \
     xilinx-zynqmp \
     nxp-imx8 \
     marvell-cn96xx \
-    nxp-s32g2xx \
+    nxp-s32g \
     intel-socfpga-64 \
     ti-j72xx \
     nxp-ls1028 \
