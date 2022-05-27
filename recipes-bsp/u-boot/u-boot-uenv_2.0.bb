@@ -22,7 +22,13 @@ bootscr_env_import() {
     cat <<EOF > ${WORKDIR}/uEnv.txt
 setenv machine_name ${MACHINE}
 setenv bretry 32
-if test \${skip_script_fdt} != yes; then setenv fdt_file $default_dtb; fi
+if test \${skip_script_fdt} != yes; then
+  if test \${board} = imx8mq_evk; then
+    setenv fdt_file imx8mq-evk-b3.dtb
+  else
+    setenv fdt_file $default_dtb
+  fi
+fi
 setenv A 5
 setenv B 7
 setenv ex _b
@@ -150,7 +156,13 @@ bootscr_fs_links() {
 ${OSTREE_BOOTSCR_PRECMD}
 setenv machine_name ${MACHINE}
 setenv bretry 32
-if test \${skip_script_fdt} != yes; then setenv fdt_file $default_dtb; fi
+if test \${skip_script_fdt} != yes; then
+  if test \${board} = imx8mq_evk; then
+    setenv fdt_file imx8mq-evk-b3.dtb
+  else
+    setenv fdt_file $default_dtb
+  fi
+fi
 setenv ninst ${OSTREE_NET_INSTALL}
 setenv A 5
 setenv B 7
